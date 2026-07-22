@@ -1,0 +1,56 @@
+package com.lune.service.impl;
+
+import com.lune.entity.SiteConfig;
+import com.lune.mapper.SiteConfigMapper;
+import com.lune.service.SiteConfigService;
+import org.springframework.stereotype.Service;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class SiteConfigServiceImpl implements SiteConfigService {
+
+    private final SiteConfigMapper siteConfigMapper;
+
+    public SiteConfigServiceImpl(SiteConfigMapper siteConfigMapper) {
+        this.siteConfigMapper = siteConfigMapper;
+    }
+
+    @Override
+    public Map<String, String> getPublicConfigs() {
+        var configs = siteConfigMapper.selectList(null);
+        var map = new LinkedHashMap<String, String>();
+        for (var c : configs) {
+            if ("public".equals(c.getConfigType())) {
+                map.put(c.getConfigKey(), c.getConfigValue());
+            }
+        }
+        return map;
+    }
+
+    @Override
+    public List<SiteConfig> listAll() {
+        return siteConfigMapper.selectList(null);
+    }
+
+    @Override
+    public SiteConfig saveOrUpdate(SiteConfig config) {
+        var exist = siteConfigMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SiteConfig>()
+                .eq(SiteConfig::getConfigKey, config.getConfigKey()));
+        if (exist != null) {
+            exist.setConfigValue(config.getConfigValue());
+            exist.setDescription(config.getDescription());
+            siteConfigMapper.updateById(exist);
+            return exist;
+        }
+        siteConfigMapper.insert(config);
+        return config;
+    }
+
+    @Override
+    public void deleteConfig(Long id) {
+        siteConfigMapper.deleteById(id);
+    }
+}

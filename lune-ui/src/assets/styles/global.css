@@ -1,0 +1,47 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  color: var(--fontColor);
+  font-family: var(--globalFont), serif;
+  word-break: break-word;
+  background: var(--background);
+  transition: background 0.3s, color 0.3s;
+}
+
+a { text-decoration: none; color: inherit; }
+ul, ol { list-style: none; }
+img { max-width: 100%; height: auto; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(73,177,245,0.2); border-radius: 1em; }
+::-webkit-scrollbar-thumb { background: #49b1f5; border-radius: 1em; }
+
+::selection { background: var(--lightGreen); color: var(--white); }
+
+.myCenter { display: flex; justify-content: center; align-items: center; }
+.myBetween { display: flex; justify-content: space-between; align-items: center; }
+.transformCenter { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+
+.shadow-box {
+  box-shadow: 0 1px 20px -6px var(--borderColor);
+  transition: all 0.3s;
+}
+.shadow-box:hover { box-shadow: 0 5px 10px 5px var(--borderHoverColor); }
+
+.shadow-box-mini { box-shadow: 1px 1px 3px var(--mask); }
+
+.user-avatar { cursor: pointer; transition: all 0.3s; }
+.user-avatar:hover { transform: rotate(360deg); }
+
+.iconRotate { animation: rotate 2s linear infinite; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
