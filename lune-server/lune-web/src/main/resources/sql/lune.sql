@@ -130,6 +130,7 @@ CREATE TABLE `record` (
     `title` VARCHAR(200) NOT NULL,
     `content` TEXT,
     `cover` VARCHAR(500) DEFAULT NULL,
+    `media` TEXT DEFAULT NULL COMMENT 'JSON媒体列表 [{type:image|video, url}]',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted` TINYINT NOT NULL DEFAULT 0,
@@ -190,7 +191,7 @@ CREATE TABLE `visit_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `user` (`username`, `password`, `nickname`, `role`, `status`) VALUES
-('admin', '$2a$10$4PVVESbnsiNljYgpf2fO9ui0i1wkX03NuO9UR4MAnU72ZaTT.tV9m', 'Lune', 'ADMIN', 1);
+('admin', '$2b$10$WgpN2.yz6/7unb1Vx4VzpetLjwb3q6rjl9hE6R3O9C4rh/juJVD2.', 'Lune', 'ADMIN', 1);
 
 INSERT INTO `category` (`name`, `description`, `type`, `sort_order`) VALUES
 ('技术', '技术相关文章', 'article', 1),

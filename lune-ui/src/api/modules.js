@@ -82,6 +82,7 @@ export const resourceApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
+  importUrl: (url) => request.post('/admin/resources/import-url', { url }),
   delete: (id) => request.delete(`/admin/resources/${id}`)
 }
 

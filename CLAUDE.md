@@ -2,13 +2,14 @@
 
 ## Project Overview
 
-Lune is a full-stack personal blog and lifestyle web application. It features articles, essays, love notes (Record), tree holes (anonymous messages), a treasure box (favorites & links), family/friends list, and a full admin dashboard.
+Lune is a full-stack personal blog and lifestyle web application. It features articles, essays (WeChat Moments style), love notes (Record, QQ Moments style), tree holes (full-screen danmaku + timeline), family/friends list, and a full admin dashboard.
 
 - **Backend**: Spring Boot 3.3.5 + Java 17 + Maven
 - **Frontend**: Vue 3 + Vite 5 + Pinia + Vue Router 4 + Element Plus
 - **Database**: MySQL + Redis
 - **Persistence**: MyBatis-Plus 3.5.7 (logic delete enabled)
 - **Security**: Spring Security + JWT (jjwt 0.12.6) + BCrypt
+- **Fonts**: Google Fonts — Noto Sans SC (400/500/600/700/900) + ZCOOL XiaoWei
 
 ---
 
@@ -27,12 +28,12 @@ lune-server/                   # Maven parent POM (pom packaging)
         │   ├── BusinessException.java     # Custom business exception
         │   └── GlobalExceptionHandler.java
         ├── config/
-        │   ├── SecurityConfig.java        # Spring Security: stateless, CORS, permitAll GET, /api/admin/** → ADMIN only
+        │   ├── SecurityConfig.java        # Spring Security: stateless, CORS, permitAll GET + POST(comments/treeholes), /api/admin/** → ADMIN only
         │   ├── CorsConfig.java
         │   ├── MyBatisPlusConfig.java
         │   ├── RedisConfig.java
         │   ├── WebMvcConfig.java
-        │   └── DataInitializer.java       # Seed data
+        │   └── DataInitializer.java       # Seed data: admin/admin123, sample categories, site configs
         ├── security/
         │   ├── JwtTokenProvider.java      # Create/parse/validate JWT (userId, username, role claims)
         │   └── JwtAuthFilter.java         # OncePerRequestFilter: extracts Bearer token, sets SecurityContext
@@ -42,12 +43,10 @@ lune-server/                   # Maven parent POM (pom packaging)
         │   ├── Category.java
         │   ├── Tag.java
         │   ├── Comment.java
-        │   ├── Essay.java                 # Short essays/notes
-        │   ├── Record.java                # Love notes / relationship records
+        │   ├── Essay.java                 # Short essays/notes (weather, mood, location, likeCount)
+        │   ├── Record.java                # Love notes: title, content, cover, media (JSON), categoryId
         │   ├── TreeHole.java              # Anonymous messages
         │   ├── Family.java                # Friends/family members
-        │   ├── Favorite.java              # Treasure box - favorites
-        │   ├── FriendLink.java            # Treasure box - external links
         │   ├── SiteConfig.java            # Site settings (key-value)
         │   ├── Resource.java              # Uploaded file resources
         │   └── VisitLog.java
@@ -66,11 +65,9 @@ lune-server/                   # Maven parent POM (pom packaging)
             │   ├── CommentController.java
             │   ├── EssayController.java
             │   ├── FamilyController.java
-            │   ├── FriendLinkController.java
             │   ├── RecordController.java
             │   ├── SiteConfigController.java
             │   ├── TagController.java
-            │   ├── TreasureController.java
             │   └── TreeHoleController.java
             └── controller/admin/          # Admin REST controllers (/api/admin/...)
                 ├── AdminArticleController.java
@@ -82,12 +79,11 @@ lune-server/                   # Maven parent POM (pom packaging)
                 ├── AdminResourceController.java
                 ├── AdminSiteConfigController.java
                 ├── AdminTagController.java
-                ├── AdminTreasureController.java
                 ├── AdminTreeHoleController.java
                 └── AdminUserController.java
 
 lune-ui/                                 # Vue 3 frontend
-├── index.html                           # zh-CN, title: "Lune - 记录美好生活"
+├── index.html                           # zh-CN, Google Fonts preconnect, title: "Lune - 记录美好生活"
 ├── vite.config.js                       # Port 5173, proxy /api and /upload → localhost:8081
 ├── package.json                         # vue 3.4, vue-router 4, pinia 2, element-plus 2, axios 1
 └── src/
@@ -99,19 +95,18 @@ lune-ui/                                 # Vue 3 frontend
     ├── router/index.js                  # Routes: Landing → PublicLayout(children) + AdminLogin + AdminLayout(children, requiresAuth)
     ├── stores/
     │   ├── user.js                      # Pinia store: token, user, login/logout actions
-    │   └── app.js
+    │   └── app.js                       # App config, webInfo, manual dark mode toggle (no time-based auto)
     ├── layout/
-    │   ├── PublicLayout.vue             # Public page layout with header/footer
+    │   ├── PublicLayout.vue             # Public page layout with header/footer, no dark mode toggle
     │   └── AdminLayout.vue              # Admin dashboard layout with sidebar
     ├── views/                           # Public-facing pages
     │   ├── landing/Landing.vue          # Landing/splash page (route: /)
-    │   ├── home/Home.vue                # Main blog home (route: /home)
+    │   ├── home/Home.vue                # 2-column layout: sidebar + article grid (route: /home)
     │   ├── article/ArticleDetail.vue    # Article detail (route: /article/:id)
-    │   ├── family/Family.vue            # Friends & family page
-    │   ├── treehole/TreeHole.vue        # Anonymous tree hole messages
-    │   ├── essay/Essay.vue              # Essays page
-    │   ├── record/Record.vue            # Love notes page
-    │   └── treasure/Treasure.vue        # Treasure box page
+    │   ├── family/Family.vue            # Friends & family page with blessing board
+    │   ├── treehole/TreeHole.vue        # Full-screen danmaku + timeline (route: /treehole)
+    │   ├── essay/Essay.vue              # WeChat Moments-style feed (route: /essay)
+    │   ├── record/Record.vue            # QQ Moments-style feed with media support (route: /record)
     ├── admin/                           # Admin management pages
     │   ├── Login.vue                    # Admin login page (/admin/login)
     │   ├── Dashboard.vue                # Dashboard with stats
@@ -121,7 +116,6 @@ lune-ui/                                 # Vue 3 frontend
     │   ├── EssayManage.vue
     │   ├── RecordManage.vue
     │   ├── TreeHoleManage.vue
-    │   ├── TreasureManage.vue
     │   ├── FamilyManage.vue
     │   ├── UserManage.vue
     │   ├── ResourceManage.vue           # File upload management
@@ -168,7 +162,7 @@ PageResult.of(records, total, page, size)
 1. `/api/auth/login` → validates credentials (BCrypt) → returns JWT token
 2. All subsequent requests: `Authorization: Bearer <token>` header
 3. `JwtAuthFilter` extracts token, validates, sets `SecurityContext` with userId/username/role
-4. `/api/admin/**` requires ADMIN role; GET on public `/api/**` is permitAll
+4. `/api/admin/**` requires ADMIN role; GET on public `/api/**` is permitAll; POST on `/api/comments/**` and `/api/treeholes/**` is also permitAll
 5. Stateless sessions (`SessionCreationPolicy.STATELESS`), CSRF disabled
 
 **Logic delete**: All entities use MyBatis-Plus `@TableLogic` — `deleted=0` (not deleted), `deleted=1` (deleted). `deleteById()` performs soft delete automatically.
@@ -180,7 +174,7 @@ PageResult.of(records, total, page, size)
 **Request flow** — `request.js` wraps axios:
 1. `baseURL: '/api'` — proxied by Vite to `localhost:8081`
 2. Request interceptor: attaches `Authorization: Bearer <token>` from localStorage
-3. Response interceptor: unwraps response → if `data.code === 200`, returns `data.data` directly; on 401/403, clears auth and redirects to login
+3. Response interceptor: unwraps response → if `data.code === 200`, returns `data.data` directly; on 401/403, clears auth and redirects to `/admin/login`
 
 **All API functions in `modules.js`** are exported as named objects grouped by domain:
 ```js
@@ -191,12 +185,57 @@ export const authApi = { login, register, logout }
 Callers use them as: `await articleApi.list({ page: 1, size: 10, categoryId: 5 })`
 
 **Routing**: Two layout trees
-- `PublicLayout` wraps: Home, ArticleDetail, Family, TreeHole, Essay, Record, Treasure
+- `PublicLayout` wraps: Home, ArticleDetail, Family, TreeHole, Essay, Record
 - `AdminLayout` wraps: Dashboard, CRUD management pages (requires auth via `router.beforeEach` + token check)
 
 **State management** — Pinia stores:
-- `user.js`: token, user object, `login()`/`logout()` actions, computed getters (isAdmin, isLoggedIn, nickname)
-- `app.js`: app-level state
+- `user.js`: token, user object, `login()`/`logout()` actions, computed getters (isAdmin, isLoggedIn, nickname, username)
+- `app.js`: app config, webInfo (site name, background, avatar, randomCover, etc.), dark mode (manual toggle via localStorage only), toolbar visibility
+
+**Typography** — Google Fonts loaded in `index.html`:
+- `Noto Sans SC` (weights 400–900): primary body font for all content
+- `ZCOOL XiaoWei`: decorative font (minimal usage)
+- All feed-style pages use `font-style: italic` for a casual, handwritten feel
+
+---
+
+## Page Design Details
+
+### Home (`/home`) — `Home.vue`
+- 2-column layout: sidebar (glass-morphism info card) + 3-column article grid
+- Article cards: cover image on top, transparent background, hover-triggered glass effect (rgba white + blur)
+- Cards: `border-radius: 14px`, hover lifts 3px with shadow
+- Responsive: ≤1200px 2-col grid, ≤768px single column
+
+### Essay (`/essay`) — `Essay.vue` — WeChat Moments style
+- Full-viewport hero banner with background image
+- Linear feed layout, max-width 680px
+- Each item: square avatar (48px, 8px radius) + username (19px, italic, #3d5a99) + relative time + content + tags
+- Inline comment section with gray background (#f5f5f5)
+- FAB add button for admins (fixed bottom-right)
+- Font: Noto Sans SC with `font-style: italic`
+
+### TreeHole (`/treehole`) — `TreeHole.vue` — Full-screen danmaku
+- **Upper section (100vh)**: Full-screen background image (random from site config `randomCover`), dark overlay, CSS-animated danmaku messages floating right-to-left across 6 lanes
+- Centered input area: title "树洞" + text input + "发射" button
+- Scroll-down hint arrow, clicking scrolls to timeline
+- **Lower section**: Alternating left/right timeline bubbles with colored backgrounds, center line, date/footer
+- Messages sync between danmaku and timeline
+
+### Record (`/record`) — `Record.vue` — QQ Moments style
+- Full-viewport hero banner with background image
+- Category tag chips (centered, with active highlight)
+- Feed layout, max-width 760px
+- Each card: avatar (53px, 8px radius) + nickname + content + media grid + category tag + relative time (bottom-right)
+- **Media support**: parses `media` JSON field:
+  - Images: responsive grid (1→full, 2→side-by-side, 3→L-shape, 4→2×2, 5+→3 columns)
+  - Video: HTML5 `<video>` player
+  - Legacy `cover` field as fallback
+- Cards: `border-radius: 14px`, transparent bg, hover glass effect
+- Font: Noto Sans SC with `font-style: italic`
+
+### Family (`/family`)
+- Family member profiles with blessing board (POST `/api/comments` with type `family`)
 
 ---
 
@@ -256,6 +295,7 @@ SQL schema is at `lune-server/lune-web/src/main/resources/sql/lune.sql`.
 - **Admin UIs follow a pattern**: Each `XxxManage.vue` has a table listing + dialog for create/edit, calls the corresponding API module
 - **Static assets** are in `lune-ui/public/assets/` (fonts, logos, background images) and `lune-ui/public/upload/` (user-uploaded images)
 - **Frontend styles**: Three CSS files in `assets/styles/` — `variables.css` (CSS custom properties), `global.css` (base styles), `animations.css`
+- **Feed-style pages** (Essay, Record, TreeHole) share common patterns: hero banner with bg-image+overlay, Noto Sans SC italic typography, centered max-width container, rounded cards with glass hover effect
 
 ## Business Domains
 
@@ -263,14 +303,12 @@ SQL schema is at `lune-server/lune-web/src/main/resources/sql/lune.sql`.
 |--------|-----------|-------------|
 | Auth | `/api/auth` | Login, register, logout |
 | Article | `/api/articles` | Blog articles with categories, tags |
-| Category | `/api/categories` | Article categories, filterable by type |
-| Comment | `/api/comments` | Article comments |
-| Essay | `/api/essays` | Short essays/notes |
-| Record | `/api/records` | Love notes / couple memories |
-| TreeHole | `/api/treeholes` | Anonymous message board |
-| Treasure | `/api/treasures` | Curated favorites + external links |
+| Category | `/api/categories` | Categories filterable by type (article/record) |
+| Comment | `/api/comments` | Comments (article, essay, family) — POST is permitAll |
+| Essay | `/api/essays` | Short essays with weather/mood tags |
+| Record | `/api/records` | QQ Moments-style feed with text/images/video |
+| TreeHole | `/api/treeholes` | Anonymous danmaku + timeline — POST is permitAll |
 | Family | `/api/family` | Friends/family member profiles |
-| FriendLink | `/api/friend-links` | Friend links (public read-only) |
-| SiteConfig | `/api/site-config` | Key-value site settings |
+| SiteConfig | `/api/site-config` | Key-value site settings (name, background, randomCover, etc.) |
 | Resource | `/api/admin/resources` | File upload/management (admin only) |
 | User | `/api/admin/users` | User management (admin only) |

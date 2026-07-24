@@ -2,6 +2,7 @@ package com.lune.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lune.common.BusinessException;
+import com.lune.common.PageResult;
 import com.lune.entity.Resource;
 import com.lune.mapper.ResourceMapper;
 import com.lune.service.ResourceService;
@@ -11,10 +12,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
@@ -65,11 +69,41 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
-    public List<Resource> listResources(int page, int size) {
-        Page<Resource> result = resourceMapper.selectPage(new Page<>(page, size),
+    public Resource importFromUrl(String url) {
+        String filename = url.substring(url.lastIndexOf('/') + 1);
+        int qi = filename.indexOf('?');
+        if (qi > 0) filename = filename.substring(0, qi);
+        if (filename.isEmpty()) filename = "imported_" + System.currentTimeMillis();
+
+        String ext = getExtension(filename);
+        if (ext.equals("bin") || ext.length() > 5) {
+            String lower = url.toLowerCase();
+            if (lower.contains(".jpg") || lower.contains(".jpeg")) ext = "jpg";
+            else if (lower.contains(".png")) ext = "png";
+            else if (lower.contains(".gif")) ext = "gif";
+            else if (lower.contains(".svg")) ext = "svg";
+            else if (lower.contains(".webp")) ext = "webp";
+            else ext = "jpg";
+        }
+
+        String storedPath = url;
+        Resource resource = new Resource();
+        resource.setFilename(filename);
+        resource.setPath(storedPath);
+        resource.setSize(0L);
+        resource.setMimeType("image/" + ext);
+        resource.setType("image");
+        resource.setStoreType("remote");
+        resourceMapper.insert(resource);
+        return resource;
+    }
+
+    @Override
+    public PageResult<Resource> listResources(int page, int size) {
+        var result = resourceMapper.selectPage(new Page<>(page, size),
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Resource>()
                         .orderByDesc(Resource::getCreateTime));
-        return result.getRecords();
+        return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 
     @Override

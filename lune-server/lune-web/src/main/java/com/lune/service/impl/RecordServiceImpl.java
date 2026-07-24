@@ -44,6 +44,7 @@ public class RecordServiceImpl implements RecordService {
         exist.setTitle(record.getTitle());
         exist.setContent(record.getContent());
         exist.setCover(record.getCover());
+        exist.setMedia(record.getMedia());
         recordMapper.updateById(exist);
         return exist;
     }

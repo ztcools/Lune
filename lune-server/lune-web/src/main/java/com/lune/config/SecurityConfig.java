@@ -37,6 +37,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/articles/**", "/api/categories/**",
                     "/api/comments/**", "/api/essays/**", "/api/records/**", "/api/treeholes/**",
                     "/api/family/**", "/api/site-config/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/comments/**", "/api/treeholes/**").permitAll()
+                .requestMatchers("/upload/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

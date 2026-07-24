@@ -14,6 +14,7 @@ public class Record {
     private String title;
     private String content;
     private String cover;
+    private String media;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

@@ -31,7 +31,7 @@ public class DataInitializer implements CommandLineRunner {
         if (userMapper.selectCount(null) == 0) {
             var admin = new User();
             admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("123"));
+            admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setNickname("Lune");
             admin.setRole("ADMIN");
             admin.setStatus(1);
