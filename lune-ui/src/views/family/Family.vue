@@ -1,460 +1,225 @@
 <template>
   <div class="family-page">
+    <!-- Sakura background -->
+    <SakuraFall :count="35" :fallSpeed="1.2" :wind="0.3" />
+
     <!-- Hero Banner -->
-    <div class="bg-wrap">
-      <el-image
-        class="family-banner-image"
-        lazy
-        :src="family.bgCover || '/assets/背景4.jpg'"
-        fit="cover"
-      >
-        <template #error><div class="image-slot"></div></template>
-      </el-image>
-      <div class="banner-overlay"></div>
-
-      <!-- Center card with avatars -->
-      <div class="family-wrap transformCenter">
-        <div>
-          <el-avatar class="family-avatar" :src="family.manCover"></el-avatar>
-          <div class="family-name">{{ family.manName || '他' }}</div>
-        </div>
-        <div>
-          <img
-            class="family-heart"
-            src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath fill=%22%23ff4b2b%22 d=%22M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z%22/%3E%3C/svg%3E"
-            alt="heart"
-            @error="(e) => { e.target.style.display = 'none' }"
-          />
-        </div>
-        <div>
-          <el-avatar class="family-avatar" :src="family.womanCover"></el-avatar>
-          <div class="family-name">{{ family.womanName || '她' }}</div>
-        </div>
+    <div class="hero-section">
+      <div class="hero-overlay" />
+      <!-- Meteors -->
+      <div class="meteors-container">
+        <span v-for="i in 15" :key="i" class="meteor" :style="meteorStyle(i)" />
       </div>
-
-      <!-- Wave effects -->
-      <div id="bannerWave1"></div>
-      <div id="bannerWave2"></div>
-    </div>
-
-    <!-- Content -->
-    <div class="family-container">
-      <!-- Timer & Countdown -->
-      <div class="myCenter family-timer-section">
-        <div>
-          <div class="timer-title">
-            这是我们一起走过的
+      <div class="hero-content">
+        <!-- Avatars + Lightning Connection -->
+        <div class="couple-area">
+          <div class="person-card">
+            <el-avatar class="couple-avatar" shape="square" :size="160" :src="family.manCover || defaultMan" @click="sendHeart('left')" />
+            <div class="couple-name">{{ family.manName || '他' }}</div>
           </div>
-          <div class="timer-display">
-            第
-            <span class="timer-digit">{{ timing.year }}</span>年
-            <span class="timer-digit">{{ timing.month }}</span>月
-            <span class="timer-digit">{{ timing.day }}</span>日
-            <span class="timer-digit">{{ timing.hour }}</span>时
-            <span class="timer-digit">{{ timing.minute }}</span>分
-            <span class="timer-digit">{{ timing.second }}</span>秒
-          </div>
-          <!-- Countdown -->
-          <div
-            v-if="family.countdownTitle || family.countdownTime"
-            class="countdown-display"
-          >
-            {{ family.countdownTitle }}: {{ countdownText }}
-          </div>
-        </div>
-      </div>
 
-      <!-- Confession Wall Button -->
-      <div class="confession-btn-wrap">
-        <div class="confession-btn shadow-box-mini" @click="switchCard(4)">
-          <span class="confession-btn-title">
-            {{ activeCard === 4 ? '回到主人家' : '开往表白墙' }}
-          </span>
-          <span class="confession-btn-car">
-            <svg viewBox="0 0 1024 1024" width="40" height="40">
-              <path
-                d="M399.502 655.103c0 7.902-6.665 14.311-14.88 14.311H72.188c-8.215 0-14.875-6.407-14.875-14.311v-28.634c0-7.913 6.66-14.315 14.875-14.315h312.435c8.217 0 14.88 6.402 14.88 14.315l-0.001 28.634zM968.167 655.103c0 7.902-6.664 14.311-14.882 14.311H640.851c-8.216 0-14.877-6.407-14.877-14.311v-28.634c0-7.913 6.661-14.315 14.877-14.315h312.436c8.218 0 14.882 6.402 14.882 14.315l-0.002 28.634z"
-                fill="#EA0606"
-              ></path>
-              <path
-                d="M968.097 624.008c0 11.563-17.723 20.937-39.583 20.937H97.263c-21.858 0-39.579-9.372-39.579-20.937v-41.876c0-11.562 17.72-20.935 39.579-20.935h831.25c21.86 0 39.583 9.373 39.583 20.935v41.876zM855.003 526.553h-12c0-161.793-151.025-293.421-336.66-293.421-185.633 0-336.656 131.628-336.656 293.421h-12c0-41.334 9.261-81.425 27.527-119.161 17.612-36.384 42.807-69.046 74.886-97.079 65.813-57.509 153.264-89.181 246.243-89.181 92.981 0 180.434 31.672 246.247 89.181 32.079 28.032 57.274 60.693 74.887 97.079 18.264 37.734 27.526 77.826 27.526 119.161z"
-                fill="#EA0606"
-              ></path>
+          <!-- Lightning + Beam connector -->
+          <div class="connector-wrap">
+            <!-- Flying heart -->
+            <Transition name="heart-fly">
+              <div v-if="flyingHeart" class="flying-heart" :class="flyingHeart.from">❤️</div>
+            </Transition>
+            <svg class="lightning-svg" viewBox="0 0 120 160" width="120" height="160">
+              <defs>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
+              <path :d="lightningPath" stroke="#ffe082" stroke-width="2.5" fill="none" filter="url(#glow)" />
+              <path :d="lightningPath" stroke="#fff" stroke-width="1" fill="none" opacity="0.7" />
             </svg>
-          </span>
+            <!-- Beam rays -->
+            <div class="beam-rays">
+              <div class="beam-ray" v-for="i in 8" :key="i" :style="{ transform: `rotate(${i*45}deg)` }" />
+            </div>
+          </div>
+
+          <div class="person-card">
+            <el-avatar class="couple-avatar" shape="square" :size="160" :src="family.womanCover || defaultWoman" @click="sendHeart('right')" />
+            <div class="couple-name">{{ family.womanName || '她' }}</div>
+          </div>
         </div>
+
+        <!-- Timer -->
+        <div class="timer-row">
+          <span>第</span><span class="timer-num">{{ timing.year }}</span><span>年</span>
+          <span class="timer-num">{{ timing.month }}</span><span>月</span>
+          <span class="timer-num">{{ timing.day }}</span><span>日</span>
+          <span class="timer-num">{{ timing.hour }}</span><span>时</span>
+          <span class="timer-num">{{ timing.minute }}</span><span>分</span>
+          <span class="timer-num">{{ timing.second }}</span><span>秒</span>
+        </div>
+        <div v-if="family.countdownTime" class="countdown-text">{{ family.countdownTitle }}: {{ countdownText }}</div>
       </div>
+    </div>
 
-      <!-- Card Navigation (not shown when on confession wall) -->
-      <div v-show="activeCard !== 4" class="card-nav">
-        <div class="card-nav-inner">
-          <!-- 点点滴滴 -->
-          <div class="nav-card shadow-box-mini" @click="switchCard(1)">
-            <div>
-              <el-avatar :size="100" src="/assets/头像1.jpg" />
-            </div>
-            <div class="nav-card-right">
-              <div class="nav-card-title">点点滴滴</div>
-              <div class="nav-card-desc">☀️今朝有酒今朝醉</div>
-            </div>
-          </div>
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button :class="{ active: activeTab === 'painting' }" @click="activeTab = 'painting'">世界名画</button>
+      <button :class="{ active: activeTab === 'blessing' }" @click="activeTab = 'blessing'">祝福板</button>
+      <button :class="{ active: activeTab === 'diary' }" @click="activeTab = 'diary'">点点滴滴</button>
+    </div>
 
-          <!-- 时光相册 -->
-          <div class="nav-card shadow-box-mini" @click="switchCard(2)">
-            <div>
-              <el-avatar :size="100" src="/assets/背景.jpg" />
-            </div>
-            <div class="nav-card-right">
-              <div class="nav-card-title">时光相册</div>
-              <div class="nav-card-desc">📸记录美好瞬间</div>
-            </div>
-          </div>
-
-          <!-- 祝福板 -->
-          <div class="nav-card shadow-box-mini" @click="switchCard(3)">
-            <div>
-              <el-avatar :size="100" src="/assets/头像2.jpg" />
-            </div>
-            <div class="nav-card-right">
-              <div class="nav-card-title">祝福板</div>
-              <div class="nav-card-desc">📋写下对我们的祝福</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card Content Area -->
-      <div class="card-content-area">
-        <!-- 点点滴滴 (TreeHole style) -->
-        <div v-show="activeCard === 1 && treeHoleList.length > 0" class="treehole-section">
-          <div
-            v-for="(item, index) in treeHoleList"
-            :key="item.id"
-            class="treehole-item"
-          >
-            <div class="treehole-item-inner">
-              <div class="th-avatar-col">
-                <el-avatar shape="square" :size="36" :src="item.avatar || appStore.webInfo.avatar" />
-              </div>
-              <div class="th-body-col">
-                <div class="th-user-row">
-                  <span class="th-username">{{ item.username }}</span>
-                </div>
-                <div class="th-content" v-html="item.content"></div>
-                <div class="th-footer">
-                  <span class="th-time">{{ formatRelative(item.createTime) }}</span>
-                  <span
-                    v-if="userStore.isLoggedIn && userStore.user?.userId === item.userId"
-                    class="th-delete"
-                    @click="deleteTreeHole(item.id)"
-                  >
-                    <svg viewBox="0 0 1024 1024" width="16" height="16" style="vertical-align: -4px;">
-                      <path
-                        d="M921.1392 155.392h-270.592v-48.2816c0-22.7328-18.432-41.1648-41.1648-41.1648H426.3424a41.1648 41.1648 0 0 0-41.1648 41.1648v48.2816H110.6432c-14.1312 0-25.6 11.4688-25.6 25.6s11.4688 25.6 25.6 25.6h810.496c14.1312 0 25.6-11.4688 25.6-25.6s-11.4688-25.6-25.6-25.6zM170.8032 260.0448v592.8448c0 50.8928 41.2672 92.16 92.16 92.16h500.6848c50.8928 0 92.16-41.2672 92.16-92.16V260.0448H170.8032z m249.1392 462.7968c0 14.1312-11.4688 25.6-25.6 25.6s-25.6-11.4688-25.6-25.6V443.0848c0-14.1312 11.4688-25.6 25.6-25.6s25.6 11.4688 25.6 25.6v279.7568z m243.1488 0c0 14.1312-11.4688 25.6-25.6 25.6s-25.6-11.4688-25.6-25.6V443.0848c0-14.1312 11.4688-25.6 25.6-25.6s25.6 11.4688 25.6 25.6v279.7568z"
-                        fill="#FF623E"
-                      ></path>
-                    </svg>
-                  </span>
-                </div>
-              </div>
-            </div>
-            <hr class="th-divider" />
-          </div>
-          <div class="pagination-wrap">
-            <div
-              v-if="treeHoleTotal > treeHoleList.length"
-              class="pagination-btn"
-              @click="loadMoreTreeHoles"
-            >
-              下一页
-            </div>
-            <div v-else class="pagination-end">~~到底啦~~</div>
-          </div>
-        </div>
-
-        <!-- 时光相册 (Records/Photos) -->
-        <div v-show="activeCard === 2" class="photo-section">
-          <div class="photo-grid">
-            <div v-for="item in photoList" :key="item.id" class="photo-card shadow-box">
-              <el-image
-                v-if="item.cover"
-                :src="item.cover"
-                fit="cover"
-                class="photo-cover"
-                :preview-src-list="[item.cover]"
-              />
-              <div class="photo-body">
-                <h4>{{ item.title }}</h4>
-                <p v-if="item.content">{{ item.content.substring(0, 60) }}</p>
-                <span class="photo-date">📅 {{ formatDate(item.createTime) }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-if="photoList.length === 0" style="text-align:center;padding:40px;">
-            <el-empty description="暂无相册" />
-          </div>
-          <div class="pagination-wrap">
-            <div
-              v-if="photoTotal > photoList.length"
-              class="pagination-btn"
-              @click="loadMorePhotos"
-            >
-              下一页
-            </div>
-            <div v-else class="pagination-end">~~到底啦~~</div>
-          </div>
-        </div>
-
-        <!-- 祝福板 (Comments) -->
-        <div v-show="activeCard === 3" class="blessing-section">
-          <div class="comment-input-area">
-            <textarea
-              v-model="blessingText"
-              placeholder="写下祝福吧..."
-              maxlength="500"
-              class="blessing-textarea"
-              rows="3"
-            ></textarea>
-            <div class="blessing-action-row">
-              <span class="char-count">{{ blessingText.length }}/500</span>
-              <el-button type="primary" size="small" @click="submitBlessing" :loading="blessingPosting">
-                发送祝福
-              </el-button>
-            </div>
-          </div>
-          <div class="blessing-list">
-            <div v-for="c in blessingList" :key="c.id" class="blessing-row">
-              <el-avatar :size="32" :src="c.avatar" shape="square" />
-              <div class="blessing-body">
-                <span class="blessing-user">{{ c.username }}</span>
-                <span class="blessing-content">{{ c.content }}</span>
-                <span class="blessing-time">{{ formatRelative(c.createTime) }}</span>
-              </div>
-            </div>
-            <div v-if="blessingList.length === 0" style="text-align:center;padding:40px;">
-              <el-empty description="还没有祝福，快来写下第一条吧" />
-            </div>
-          </div>
-        </div>
-
-        <!-- 表白墙 (Family Cards Grid) -->
-        <div v-show="activeCard === 4" class="confession-wall">
-          <div class="family-grid" v-if="randomFamilies.length > 0">
-            <div
-              v-for="(item, index) in randomFamilies"
-              :key="index"
-              class="family-grid-card"
-              @click="selectFamily(item)"
-              :style="{ background: `url(${item.bgCover}) center center / cover no-repeat` }"
-            >
-              <div class="fgc-overlay"></div>
-              <div class="fgc-content">
-                <div>
-                  <el-avatar class="fgc-avatar" :src="item.manCover" />
-                  <div class="fgc-name">{{ item.manName }}</div>
-                </div>
-                <div>
-                  <img
-                    class="fgc-heart"
-                    src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath fill=%22%23ff4b2b%22 d=%22M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z%22/%3E%3C/svg%3E"
-                    alt="heart"
-                    @error="(e) => { e.target.style.display = 'none' }"
-                  />
-                </div>
-                <div>
-                  <el-avatar class="fgc-avatar" :src="item.womanCover" />
-                  <div class="fgc-name">{{ item.womanName }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="confession-bottom">
-            <div
-              v-if="randomFamilies.length > 10"
-              class="confession-action-btn"
-              style="background-color: var(--maxLightRed)"
-              @click="fetchRandomFamilies"
-            >
-              <span class="action-btn-text">换一换</span>
-              <svg viewBox="0 0 1024 1024" width="30" height="30"><path
-                d="M952 511.5L567.4 183v164.3s-251.3 30.3-369.1 131.2C76.4 582.9 73 840 73 840l20.4-2s72.9-164 258.5-162.3c99.9 0.9 171.3 0.8 215.6 0.6V840L952 511.5z"
-                fill="#FF9D3A"
-              ></path></svg>
-            </div>
-            <div
-              class="confession-action-btn"
-              style="background-color: var(--lightGreen)"
-              @click="openFamilyForm"
-            >
-              <span class="action-btn-text">申请入住</span>
-              <svg viewBox="0 0 1024 1024" width="30" height="30"><path
-                d="M731.0848 143.7696c-125.0816-54.528-270.7456 2.6624-325.2736 127.7952l-3.7376 8.6016-8.6016-3.7376c-125.0816-54.5792-270.6944 2.6112-325.2224 127.744-54.528 125.0816 2.6624 270.7456 127.7952 325.2736l368.0256 160.4096c51.712 22.528 111.872-1.1264 134.4-52.7872l0.0512-0.1024c0-0.0512 0.0512-0.1024 0.0512-0.1536l160.3072-367.7696c54.528-125.1328-2.6624-270.7456-127.7952-325.2736z"
-                fill="#F85F69"
-              ></path></svg>
-            </div>
-          </div>
+    <!-- Tab: 世界名画 -->
+    <div v-show="activeTab === 'painting'" class="painting-card">
+      <div class="painting-inner">
+        <div class="painting-frame">
+          <img src="/assets/背景4.jpg" class="painting-img" alt="世界名画" />
+          <div class="painting-vignette" />
+          <div class="painting-label">世界名画</div>
         </div>
       </div>
     </div>
 
-    <!-- Family Form Dialog -->
-    <el-dialog
-      v-model="familyDialogVisible"
-      title="入住表白墙"
-      width="45%"
-      :close-on-click-modal="false"
-      destroy-on-close
-      center
-    >
-      <div class="form-main">
-        <div class="form-friend-body">
-          <div class="form-field">
-            <label class="form-label">背景封面</label>
-            <el-input v-model="userFamily.bgCover" placeholder="输入背景图片URL" maxlength="120" />
+    <!-- Tab: 祝福板 -->
+    <div v-show="activeTab === 'blessing'" class="blessing-section">
+      <div class="blessing-carousel-wrap">
+        <div class="blessing-track" :style="carouselStyle">
+          <div v-for="(b, i) in blessingLoop" :key="i" class="blessing-slide">
+            <el-avatar :size="44" :src="b.avatar || randomAvatar(i)">
+              <el-icon :size="22"><UserFilled /></el-icon>
+            </el-avatar>
+            <div class="blessing-slide-body">
+              <span v-if="b.username" class="blessing-slide-name">{{ b.username }}</span>
+              <span class="blessing-slide-text">{{ b.content }}</span>
+              <span class="blessing-slide-time">{{ timeAgo(b.createTime) }}</span>
+            </div>
           </div>
-          <div class="form-field">
-            <label class="form-label">男生头像</label>
-            <el-input v-model="userFamily.manCover" placeholder="输入头像URL" maxlength="120" />
+          <div v-for="(b, i) in blessingLoop" :key="'dup'+i" class="blessing-slide">
+            <el-avatar :size="44" :src="b.avatar || randomAvatar(i)">
+              <el-icon :size="22"><UserFilled /></el-icon>
+            </el-avatar>
+            <div class="blessing-slide-body">
+              <span v-if="b.username" class="blessing-slide-name">{{ b.username }}</span>
+              <span class="blessing-slide-text">{{ b.content }}</span>
+              <span class="blessing-slide-time">{{ timeAgo(b.createTime) }}</span>
+            </div>
           </div>
-          <div class="form-field">
-            <label class="form-label">女生头像</label>
-            <el-input v-model="userFamily.womanCover" placeholder="输入头像URL" maxlength="120" />
-          </div>
-          <div class="form-field">
-            <label class="form-label">男生昵称</label>
-            <el-input v-model="userFamily.manName" placeholder="输入昵称" maxlength="10" />
-          </div>
-          <div class="form-field">
-            <label class="form-label">女生昵称</label>
-            <el-input v-model="userFamily.womanName" placeholder="输入昵称" maxlength="10" />
-          </div>
-          <div class="form-field">
-            <label class="form-label">计时时间</label>
-            <el-date-picker
-              v-model="userFamily.timing"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              type="datetime"
-              placeholder="选择计时开始时间"
-              style="width:100%"
-            />
-          </div>
-          <div class="form-field">
-            <label class="form-label">倒计时标题</label>
-            <el-input v-model="userFamily.countdownTitle" placeholder="例如: 生日倒计时" maxlength="20" />
-          </div>
-          <div class="form-field">
-            <label class="form-label">倒计时时间</label>
-            <el-date-picker
-              v-model="userFamily.countdownTime"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              type="datetime"
-              placeholder="选择倒计时日期"
-              style="width:100%"
-            />
-          </div>
-          <div class="form-field">
-            <label class="form-label">告白信</label>
-            <el-input
-              v-model="userFamily.familyInfo"
-              type="textarea"
-              :rows="4"
-              maxlength="1000"
-              show-word-limit
-              placeholder="写下想说的话..."
-            />
-          </div>
-          <div style="text-align:center;margin-top:20px;">
-            <el-button type="primary" @click="submitFamily" :loading="familyPosting">提交</el-button>
-          </div>
-          <p style="font-size:12px;text-align:center;color:#999;margin-top:10px;">欢迎入住表白墙</p>
         </div>
       </div>
-    </el-dialog>
+      <div class="blessing-input-bar">
+        <div class="blessing-input-wrap">
+          <el-input v-model="blessingText" placeholder="💌 写下祝福..." size="large" class="blessing-input"
+            @keyup.enter="submitBlessing" />
+          <button class="blessing-send-btn" :disabled="!blessingText.trim()" @click="submitBlessing">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: 烂皮书 (点点滴滴) -->
+    <div v-show="activeTab === 'diary'" class="diary-book">
+      <div class="book-container">
+        <!-- Left page -->
+        <div class="book-page book-left" :key="'l'+currentPage">
+          <div class="page-content">
+            <div class="page-record-time">{{ formatFullDate(leftPage?.recordTime) }}</div>
+            <img v-if="firstDiaryImage(leftPage)" :src="firstDiaryImage(leftPage)" class="page-image" />
+            <div class="page-text" v-html="leftPage?.content"></div>
+            <div class="page-number">{{ leftPage?.pageOrder || currentPage * 2 - 1 }}</div>
+          </div>
+        </div>
+        <!-- Right page -->
+        <div class="book-page book-right" :key="'r'+currentPage">
+          <div class="page-content">
+            <div class="page-record-time">{{ formatFullDate(rightPage?.recordTime) }}</div>
+            <img v-if="firstDiaryImage(rightPage)" :src="firstDiaryImage(rightPage)" class="page-image" />
+            <div class="page-text" v-html="rightPage?.content"></div>
+            <div class="page-number">{{ rightPage?.pageOrder || currentPage * 2 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page navigation -->
+      <div class="book-nav">
+        <button :disabled="currentPage <= 1" @click="prevPage">◂ 上一页</button>
+        <span class="book-page-indicator">{{ currentPage }} / {{ totalPages }}</span>
+        <button :disabled="currentPage >= totalPages" @click="nextPage">下一页 ▸</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { familyApi, treeHoleApi, commentApi, recordApi } from '../../api/modules'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { familyApi, diaryApi, commentApi } from '../../api/modules'
 import { useUserStore } from '../../stores/user'
-import { useAppStore } from '../../stores/app'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { UserFilled } from '@element-plus/icons-vue'
+import SakuraFall from '../../components/SakuraFall.vue'
+
+const avatarColors = ['#ff6b6b','#ffa07a','#ffd700','#51c492','#409eff','#a78bfa','#f472b6','#fb923c']
+function randomAvatar(i) { return '' } // will use default icon
+function randomNick() { const nicks=['小星星','月亮船','阳光','微风','彩虹糖','云朵','海浪','樱花','蒲公英','小太阳']; return nicks[Math.floor(Math.random()*nicks.length)] }
 
 const userStore = useUserStore()
-const appStore = useAppStore()
+const defaultMan = '/assets/头像1.jpg'
+const defaultWoman = '/assets/头像2.jpg'
 
-// --- Family state ---
-const family = ref({
-  bgCover: '',
-  manCover: '',
-  womanCover: '',
-  manName: '',
-  womanName: '',
-  countdownTitle: '',
-  countdownTime: '',
-  timing: ''
-})
-const adminFamily = ref({})
-
-// --- Timer state ---
-const timing = ref({ year: 0, month: 0, day: 0, hour: 0, minute: 0, second: 0 })
-const countdownText = ref('')
+// Family
+const family = ref({})
 let timerInterval = null
+const timing = reactive({ year:0, month:0, day:0, hour:0, minute:0, second:0 })
+const countdownText = ref('')
 
-// --- Card state ---
-const activeCard = ref(2)
+// Tabs
+const activeTab = ref('painting')
 
-// --- TreeHole state (点点滴滴) ---
-const treeHoleList = ref([])
-const treeHolePage = ref(1)
-const treeHoleTotal = ref(0)
+// Lightning
+const lightningPath = computed(() => {
+  const segs = 8, dx = 120 / segs, dy = 160 / segs
+  let path = 'M60,0'
+  for (let i = 1; i <= segs; i++) {
+    const x = 60 + (Math.random() - 0.5) * 50 + (i % 2 ? 15 : -15)
+    const y = i * dy
+    path += ` L${x},${y}`
+  }
+  return path
+})
 
-// --- Photo state (时光相册) ---
-const photoList = ref([])
-const photoPage = ref(1)
-const photoTotal = ref(0)
-
-// --- Blessing state (祝福板) ---
+// Blessings
 const blessingList = ref([])
 const blessingText = ref('')
 const blessingPosting = ref(false)
-
-// --- Confession Wall state (表白墙) ---
-const randomFamilies = ref([])
-
-// --- Family form ---
-const familyDialogVisible = ref(false)
-const familyPosting = ref(false)
-const userFamily = ref({
-  bgCover: '',
-  manCover: '',
-  womanCover: '',
-  manName: '',
-  womanName: '',
-  countdownTitle: '',
-  countdownTime: '',
-  timing: '',
-  familyInfo: ''
+const blessingLoop = computed(() => blessingList.value.length > 0 ? blessingList.value : defaultBlessings)
+const carouselStyle = computed(() => {
+  const count = blessingLoop.value.length || 1
+  return { animationDuration: `${Math.max(count * 4, 10)}s` }
 })
 
-// --- lifecycle ---
+// Diary book
+const diaryPages = ref([])
+const currentPage = ref(1)
+const totalPages = computed(() => Math.max(1, Math.ceil(diaryPages.value.length / 2)))
+const leftPage = computed(() => diaryPages.value[(currentPage.value - 1) * 2] || null)
+const rightPage = computed(() => diaryPages.value[(currentPage.value - 1) * 2 + 1] || null)
+
+// Default blessings
+const defaultBlessings = [
+  { id:1, username:'小星星', avatar:'', content:'祝你们永远幸福！💕', createTime: new Date().toISOString() },
+  { id:2, username:'月亮', avatar:'', content:'岁月静好，与君偕老 🌙', createTime: new Date().toISOString() },
+  { id:3, username:'阳光', avatar:'', content:'看到你们就觉得爱情真美好 ☀️', createTime: new Date().toISOString() },
+]
+
 onMounted(async () => {
-  await fetchAdminFamily()
-  fetchPhotos()
+  await fetchFamily()
+  fetchBlessings()
+  fetchDiaries()
 })
+onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
 
-onUnmounted(() => {
-  if (timerInterval) clearInterval(timerInterval)
-})
-
-// --- API: Admin Family & Timer ---
-async function fetchAdminFamily() {
+async function fetchFamily() {
   try {
     const data = await familyApi.list()
     if (data && (Array.isArray(data) ? data.length > 0 : data.id)) {
-      const f = Array.isArray(data) ? data[0] : data
-      family.value = f
-      adminFamily.value = f
+      family.value = Array.isArray(data) ? data[0] : data
       startTimer()
     }
   } catch (e) { /* silent */ }
@@ -462,121 +227,28 @@ async function fetchAdminFamily() {
 
 function startTimer() {
   if (timerInterval) clearInterval(timerInterval)
-  timerInterval = setInterval(() => {
-    computeTiming()
-    computeCountdown()
-  }, 1000)
-  computeTiming()
-  computeCountdown()
-}
-
-function computeTiming() {
-  if (!family.value.timing) return
-  const start = new Date(family.value.timing).getTime()
-  const now = Date.now()
-  if (now < start) return
-  const diffMs = now - start
-  const diffSec = Math.floor(diffMs / 1000)
-  timing.value.second = diffSec % 60
-  timing.value.minute = Math.floor(diffSec / 60) % 60
-  timing.value.hour = Math.floor(diffSec / 3600) % 24
-  const totalDays = Math.floor(diffSec / 86400)
-  timing.value.day = totalDays
-  timing.value.month = Math.floor(totalDays / 30)
-  timing.value.year = Math.floor(totalDays / 365)
-}
-
-function computeCountdown() {
-  if (!family.value.countdownTime) return
-  const target = new Date(family.value.countdownTime).getTime()
-  const now = Date.now()
-  const diffMs = target - now
-  if (diffMs <= 0) {
-    countdownText.value = '已到来!'
-    return
-  }
-  const d = Math.floor(diffMs / 86400000)
-  const h = Math.floor((diffMs % 86400000) / 3600000)
-  const m = Math.floor((diffMs % 3600000) / 60000)
-  const s = Math.floor((diffMs % 60000) / 1000)
-  countdownText.value = `${d}天${h}时${m}分${s}秒`
-}
-
-// --- Card switching ---
-function switchCard(card) {
-  if (card === 4 || activeCard.value !== card) {
-    activeCard.value = card
-  } else {
-    activeCard.value = 1
-    family.value = adminFamily.value
-  }
-  if (card === 1 && treeHoleList.value.length === 0) fetchTreeHoles()
-  if (card === 2 && photoList.value.length === 0) fetchPhotos()
-  if (card === 3 && blessingList.value.length === 0) fetchBlessings()
-  if (card === 4 && randomFamilies.value.length === 0) fetchRandomFamilies()
-}
-
-function selectFamily(f) {
-  family.value = f
-  startTimer()
-  activeCard.value = 1
-}
-
-// --- TreeHole ---
-async function fetchTreeHoles(reset = false) {
-  try {
-    if (reset) { treeHolePage.value = 1; treeHoleList.value = [] }
-    const data = await treeHoleApi.list({ page: treeHolePage.value, size: 10 })
-    if (data && data.records) {
-      data.records.forEach((c) => {
-        if (c.content) {
-          c.content = c.content.replace(/\n{2,}/g, '<div style="height:12px"></div>')
-          c.content = c.content.replace(/\n/g, '<br/>')
-        }
-      })
-      treeHoleList.value = treeHoleList.value.concat(data.records)
-      treeHoleTotal.value = data.total
+  const tick = () => {
+    if (!family.value.timing) return
+    const start = new Date(family.value.timing).getTime()
+    const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
+    timing.second = diff % 60; timing.minute = Math.floor(diff/60) % 60
+    timing.hour = Math.floor(diff/3600) % 24; timing.day = Math.floor(diff/86400)
+    timing.month = Math.floor(timing.day / 30); timing.year = Math.floor(timing.day / 365)
+    if (family.value.countdownTime) {
+      const cd = new Date(family.value.countdownTime).getTime() - Date.now()
+      if (cd <= 0) countdownText.value = '已到来!'
+      else {
+        const d = Math.floor(cd/86400000), h = Math.floor((cd%86400000)/3600000)
+        const m = Math.floor((cd%3600000)/60000), s = Math.floor((cd%60000)/1000)
+        countdownText.value = `${d}天${h}时${m}分${s}秒`
+      }
     }
-  } catch (e) { /* silent */ }
+  }
+  tick(); timerInterval = setInterval(tick, 1000)
 }
 
-function loadMoreTreeHoles() {
-  treeHolePage.value++
-  fetchTreeHoles()
-}
-
-async function deleteTreeHole(id) {
-  if (!userStore.isLoggedIn) { ElMessage.error('请先登录！'); return }
-  try {
-    await ElMessageBox.confirm('确认删除？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'success', center: true })
-    await treeHoleApi.delete(id)
-    ElMessage.success('删除成功!')
-    treeHolePage.value = 1
-    treeHoleList.value = []
-    await fetchTreeHoles()
-  } catch (e) { /* cancelled */ }
-}
-
-// --- Photos ---
-async function fetchPhotos() {
-  try {
-    const data = await recordApi.list({ page: photoPage.value, size: 12 })
-    if (data && data.records) {
-      photoList.value = photoList.value.concat(data.records)
-      photoTotal.value = data.total
-    }
-  } catch (e) { /* silent */ }
-}
-
-function loadMorePhotos() {
-  photoPage.value++
-  fetchPhotos()
-}
-
-// --- Blessings ---
 async function fetchBlessings() {
   try {
-    // Use comments with type 'love' for blessings
     const data = await commentApi.list({ type: 'love', page: 1, size: 50 })
     blessingList.value = data?.records || data || []
   } catch (e) { /* silent */ }
@@ -587,631 +259,293 @@ async function submitBlessing() {
   if (!userStore.isLoggedIn) { ElMessage.error('请先登录！'); return }
   blessingPosting.value = true
   try {
-    await commentApi.create({ content: blessingText.value, type: 'love' })
+    await commentApi.create({ content: blessingText.value, type: 'love', sourceId: 0 })
     ElMessage.success('祝福发送成功')
     blessingText.value = ''
-    await fetchBlessings()
-  } catch (e) {
-    ElMessage.error('发送失败')
-  } finally {
-    blessingPosting.value = false
-  }
+    fetchBlessings()
+  } catch (e) { ElMessage.error('发送失败') }
+  finally { blessingPosting.value = false }
 }
 
-// --- Random Families ---
-async function fetchRandomFamilies() {
+async function fetchDiaries() {
   try {
-    const data = await familyApi.listAll()
-    if (data && (data.records || Array.isArray(data))) {
-      randomFamilies.value = data.records || data
-    }
+    const data = await diaryApi.list({ page: 1, size: 100 })
+    diaryPages.value = data?.records || []
   } catch (e) { /* silent */ }
 }
 
-// --- Family Form ---
-function openFamilyForm() {
-  if (!userStore.isLoggedIn) { ElMessage.error('请先登录！'); return }
-  familyDialogVisible.value = true
-}
+function prevPage() { if (currentPage.value > 1) currentPage.value-- }
+function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++ }
 
-async function submitFamily() {
-  const uf = userFamily.value
-  if (!uf.bgCover.trim()) { ElMessage.warning('你还没设置背景封面呢~'); return }
-  if (!uf.manCover.trim()) { ElMessage.warning('你还没设置男生头像呢~'); return }
-  if (!uf.womanCover.trim()) { ElMessage.warning('你还没设置女生头像呢~'); return }
-  if (!uf.manName.trim()) { ElMessage.warning('你还没写男生昵称呢~'); return }
-  if (!uf.womanName.trim()) { ElMessage.warning('你还没写女生昵称呢~'); return }
-  if (!uf.timing) { ElMessage.warning('你还没设置计时时间呢~'); return }
-  familyPosting.value = true
-  try {
-    await familyApi.create({
-      bgCover: uf.bgCover,
-      manCover: uf.manCover,
-      womanCover: uf.womanCover,
-      manName: uf.manName,
-      womanName: uf.womanName,
-      timing: uf.timing,
-      countdownTitle: uf.countdownTitle,
-      countdownTime: uf.countdownTime,
-      content: uf.familyInfo
-    })
-    ElMessage.success('提交成功，待管理员审核！')
-    userFamily.value = {
-      bgCover: '', manCover: '', womanCover: '',
-      manName: '', womanName: '',
-      countdownTitle: '', countdownTime: '', timing: '', familyInfo: ''
-    }
-    familyDialogVisible.value = false
-  } catch (e) {
-    ElMessage.error('提交失败')
-  } finally {
-    familyPosting.value = false
-  }
+function firstDiaryImage(page) {
+  if (!page?.images) return null
+  try { const arr = JSON.parse(page.images); return arr[0] || null } catch { return null }
 }
-
-// --- Helpers ---
-function formatRelative(d) {
+function timeAgo(d) {
   if (!d) return ''
   const diff = Date.now() - new Date(d).getTime()
-  const sec = Math.floor(diff / 1000)
-  const min = Math.floor(sec / 60)
-  const hrs = Math.floor(min / 60)
-  const dys = Math.floor(hrs / 24)
-  if (sec < 60) return '刚刚'
-  if (min < 60) return `${min}分钟前`
-  if (hrs < 24) return `${hrs}小时前`
-  if (dys < 30) return `${dys}天前`
-  if (dys < 365) return `${Math.floor(dys / 30)}个月前`
-  return `${Math.floor(dys / 365)}年前`
+  if (diff < 6e4) return '刚刚'
+  if (diff < 36e5) return Math.floor(diff/6e4)+'分钟前'
+  if (diff < 864e5) return Math.floor(diff/36e5)+'小时前'
+  return Math.floor(diff/864e5)+'天前'
+}
+// Flying heart animation
+const flyingHeart = ref(null)
+function sendHeart(from) {
+  flyingHeart.value = { from }
+  setTimeout(() => { flyingHeart.value = null }, 1200)
 }
 
-function formatDate(d) {
+function meteorStyle(i) {
+  const left = Math.random() * 100
+  const delay = Math.random() * 8
+  const dur = 2 + Math.random() * 4
+  const top = Math.random() * 60
+  return { left: left + '%', top: top + '%', animationDelay: delay + 's', animationDuration: dur + 's' }
+}
+
+function formatFullDate(d) {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('zh-CN')
+  return new Date(d).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' })
 }
 </script>
 
 <style scoped>
-/* ====== Banner ====== */
-.bg-wrap {
-  height: 55vh;
-  position: relative;
+/* ====== Font imports ====== */
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&display=swap');
+
+/* ====== Hero ====== */
+.hero-section {
+  position: relative; min-height: 60vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #2d1b2e 0%, #4a2c3f 40%, #7a4b5c 70%, #c8a08c 100%);
   overflow: hidden;
 }
-.family-banner-image {
-  position: absolute;
-  inset: 0;
+.hero-overlay {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.3) 100%);
+  z-index: 2;
 }
-.family-banner-image::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-color: var(--miniMask);
-  z-index: 1;
-}
-.banner-overlay {
-  position: absolute;
-  inset: 0;
-  background: var(--miniMask);
-  z-index: 1;
+.hero-content {
+  position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 20px;
 }
 
-.family-wrap {
-  width: 90%;
-  max-width: 950px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3em;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 50px 70px 30px;
-  z-index: 10;
+/* Couple area */
+.couple-area { display: flex; align-items: center; gap: 8px; }
+.person-card { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.couple-avatar {
+  border-radius: 22px !important;
+  border: 3px solid rgba(255,255,255,0.3) !important;
+  box-shadow: 0 0 30px rgba(255,200,150,0.3);
 }
-.family-avatar {
-  width: 180px !important;
-  height: 180px !important;
-  border: rgba(255, 255, 255, 0.2) 4px solid;
+.couple-name { color: #fff; font-size: 22px; font-weight: 600; letter-spacing: 2px; }
+
+/* Lightning connector */
+.connector-wrap { position: relative; width: 120px; height: 160px; display: flex; align-items: center; justify-content: center; }
+.lightning-svg { position: absolute; z-index: 2; }
+.beam-rays { position: absolute; width: 100px; height: 100px; }
+.beam-ray {
+  position: absolute; top: 50%; left: 50%; width: 2px; height: 60px;
+  background: linear-gradient(to top, rgba(255,220,150,0), rgba(255,220,150,0.6), rgba(255,220,150,0));
+  transform-origin: bottom center; margin-top: -60px;
+  animation: beamPulse 2s ease-in-out infinite;
 }
-.family-name {
-  margin-top: 15px;
-  text-align: center;
-  font-size: 25px;
-  font-weight: 700;
-  color: var(--white);
+.beam-ray:nth-child(2n) { animation-delay: 0.5s; }
+.beam-ray:nth-child(3n) { animation-delay: 1s; }
+@keyframes beamPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
-.family-heart {
-  animation: imgScale 2s linear infinite;
-  width: 120px;
-  height: 120px;
+/* Flying heart animation */
+.flying-heart {
+  position: absolute; font-size: 28px; z-index: 20; pointer-events: none;
+  top: 60px; left: 50%; transform: translateX(-50%);
+  animation: heartFly 1.2s ease-out forwards;
+}
+.flying-heart.left { animation-name: heartFlyLeft; }
+@keyframes heartFly {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateX(50%) translateY(-40px) scale(1.3); }
+  100% { opacity: 0; transform: translateX(80%) translateY(-60px) scale(0.3); }
+}
+@keyframes heartFlyLeft {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateX(-150%) translateY(-40px) scale(1.3); }
+  100% { opacity: 0; transform: translateX(-200%) translateY(-60px) scale(0.3); }
 }
 
-/* Waves */
-#bannerWave1 {
-  height: 84px;
-  background: var(--bannerWave1, linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.3)));
-  position: absolute;
-  width: 200%;
-  bottom: 0;
-  z-index: 10;
-  animation: gradientBG 120s linear infinite;
+/* Timer */
+.timer-row { color: #ffe8d0; font-size: 20px; letter-spacing: 2px; }
+.timer-num { font-size: 36px; font-weight: 700; color: #fff; margin: 0 2px; font-family: 'Ma Shan Zheng', cursive; }
+.countdown-text { color: #ffccaa; font-size: 16px; letter-spacing: 1px; }
+
+/* ====== Tab Nav ====== */
+.tab-nav {
+  display: flex; justify-content: center; gap: 12px; padding: 24px 16px;
+  background: rgba(255,255,255,0.8); backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 10;
 }
-#bannerWave2 {
-  height: 100px;
-  background: var(--bannerWave2, linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.5)));
-  position: absolute;
-  width: 400%;
-  bottom: 0;
-  z-index: 5;
-  animation: gradientBG 120s linear infinite;
+.tab-nav button {
+  padding: 10px 28px; border: 1.5px solid #d4a574; background: transparent;
+  color: #6b4c3b; border-radius: 24px; font-size: 15px; cursor: pointer;
+  transition: all 0.3s; font-family: 'Ma Shan Zheng', cursive; letter-spacing: 1px;
+}
+.tab-nav button.active,
+.tab-nav button:hover { background: #6b4c3b; color: #fff; border-color: #6b4c3b; }
+
+/* ====== World Painting Card ====== */
+.painting-card { display: flex; justify-content: center; padding: 30px 16px 60px; }
+.painting-inner { max-width: 800px; width: 100%; }
+.painting-frame {
+  position: relative; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 0 0 8px #f5e6d3, 0 0 0 10px #c8a882, 0 0 0 18px #f5e6d3;
+}
+.painting-img { width: 100%; min-height: 400px; object-fit: cover; display: block; filter: sepia(0.2) brightness(0.95); }
+.painting-vignette {
+  position: absolute; inset: 0;
+  box-shadow: inset 0 0 80px rgba(0,0,0,0.4);
+  pointer-events: none;
+}
+.painting-label {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  color: #f5e6d3; font-size: 28px; letter-spacing: 8px;
+  font-family: 'Ma Shan Zheng', cursive;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
-/* ====== Container ====== */
-.family-container {
-  background-image:
-    linear-gradient(to right, rgba(37, 82, 110, 0.1) 1px, var(--background) 1px),
-    linear-gradient(to bottom, rgba(37, 82, 110, 0.1) 1px, var(--background) 1px);
-  background-size: 3rem 3rem;
-  padding-bottom: 40px;
+/* ====== Blessing Board ====== */
+.blessing-section { padding: 20px 16px 40px; max-width: 760px; margin: 0 auto; }
+.blessing-carousel-wrap { overflow: hidden; margin-bottom: 20px; border-radius: 18px; background: linear-gradient(135deg, rgba(255,248,240,0.8), rgba(255,240,245,0.8)); height: 360px; }
+.blessing-track {
+  display: flex; flex-direction: column; gap: 6px;
+  animation: blessScroll var(--dur, 20s) linear infinite;
+  padding: 14px 0;
 }
-
-/* ====== Timer ====== */
-.family-timer-section {
-  max-width: 1200px;
-  overflow: hidden;
-  margin: 20px auto 0;
-  user-select: none;
-  flex-direction: column;
+.blessing-track:hover { animation-play-state: paused; }
+@keyframes blessScroll { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+.blessing-slide {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 18px;
+  border-bottom: 1px solid rgba(0,0,0,0.04); flex-shrink: 0;
+  transition: background 0.3s;
 }
-.timer-title {
-  font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: 0.2rem;
-  line-height: 4rem;
-  text-align: center;
-  background-image: linear-gradient(270deg,
-    #ff4500, #ffa500, #ffd700, #90ee90, #00ffff, #1e90ff, #9370db, #ff69b4, #ff4500);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: jianBian 60s linear infinite;
-  width: 3000px;
-}
-.timer-display {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--fontColor);
-}
-.timer-digit {
-  font-size: 4rem;
-  font-weight: 700;
-}
-.countdown-display {
-  text-align: center;
-  font-size: 1.5rem;
-  line-height: 4rem;
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: var(--fontColor);
-}
-
-/* ====== Confession Button ====== */
-.confession-btn-wrap {
-  padding: 0 20px;
-}
-.confession-btn {
-  position: relative;
-  overflow: hidden;
-  height: 150px;
-  color: var(--white);
-  margin: 50px auto 15px;
-  border-radius: 20px;
-  max-width: 350px;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: var(--love, linear-gradient(135deg, #ff416c, #ff4b2b)) center center / cover no-repeat;
-  user-select: none;
-}
-.confession-btn:hover {
-  transform: translateY(-6px);
-}
-.confession-btn::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-color: var(--miniMask);
-}
-.confession-btn-title {
-  position: absolute;
-  line-height: 150px;
-  margin-left: 20px;
-  font-size: 25px;
-  font-weight: 700;
-  color: var(--white);
-}
-.confession-btn-car {
-  position: absolute;
-  margin-left: 220px;
-  margin-top: 55px;
-  animation: passing 4s linear infinite;
-}
-
-/* ====== Card Navigation ====== */
-.card-nav {
-  padding: 0 20px;
-}
-.card-nav-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-}
-.nav-card {
-  display: flex;
-  padding: 25px;
-  margin: 25px;
-  border-radius: 20px;
-  max-width: 400px;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: var(--background);
-}
-.nav-card:hover {
-  transform: translateY(-6px);
-}
-.nav-card-right {
-  margin-left: 20px;
-}
-.nav-card-title {
-  font-size: 1.6rem;
-  letter-spacing: 0.2rem;
-  line-height: 3.5rem;
-  font-weight: 700;
-}
-.nav-card-desc {
-  font-size: 1.1rem;
-  letter-spacing: 0.2rem;
-  color: #777777;
-}
-
-/* ====== Card Content Area ====== */
-.card-content-area {
-  max-width: 1500px;
-  margin: 20px auto 40px;
-  padding: 0 20px;
-}
-
-/* TreeHole section */
-.treehole-section {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-.treehole-item-inner {
-  display: flex;
-}
-.th-avatar-col {
-  margin: 10px 15px 10px 10px;
-}
-.th-body-col {
-  flex: 1;
-}
-.th-user-row {
-  margin: 10px 0 15px;
-}
-.th-username {
-  color: #607199;
-  font-size: 16px;
-  font-weight: 600;
-}
-.th-content {
-  margin-right: 20px;
-  letter-spacing: 1px;
-  line-height: 1.4;
-}
-.th-footer {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0 10px;
-}
-.th-time {
-  font-size: 14px;
-  color: var(--greyFont);
-}
-.th-delete {
-  cursor: pointer;
-}
-.th-divider {
-  border: 1px solid #f5f5f5;
-  margin: 10px auto;
-}
-
-/* Photo section */
-.photo-section {
-  max-width: 1170px;
-  margin: 0 auto;
-}
-.photo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-.photo-card {
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--background);
+.blessing-slide:hover { background: rgba(255,107,157,0.05); }
+.blessing-slide-body { flex: 1; min-width: 0; }
+.blessing-slide-name { font-weight: 700; font-size: 14px; color: #e8734a; margin-right: 8px; }
+.blessing-slide-text { font-size: 15px; color: #444; line-height: 1.5; }
+.blessing-slide-time { display: block; font-size: 11px; color: #ccc; margin-top: 3px; }
+.blessing-input-bar { padding: 8px 0; }
+.blessing-input-wrap {
+  display: flex; gap: 10px; align-items: center;
+  background: linear-gradient(135deg, #fff5f7, #fff0f5, #fef5e7);
+  border-radius: 30px; padding: 6px 6px 6px 18px;
+  box-shadow: 0 2px 16px rgba(255,107,157,0.12);
+  border: 2px solid transparent;
   transition: all 0.3s;
 }
-.photo-card:hover {
-  transform: translateY(-2px);
+.blessing-input-wrap:focus-within {
+  border-color: #ff6b9d;
+  box-shadow: 0 4px 24px rgba(255,107,157,0.2);
 }
-.photo-cover {
-  width: 100%;
-  height: 200px;
+.blessing-input :deep(.el-input__wrapper) {
+  border-radius: 24px; background: transparent; box-shadow: none !important;
+  padding: 0;
 }
-.photo-body {
-  padding: 16px;
+.blessing-input :deep(.el-input__inner) { font-size: 15px; }
+.blessing-send-btn {
+  width: 46px; height: 46px; border-radius: 50%; border: none;
+  background: linear-gradient(135deg, #ff6b9d, #ff8e53); color: #fff;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; flex-shrink: 0;
+  box-shadow: 0 3px 12px rgba(255,107,157,0.3);
 }
-.photo-body h4 {
-  margin-bottom: 8px;
-  font-size: 16px;
-}
-.photo-body p {
-  color: var(--greyFont);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.photo-date {
-  display: block;
-  margin-top: 10px;
-  color: var(--greyFont);
-  font-size: 12px;
-}
+.blessing-send-btn:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 6px 24px rgba(255,107,157,0.5); }
+.blessing-send-btn:disabled { opacity: 0.4; cursor: default; }
 
-/* Blessing section */
-.blessing-section {
-  max-width: 1000px;
-  margin: 0 auto;
+/* ====== Diary Book ====== */
+.diary-book { display: flex; flex-direction: column; align-items: center; padding: 30px 16px 60px; }
+.book-container {
+  display: flex; gap: 0; max-width: 860px; width: 100%;
+  perspective: 1500px;
+  background: linear-gradient(to right, #e8d5c0 0%, #f0e0cc 2%, #faf3e8 4%, #faf3e8 96%, #f0e0cc 98%, #e8d5c0 100%);
+  border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,0.15), inset 0 0 30px rgba(0,0,0,0.05);
+  min-height: 500px;
 }
-.comment-input-area {
-  margin-bottom: 24px;
-}
-.blessing-textarea {
-  width: 100%;
-  border: 2px solid var(--lightGreen);
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 14px;
-  resize: vertical;
-  outline: none;
-  background: var(--background);
-  color: var(--fontColor);
-  box-sizing: border-box;
-}
-.blessing-action-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-}
-.blessing-list {
-  margin-top: 20px;
-}
-.blessing-row {
-  display: flex;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-.blessing-body {
-  flex: 1;
-}
-.blessing-user {
-  font-weight: 600;
-  font-size: 13px;
-  color: #607199;
-  margin-right: 8px;
-}
-.blessing-content {
-  font-size: 13px;
-  color: var(--fontColor);
-}
-.blessing-time {
-  display: block;
-  font-size: 11px;
-  color: var(--greyFont);
-  margin-top: 2px;
-}
-.char-count {
-  font-size: 12px;
-  color: var(--greyFont);
-}
-
-/* Confession Wall */
-.confession-wall {
-  padding: 0 20px;
-}
-.family-grid {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-}
-.family-grid-card {
-  cursor: pointer;
-  width: 350px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 15px 25px 5px;
-  margin: 20px;
-  transition: all 0.3s;
-  user-select: none;
+.book-page {
+  flex: 1; padding: 40px 32px;
+  font-family: 'Ma Shan Zheng', 'Liu Jian Mao Cao', 'KaiTi', cursive;
   position: relative;
-  overflow: hidden;
 }
-.family-grid-card:hover {
-  transform: translateY(-6px);
+.book-left { border-right: 1px solid rgba(0,0,0,0.08); }
+.book-right { border-left: 1px solid rgba(0,0,0,0.08); }
+.page-content {
+  position: relative; height: 100%;
+  background: repeating-linear-gradient(transparent, transparent 33px, rgba(0,0,0,0.04) 33px, rgba(0,0,0,0.04) 34px);
 }
-.fgc-overlay {
-  position: absolute;
-  inset: 0;
-  background: var(--miniMask);
-  border-radius: 20px;
+.page-record-time {
+  font-size: 15px; color: #8b7355; margin-bottom: 16px;
+  border-bottom: 1px dashed #c8b898; padding-bottom: 8px;
 }
-.fgc-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  width: 100%;
+.page-image {
+  width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px;
+  margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-.fgc-avatar {
-  width: 90px !important;
-  height: 90px !important;
-  border: rgba(255, 255, 255, 0.2) 4px solid;
+.page-text { font-size: 18px; line-height: 34px; color: #3a2a1a; }
+.page-text :deep(p) { margin: 0 0 17px 0; text-indent: 2em; }
+.page-number {
+  position: absolute; bottom: 0; right: 0;
+  font-size: 16px; color: #b8a080; font-style: italic;
 }
-.fgc-name {
-  margin-top: 15px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--white);
+.book-nav {
+  display: flex; align-items: center; gap: 24px; margin-top: 24px;
 }
-.fgc-heart {
-  animation: imgScale 2s linear infinite;
-  width: 60px;
-  height: 60px;
+.book-nav button {
+  padding: 8px 20px; border: 1px solid #c8a882; background: #faf3e8;
+  border-radius: 20px; cursor: pointer; font-family: 'Ma Shan Zheng', cursive;
+  font-size: 16px; color: #6b4c3b; transition: all 0.3s;
 }
-.confession-bottom {
-  display: flex;
-  justify-content: space-around;
-  margin: 0 0 40px;
-}
-.confession-action-btn {
-  color: var(--white);
-  border-radius: 3rem;
-  width: 150px;
-  text-align: center;
-  height: 50px;
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-.action-btn-text {
-  line-height: 50px;
-}
+.book-nav button:hover:not(:disabled) { background: #6b4c3b; color: #fff; }
+.book-nav button:disabled { opacity: 0.4; cursor: default; }
+.book-page-indicator { font-size: 15px; color: #8b7355; font-family: 'Ma Shan Zheng', cursive; }
 
-/* Pagination */
-.pagination-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 40px;
-}
-.pagination-btn {
-  padding: 13px 15px;
-  border: 1px solid var(--lightGray);
-  border-radius: 3rem;
-  color: var(--greyFont);
-  width: 100px;
-  user-select: none;
-  cursor: pointer;
-  text-align: center;
-}
-.pagination-btn:hover {
-  border: 1px solid var(--themeBackground);
-  color: var(--themeBackground);
-  box-shadow: 0 0 5px var(--themeBackground);
-}
-.pagination-end {
-  user-select: none;
-  color: var(--greyFont);
-}
-
-/* Form Dialog */
-.form-main {
-  border-radius: 12px;
-  overflow: hidden;
-}
-.form-friend-body {
-  background-color: #eeeeee;
-  padding: 20px;
-  border-radius: 12px;
-}
-.form-field {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-  gap: 12px;
-}
-.form-label {
-  width: 100px;
-  text-align: right;
-  font-size: 14px;
-  flex-shrink: 0;
-}
+/* Page turn animation */
+.book-page { transition: transform 0.5s ease, opacity 0.5s ease; }
+.book-left { transform-origin: right center; }
+.book-right { transform-origin: left center; }
 
 /* ====== Responsive ====== */
-@media screen and (max-width: 1200px) {
-  .card-nav-inner {
-    flex-wrap: wrap;
-  }
+@media screen and (max-width: 768px) {
+  .couple-avatar { width: 100px !important; height: 100px !important; border-radius: 16px !important; }
+  .connector-wrap { width: 60px; height: 100px; }
+  .lightning-svg { width: 60px; height: 100px; }
+  .beam-rays { width: 50px; height: 50px; }
+  .beam-ray { height: 30px; }
+  .timer-row { font-size: 14px; }
+  .timer-num { font-size: 24px; }
+  .book-container { flex-direction: column; min-height: auto; }
+  .book-left { border-right: none; border-bottom: 1px solid rgba(0,0,0,0.08); }
+  .book-right { border-left: none; border-top: 1px solid rgba(0,0,0,0.08); }
+  .painting-frame { box-shadow: 0 0 0 4px #f5e6d3, 0 0 0 6px #c8a882; }
+  .painting-label { font-size: 20px; letter-spacing: 4px; }
+  .meteors-container { display: none; }
 }
-@media screen and (max-width: 800px) {
-  .family-wrap {
-    border-radius: 1.5em;
-    padding: 40px 30px 10px;
-  }
-  .family-avatar {
-    width: 120px !important;
-    height: 120px !important;
-  }
-  .family-heart {
-    width: 100px;
-    height: 100px;
-  }
-  .timer-display {
-    font-size: 1.4rem;
-  }
-  .timer-digit {
-    font-size: 3rem;
-  }
+/* ====== Meteor Shooting Stars ====== */
+.meteors-container { position: absolute; inset: 0; overflow: hidden; z-index: 1; pointer-events: none; }
+.meteor {
+  position: absolute; width: 2px; height: 70px;
+  background: linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.8));
+  border-radius: 1px; opacity: 0;
+  animation: meteorFall linear infinite;
+  transform: rotate(-35deg);
 }
-@media screen and (max-width: 600px) {
-  .family-wrap {
-    padding: 30px 20px 10px;
-  }
-  .family-avatar {
-    width: 100px !important;
-    height: 100px !important;
-  }
-  .family-heart {
-    width: 80px;
-    height: 80px;
-  }
-  .timer-display {
-    font-size: 1rem;
-  }
-  .timer-digit {
-    font-size: 1.8rem;
-  }
-  .countdown-display {
-    font-size: 1.2rem;
-  }
-  .form-field {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .form-label {
-    text-align: left;
-    width: auto;
-  }
+.meteor::after {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 2px; height: 20px;
+  background: linear-gradient(to top, rgba(255,255,255,0), #fff);
+  border-radius: 50%;
+}
+@keyframes meteorFall {
+  0% { opacity: 0; transform: rotate(-35deg) translateY(-100px) translateX(0); }
+  5% { opacity: 1; }
+  15% { opacity: 0; }
+  100% { opacity: 0; transform: rotate(-35deg) translateY(400px) translateX(-100px); }
 }
 </style>

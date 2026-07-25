@@ -6,7 +6,7 @@
       <div class="bg-overlay"></div>
       <div class="hero-info">
         <h1>随笔随心</h1>
-        <p>随心所悦，记录生活点滴 ✍️</p>
+        <p class="hero-subtitle">随心所悦，记录生活点滴 ✍️</p>
       </div>
     </div>
 
@@ -48,7 +48,7 @@
                 <svg viewBox="0 0 1024 1024" width="18" height="18" style="vertical-align: -3px; margin-right: 4px;">
                   <path d="M512 82.464153c-244.63772 0-442.955484 171.85302-442.955484 383.832945 0 125.44199 69.434395 236.8258 176.814008 306.863946-0.502443 56.870242 0.00307 168.373779 0.00307 168.373779s107.36938-70.083172 159.796426-102.527095c34.066887 7.272637 69.684082 11.135618 106.34198 11.135618 244.63772 0 442.955484-171.85302 442.955484-383.846248C954.955484 254.318196 756.63772 82.464153 512 82.464153z" fill="#999"/>
                 </svg>
-                <span>{{ essay.commentCount || 0 }}</span>
+                <span>{{ essay._cc || 0 }}</span>
               </div>
               <span
                 v-if="userStore.isLoggedIn && userStore.user?.userId === essay.userId"
@@ -61,23 +61,37 @@
               </span>
             </div>
 
-            <!-- Inline comments -->
+            <!-- Inline comments (Douyin style) -->
             <div v-if="currentEssay && essay.id === currentEssay.id" class="moment-comments">
-              <div class="comments-box">
-                <div v-for="c in essayComments" :key="c.id" class="comment-row">
-                  <span class="comment-user">{{ c.username }}</span>
-                  <span class="comment-text">{{ c.content }}</span>
+              <div class="comments-list">
+                <div v-if="!essayComments.length" class="comment-empty">暂无评论，来说点什么吧</div>
+                <div v-for="c in essayComments" :key="c.id" class="comment-item">
+                  <el-avatar :size="32" :src="c.avatar" class="c-avatar">
+                    <el-icon :size="16"><UserFilled /></el-icon>
+                  </el-avatar>
+                  <div class="c-body">
+                    <div class="c-top">
+                      <span class="c-nick">{{ c.username || '匿名' }}</span>
+                      <span class="c-time">{{ formatRelative(c.createTime) }}</span>
+                    </div>
+                    <div class="c-text">{{ c.content }}</div>
+                  </div>
                 </div>
-                <div v-if="!essayComments.length" class="comment-empty">暂无评论</div>
-                <div class="comment-input-row">
-                  <el-input
-                    v-model="commentText[essay.id]"
-                    placeholder="写评论..."
-                    size="small"
-                    @keyup.enter="submitComment(essay)"
-                  />
-                  <el-button size="small" type="primary" @click="submitComment(essay)">发送</el-button>
-                </div>
+              </div>
+              <div class="comment-input-bar">
+                <el-input
+                  v-model="commentText[essay.id]"
+                  placeholder="说点什么..."
+                  size="small"
+                  class="c-input"
+                  @keyup.enter="submitComment(essay)"
+                >
+                  <template #suffix>
+                    <el-button type="primary" size="small" round
+                      :disabled="!(commentText[essay.id] || '').trim()"
+                      @click="submitComment(essay)">发送</el-button>
+                  </template>
+                </el-input>
               </div>
             </div>
           </div>
@@ -130,6 +144,7 @@ import { essayApi, commentApi } from '../../api/modules'
 import { useUserStore } from '../../stores/user'
 import { useAppStore } from '../../stores/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { UserFilled } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const appStore = useAppStore()
@@ -165,7 +180,22 @@ async function fetchEssays(reset = false) {
       if (reset) { pagination.value.current = 1; essayList.value = []; currentEssay.value = null }
       essayList.value = essayList.value.concat(data.records)
       total.value = data.total
+      fetchCommentCounts()
     }
+  } catch (e) { /* silent */ }
+}
+
+async function fetchCommentCounts() {
+  try {
+    const data = await commentApi.list({ type: 'essay', page: 1, size: 500 })
+    const records = data?.records || (Array.isArray(data) ? data : [])
+    if (!records.length) return
+    const counts = {}
+    records.forEach(c => {
+      const sid = c.sourceId || c.articleId
+      if (sid) counts[sid] = (counts[sid] || 0) + 1
+    })
+    essayList.value.forEach(e => { e._cc = counts[e.id] || 0 })
   } catch (e) { /* silent */ }
 }
 
@@ -186,15 +216,16 @@ function toggleComment(essay) {
   else { currentEssay.value = essay; fetchComments(essay.id) }
 }
 async function fetchComments(sourceId) {
-  try { const data = await commentApi.list({ source: sourceId, type: 'essay' }); essayComments.value = data?.records || data || [] }
-  catch (e) { essayComments.value = [] }
+  try { const data = await commentApi.list({ sourceId: sourceId, type: 'essay' }); essayComments.value = data?.records || data || []
+    if (currentEssay.value) currentEssay.value._cc = essayComments.value.length
+  } catch (e) { essayComments.value = [] }
 }
 async function submitComment(essay) {
   const text = (commentText.value[essay.id] || '').trim()
   if (!text) return
   if (!userStore.isLoggedIn) { ElMessage.error('请先登录！'); return }
   try {
-    await commentApi.create({ content: text, source: essay.id, type: 'essay' })
+    await commentApi.create({ content: text, sourceId: essay.id, type: 'essay' })
     commentText.value[essay.id] = ''
     fetchComments(essay.id)
   } catch (e) { ElMessage.error('评论失败') }
@@ -355,22 +386,19 @@ function formatRelative(d) {
 .moment-delete:hover { opacity: 1; }
 
 /* ====== Comments ====== */
-.moment-comments { margin-top: 10px; }
-.comments-box {
-  background: #f5f5f5;
-  border-radius: 8px;
-  padding: 12px 14px;
-}
-.comment-row {
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.6;
-  padding: 4px 0;
-}
-.comment-user { color: #3d5a99; font-weight: 600; margin-right: 6px; }
-.comment-text { color: #333; }
-.comment-empty { font-size: 13px; color: #ccc; text-align: center; padding: 10px 0; }
-.comment-input-row { display: flex; gap: 8px; margin-top: 10px; }
+.moment-comments { margin-top: 10px; background: #fafafa; border-radius: 12px; padding: 12px 14px; }
+.comments-list { max-height: 240px; overflow-y: auto; }
+.comment-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.comment-item:last-child { border-bottom: none; }
+.c-avatar { flex-shrink: 0; }
+.c-body { flex: 1; min-width: 0; }
+.c-top { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.c-nick { font-size: 13px; font-weight: 600; color: #576b95; }
+.c-time { font-size: 11px; color: #bbb; }
+.c-text { font-size: 14px; color: #333; line-height: 1.5; word-break: break-word; }
+.comment-empty { font-size: 13px; color: #ccc; text-align: center; padding: 16px 0; }
+.comment-input-bar { margin-top: 10px; }
+.c-input :deep(.el-input__wrapper) { border-radius: 20px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
 
 /* ====== FAB ====== */
 .add-fab {

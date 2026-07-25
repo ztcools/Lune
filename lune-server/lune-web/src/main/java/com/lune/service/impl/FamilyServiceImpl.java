@@ -41,6 +41,10 @@ public class FamilyServiceImpl implements FamilyService {
         exist.setContent(family.getContent());
         exist.setCover(family.getCover());
         exist.setBgCover(family.getBgCover());
+        exist.setManCover(family.getManCover());
+        exist.setWomanCover(family.getWomanCover());
+        exist.setManName(family.getManName());
+        exist.setWomanName(family.getWomanName());
         exist.setTiming(family.getTiming());
         exist.setCountdownTitle(family.getCountdownTitle());
         exist.setCountdownTime(family.getCountdownTime());

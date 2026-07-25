@@ -69,3 +69,15 @@
   50% { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
 }
+.hero-subtitle {
+  display: inline-block; font-size: 1.1rem; letter-spacing: 2px;
+  background: linear-gradient(90deg, #ff6b6b, #ffa07a, #ffd700, #ff69b4, #ff6b6b);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: mottoShine 3s ease-in-out infinite;
+}
+@keyframes mottoShine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}

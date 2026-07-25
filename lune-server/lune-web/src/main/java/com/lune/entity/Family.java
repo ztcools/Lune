@@ -14,6 +14,10 @@ public class Family {
     private String content;
     private String cover;
     private String bgCover;
+    private String manCover;
+    private String womanCover;
+    private String manName;
+    private String womanName;
     private String timing;
     private String countdownTitle;
     private LocalDateTime countdownTime;

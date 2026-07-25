@@ -38,6 +38,7 @@ const routes = [
       { path: 'users', name: 'AdminUsers', component: () => import('../admin/UserManage.vue') },
       { path: 'resources', name: 'AdminResources', component: () => import('../admin/ResourceManage.vue') },
       { path: 'family', name: 'AdminFamily', component: () => import('../admin/FamilyManage.vue') },
+      { path: 'diaries', name: 'AdminDiaries', component: () => import('../admin/DiaryManage.vue') },
       { path: 'settings', name: 'AdminSettings', component: () => import('../admin/Settings.vue') }
     ]
   }

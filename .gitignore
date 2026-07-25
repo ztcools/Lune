@@ -19,5 +19,8 @@ Thumbs.db
 # Uploads
 upload/
 
+# 部署文档 (不需要提交到仓库)
+部署文档.md
+
 # Logs
 *.log

@@ -29,4 +29,10 @@ public class ArticleController {
     public Result<Article> getById(@PathVariable Long id) {
         return Result.success(articleService.getArticleById(id));
     }
+
+    @PatchMapping("/{id}/like")
+    public Result<?> like(@PathVariable Long id, @RequestParam(defaultValue = "1") int delta) {
+        articleService.updateLikeCount(id, delta);
+        return Result.success(null);
+    }
 }

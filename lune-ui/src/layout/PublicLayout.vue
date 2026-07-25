@@ -10,7 +10,7 @@
       >
         <!-- 网站名称 -->
         <div class="toolbar-title">
-          <h2 @click="$router.push({ path: '/' })">{{ appStore.webInfo.webName || 'Lune' }}</h2>
+          <h2 @click="goHome" class="site-title-link">{{ appStore.webInfo.webName || 'Lune' }}</h2>
         </div>
 
         <!-- 手机导航按钮（窄屏） -->
@@ -26,46 +26,23 @@
         <!-- 导航列表 -->
         <div v-else>
           <ul class="scroll-menu">
-            <!-- 首页 -->
-            <li @click="$router.push({ path: '/home' })">
-              <div class="my-menu">
-                🏠 <span>首页</span>
-              </div>
+            <li @click="$router.push({ path: '/home' })" :class="{ active: route.path === '/home' }">
+              <div class="my-menu">🏠 <span>首页</span></div>
             </li>
-
-            <!-- 家 -->
-            <li @click="$router.push({ path: '/family' })">
-              <div class="my-menu">
-                ❤️ <span>家</span>
-              </div>
+            <li @click="$router.push({ path: '/family' })" :class="{ active: route.path === '/family' }">
+              <div class="my-menu">❤️ <span>家</span></div>
             </li>
-
-            <!-- 树洞 -->
-            <li @click="$router.push({ path: '/treehole' })">
-              <div class="my-menu">
-                🌳 <span>树洞</span>
-              </div>
+            <li @click="$router.push({ path: '/treehole' })" :class="{ active: route.path === '/treehole' }">
+              <div class="my-menu">🌳 <span>树洞</span></div>
             </li>
-
-            <!-- 随笔 -->
-            <li @click="$router.push({ path: '/essay' })">
-              <div class="my-menu">
-                🏖️ <span>随笔</span>
-              </div>
+            <li @click="$router.push({ path: '/essay' })" :class="{ active: route.path === '/essay' }">
+              <div class="my-menu">🏖️ <span>随笔</span></div>
             </li>
-
-            <!-- 记录 -->
-            <li @click="$router.push({ path: '/record' })">
-              <div class="my-menu">
-                📒 <span>记录</span>
-              </div>
+            <li @click="$router.push({ path: '/record' })" :class="{ active: route.path === '/record' }">
+              <div class="my-menu">📒 <span>记录</span></div>
             </li>
-
-            <!-- 后台（仅管理员） -->
             <li v-if="userStore.isAdmin" @click="goAdmin()">
-              <div class="my-menu">
-                💻️ <span>后台</span>
-              </div>
+              <div class="my-menu">💻️ <span>后台</span></div>
             </li>
 
             <!-- 个人中心 / 用户头像 -->
@@ -200,12 +177,21 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '../stores/app'
 import { useUserStore } from '../stores/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
+
+function goHome() {
+  if (route.path === '/') return
+  const el = document.querySelector('.toolbar-title h2')
+  el?.classList.add('site-clicked')
+  setTimeout(() => el?.classList.remove('site-clicked'), 600)
+  router.push('/')
+}
 const appStore = useAppStore()
 const userStore = useUserStore()
 
@@ -328,11 +314,25 @@ onUnmounted(() => {
   margin-left: 30px;
   cursor: pointer;
 }
-
 .toolbar-title h2 {
-  font-size: 20px;
-  white-space: nowrap;
-  cursor: pointer;
+  font-size: 22px; white-space: nowrap; cursor: pointer;
+  font-family: 'Ma Shan Zheng', 'Liu Jian Mao Cao', 'KaiTi', cursive;
+  letter-spacing: 3px; color: var(--themeBackground);
+  transition: all 0.3s ease;
+  position: relative;
+}
+.toolbar-title h2:hover {
+  transform: scale(1.12);
+  text-shadow: 0 0 12px rgba(255,165,0,0.5), 0 0 24px rgba(255,165,0,0.3);
+  filter: brightness(1.2);
+}
+.site-clicked {
+  animation: sitePop 0.6s ease;
+}
+@keyframes sitePop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.25); color: #ff4757; }
+  100% { transform: scale(1); }
 }
 
 .toolbar-mobile-menu {
@@ -347,20 +347,19 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   padding: 0;
+  gap: 6px;
 }
-
 .scroll-menu li {
-  list-style: none;
-  margin: 0 8px;
-  font-size: 17px;
-  height: 60px;
-  line-height: 60px;
-  position: relative;
-  cursor: pointer;
+  list-style: none; margin: 0 10px; font-size: 17px;
+  height: 60px; line-height: 60px; position: relative;
+  cursor: pointer; display: flex; flex-direction: column;
+  align-items: center;
 }
-
-.scroll-menu li:hover .my-menu span {
-  color: var(--themeBackground);
+.scroll-menu li:hover .my-menu span { color: var(--themeBackground); }
+.scroll-menu li .my-menu { height: 52px; line-height: 52px; }
+.scroll-menu li.active .my-menu span {
+  color: var(--themeBackground); font-weight: 700;
+  text-shadow: 0 0 12px rgba(255,165,0,0.6), 0 0 24px rgba(255,165,0,0.3);
 }
 
 .scroll-menu li .my-menu:after {

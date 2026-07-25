@@ -5,19 +5,19 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("comment")
-public class Comment {
+@TableName("diary")
+public class Diary {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Long articleId;
-    private String type;
-    private Long sourceId;
     private Long userId;
-    private Long parentId;
-    private Long replyTo;
+    private String title;
     private String content;
-    private Long likeCount;
+    private String images;
+    private LocalDateTime recordTime;
+    private Integer pageOrder;
     private Integer status;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 }

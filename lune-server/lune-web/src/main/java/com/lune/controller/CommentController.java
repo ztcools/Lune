@@ -20,9 +20,11 @@ public class CommentController {
 
     @GetMapping
     public Result<PageResult<Comment>> list(@RequestParam(required = false) Long articleId,
+                                            @RequestParam(required = false) String type,
+                                            @RequestParam(required = false) Long sourceId,
                                             @RequestParam(defaultValue = "1") int page,
                                             @RequestParam(defaultValue = "10") int size) {
-        return Result.success(commentService.listByArticle(articleId, page, size));
+        return Result.success(commentService.listByArticle(articleId, type, sourceId, page, size));
     }
 
     @PostMapping

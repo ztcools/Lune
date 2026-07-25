@@ -21,7 +21,7 @@ public class AdminCommentController {
     @GetMapping
     public Result<PageResult<Comment>> list(@RequestParam(defaultValue = "1") int page,
                                              @RequestParam(defaultValue = "10") int size) {
-        return Result.success(commentService.listByArticle(null, page, size));
+        return Result.success(commentService.listByArticle(null, null, null, page, size));
     }
 
     @DeleteMapping("/{id}")

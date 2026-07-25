@@ -11,4 +11,5 @@ public interface ArticleService {
     Article createArticle(ArticleRequest request);
     Article updateArticle(Long id, ArticleRequest request);
     void deleteArticle(Long id);
+    void updateLikeCount(Long id, int delta);
 }

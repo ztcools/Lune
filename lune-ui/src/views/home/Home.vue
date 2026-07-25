@@ -12,6 +12,22 @@
       <div slot="error" class="image-slot background-image-index-error"></div>
     </el-image>
 
+    <!-- PixelSnow full-page overlay -->
+    <PixelSnow
+      color="#ffffff"
+      :flakeSize="0.023"
+      :minFlakeSize="1.25"
+      :pixelResolution="500"
+      :speed="2.3"
+      :density="0.45"
+      :direction="180"
+      :brightness="3.0"
+      :depthFade="14.5"
+      :farPlane="15"
+      variant="snowflake"
+      class-name="full-page-snow"
+    />
+
     <!-- Hero text overlay -->
     <div class="signature-wall myCenter my-animation-hideToShow">
       <h1 class="playful">
@@ -31,6 +47,11 @@
 
     <!-- Content area -->
     <div class="page-container-wrap">
+      <!-- Blurred background layer -->
+      <div class="bg-blur-layer" v-if="contentBgImage">
+        <img :src="contentBgImage" alt="" class="bg-blur-img" />
+      </div>
+
       <div class="page-container">
         <!-- Left sidebar -->
         <div class="aside-content" v-if="showAside">
@@ -39,7 +60,7 @@
             <div class="card-content1 glass-card shadow-box">
               <el-avatar class="user-avatar" :size="120" :src="appStore.webInfo.avatar || '/assets/头像1.jpg'" />
               <div class="web-name">{{ appStore.webInfo.webName || 'Lune' }}</div>
-              <div class="web-bio">记录美好生活，分享成长点滴 ✨</div>
+              <div class="web-bio"><span class="motto-text">时刻保持思考！</span></div>
               <div class="web-info">
                 <div class="blog-info-box">
                   <span>文章</span>
@@ -59,30 +80,32 @@
               </a>
             </div>
 
-            <!-- Search box -->
-            <div class="search-box-card glass-card shadow-box">
-              <div class="search-title">搜索</div>
-              <div class="search-row">
-                <input
-                  class="ais-SearchBox-input"
-                  v-model="articleSearch"
-                  placeholder="搜索文章"
-                  maxlength="32"
-                  @keyup.enter="selectArticle"
-                />
-                <div class="ais-SearchBox-submit" @click="selectArticle">
-                  <svg style="margin-top: 3.5px; margin-left: 18px" viewBox="0 0 1024 1024" width="20" height="20">
-                    <path d="M51.2 508.8c0 256.8 208 464.8 464.8 464.8s464.8-208 464.8-464.8-208-464.8-464.8-464.8-464.8 208-464.8 464.8z" fill="#51C492"></path>
-                    <path d="M772.8 718.4c48-58.4 76.8-132.8 76.8-213.6 0-186.4-151.2-337.6-337.6-337.6-186.4 0-337.6 151.2-337.6 337.6 0 186.4 151.2 337.6 337.6 337.6 81.6 0 156-28.8 213.6-76.8L856 896l47.2-47.2-130.4-130.4zM512 776c-149.6 0-270.4-121.6-270.4-271.2S363.2 233.6 512 233.6c149.6 0 271.2 121.6 271.2 271.2C782.4 654.4 660.8 776 512 776z" fill="#FFFFFF"></path>
-                  </svg>
+            <!-- BGM Player -->
+            <div class="music-card glass-card shadow-box">
+              <div class="music-title">🎵 来听首小曲</div>
+              <div class="music-player">
+                <div class="music-lyrics" v-if="currentLyric">
+                  <div class="lyric-line" :class="{ active: currentLyric === lyrics[lyricIdx] }">{{ lyrics[lyricIdx] || '' }}</div>
+                  <div class="lyric-line">{{ lyrics[lyricIdx + 1] || '' }}</div>
                 </div>
+                <div class="music-song-name">{{ currentSong.name }}</div>
+                <div class="music-controls">
+                  <button class="music-play-btn" @click="toggleMusic">
+                    <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="18" height="18"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+                    <svg v-else viewBox="0 0 24 24" width="18" height="18"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
+                  </button>
+                  <div class="music-progress" @click="seekMusic">
+                    <div class="music-progress-fill" :style="{ width: musicProgress + '%' }" />
+                  </div>
+                </div>
+                <div class="music-song-artist">{{ currentSong.artist }}</div>
               </div>
             </div>
 
             <!-- Recommended articles -->
             <div v-if="recommendArticles.length > 0" class="recommend-card glass-card shadow-box">
               <div class="card-content2-title"><span>🔥 推荐文章</span></div>
-              <div v-for="(article, index) in recommendArticles" :key="'rec' + index" @click="$router.push('/article/' + article.id)">
+              <div v-for="(article, index) in recommendArticles" :key="'rec' + index" @click="readerArticleId = article.id">
                 <div class="aside-post-detail">
                   <div class="aside-post-image">
                     <el-image lazy class="my-el-image" :src="article.cover || '/assets/背景1.jpg'" fit="cover">
@@ -135,21 +158,14 @@
                     </svg>
                     {{ cat.name }}
                   </div>
-                  <div class="article-more" @click="selectSort(cat)">
-                    <svg viewBox="0 0 1024 1024" width="20" height="20" style="vertical-align: -2px; margin-bottom: -2px">
-                      <path d="M347.3 897.3H142.2c-30.8 0-51.4-31.7-38.9-59.9l136.1-306.1c4.9-11 4.9-23.6 0-34.6L103.3 190.6c-12.5-28.2 8.1-59.9 38.9-59.9h205.1c16.8 0 32.1 9.9 38.9 25.3l151.4 340.7c4.9 11 4.9 23.6 0 34.6L386.3 872.1c-6.9 15.3-22.1 25.2-39 25.2z" fill="#009F72"></path>
-                      <path d="M730.4 897.3H525.3c-30.8 0-51.4-31.7-38.9-59.9l136.1-306.1c4.9-11 4.9-23.6 0-34.6L486.4 190.6c-12.5-28.2 8.1-59.9 38.9-59.9h205.1c16.8 0 32.1 9.9 38.9 25.3l151.4 340.7c4.9 11 4.9 23.6 0 34.6L769.3 872.1c-6.8 15.3-22.1 25.2-38.9 25.2z" fill="#F9DB88"></path>
-                    </svg>
-                    MORE
-                  </div>
                 </div>
                 <!-- Grid article cards -->
                 <div class="article-grid">
                   <div
-                    v-for="article in groupedArticles[cat.id].slice(0, 4)"
+                    v-for="article in groupedArticles[cat.id]"
                     :key="article.id"
                     class="article-card shadow-box"
-                    @click="$router.push('/article/' + article.id)"
+                    @click="readerArticleId = article.id"
                   >
                     <div class="article-cover-wrap">
                       <el-image lazy class="article-cover-img" :src="article.cover || '/assets/背景1.jpg'" fit="cover">
@@ -163,6 +179,7 @@
                         <span>📅 {{ formatDate(article.createTime) }}</span>
                         <span>👁 {{ article.viewCount || 0 }}</span>
                         <span>❤️ {{ article.likeCount || 0 }}</span>
+                        <span>💬 {{ article._cc || 0 }}</span>
                       </div>
                     </div>
                   </div>
@@ -181,7 +198,7 @@
                 v-for="article in filteredArticles"
                 :key="article.id"
                 class="article-card shadow-box"
-                @click="$router.push('/article/' + article.id)"
+                @click="readerArticleId = article.id"
               >
                 <div class="article-cover-wrap">
                   <el-image lazy class="article-cover-img" :src="article.cover || '/assets/背景1.jpg'" fit="cover">
@@ -195,6 +212,7 @@
                     <span>📅 {{ formatDate(article.createTime) }}</span>
                     <span>👁 {{ article.viewCount || 0 }}</span>
                     <span>❤️ {{ article.likeCount || 0 }}</span>
+                    <span>💬 {{ article._cc || 0 }}</span>
                   </div>
                 </div>
               </div>
@@ -207,6 +225,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Article reader overlay -->
+    <ArticleReader
+      v-if="readerArticleId"
+      :key="readerArticleId"
+      :articleId="readerArticleId"
+      @close="readerArticleId = null"
+      @liked="onArticleLiked"
+    />
   </div>
 </template>
 
@@ -214,10 +241,14 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../../stores/app'
+import { useUserStore } from '../../stores/user'
 import { articleApi, categoryApi } from '../../api/modules'
+import PixelSnow from '../../components/PixelSnow/PixelSnow.vue'
+import ArticleReader from '../../components/ArticleReader.vue'
 
 const router = useRouter()
 const appStore = useAppStore()
+const userStore = useUserStore()
 
 const titleChars = ref([])
 const printerText = ref('')
@@ -231,11 +262,24 @@ const bgImage = computed(() => {
   return covers.length > 0 ? covers[Math.floor(Math.random() * covers.length)] : `/assets/背景${idx}.jpg`
 })
 
+// Background image for content area (different random pick for visual depth)
+const contentBgImage = computed(() => {
+  const covers = safeJsonParse(appStore.webInfo.randomCover, [])
+  if (covers.length >= 2) {
+    // Pick a random one different from the hero bg when possible
+    const pick = covers[Math.floor(Math.random() * covers.length)]
+    return pick
+  }
+  // Fallback to hero bg or random
+  const idx = (Math.floor(Math.random() * 11) + 1)
+  return `/assets/背景${idx}.jpg`
+})
+
 const notices = computed(() => safeJsonParse(appStore.webInfo.notices, []))
 
 const indexType = ref(1)
 const showAside = ref(true)
-const articleSearch = ref('')
+const readerArticleId = ref(null)
 const sortColors = ['#FF623E', '#51C492', '#F9DB88', '#5362f6', '#e485f8', '#ff9c55']
 
 const articles = ref([])
@@ -245,7 +289,7 @@ const categories = ref([])
 const recommendArticles = ref([])
 
 const pagination = reactive({
-  current: 1, size: 10, total: 0, searchKey: '', sortId: null, articleSearch: ''
+  current: 1, size: 10, total: 0, sortId: null
 })
 const total = ref(0)
 
@@ -260,6 +304,97 @@ const groupedArticles = computed(() => {
   }
   return groups
 })
+
+// Music player with Web Audio melody generator
+const musicPlaying = ref(false)
+const musicProgress = ref(0)
+const currentSong = ref(null)
+const currentLyric = ref('')
+const lyricIdx = ref(0)
+let audioCtx = null
+let progressTimer = null
+
+// Pentatonic scale melodies (C D E G A)
+const pentatonic = [262, 294, 330, 392, 440, 523, 587, 659, 784, 880]
+const songList = [
+  { name:'晴天', artist:'周杰伦 · 纯音版', notes:[0,2,3,5,7,8,7,5,3,2,0,1,2,3,4,5,3,2,0,2,3,5,7], lyrics:['故事的小黄花 从出生那年就飘着','童年的荡秋千 随记忆一直晃到现在','Re So So Si Do Si La','So La Si Si Si Si La Si La So','吹着前奏 望着天空','我想起花瓣试着掉落','为你翘课的那一天 花落的那一天'] },
+  { name:'起风了', artist:'买辣椒也用券 · 纯音版', notes:[5,3,2,0,1,2,3,5,6,7,8,7,5,3,2,0,2,3,5,3,2,0,1,2], lyrics:['这一路上走走停停 顺着少年漂流的痕迹','迈出车站的前一刻 竟有些犹豫','不禁笑这近乡情怯 仍无可避免','而长野的天 依旧那么暖 风吹起了从前','从前初识这世间 万般流连','看着天边似在眼前','也甘愿赴汤蹈火去走它一遍'] }
+]
+currentSong.value = songList[0]
+const lyrics = computed(() => currentSong.value?.lyrics || [])
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+}
+
+function toggleMusic() {
+  if (musicPlaying.value) { stopMusic() }
+  else { playMusic() }
+}
+
+function playMusic() {
+  initAudio()
+  stopMusic()
+  if (audioCtx.state === 'suspended') audioCtx.resume()
+  const song = currentSong.value
+  const notes = song.notes
+  const noteLen = 0.5 // seconds per note
+  const totalDur = notes.length * noteLen
+
+  const now = audioCtx.currentTime
+  notes.forEach((ni, i) => {
+    const osc = audioCtx.createOscillator()
+    const g = audioCtx.createGain()
+    osc.type = 'triangle'
+    osc.frequency.value = pentatonic[ni % pentatonic.length]
+    g.gain.setValueAtTime(0, now + i * noteLen)
+    g.gain.linearRampToValueAtTime(0.07, now + i * noteLen + 0.02)
+    g.gain.setValueAtTime(0.07, now + (i + 1) * noteLen - 0.05)
+    g.gain.linearRampToValueAtTime(0, now + (i + 1) * noteLen)
+    osc.connect(g); g.connect(audioCtx.destination)
+    osc.start(now + i * noteLen); osc.stop(now + (i + 1) * noteLen)
+  })
+
+  musicPlaying.value = true
+  musicProgress.value = 0
+  lyricIdx.value = 0
+  currentLyric.value = lyrics.value[0] || ''
+
+  clearInterval(progressTimer)
+  progressTimer = setInterval(() => {
+    if (!audioCtx || !musicPlaying.value) return
+    const elapsed = audioCtx.currentTime - now
+    const pct = Math.min(elapsed / totalDur, 1)
+    musicProgress.value = pct * 100
+    const newIdx = Math.min(Math.floor(pct * lyrics.value.length), lyrics.value.length - 1)
+    if (newIdx !== lyricIdx.value) { lyricIdx.value = newIdx; currentLyric.value = lyrics.value[newIdx] || '' }
+    if (pct >= 1) {
+      const idx = (songList.indexOf(currentSong.value) + 1) % songList.length
+      currentSong.value = songList[idx]; stopMusic(); playMusic()
+    }
+  }, 250)
+}
+
+function stopMusic() {
+  clearInterval(progressTimer)
+  musicPlaying.value = false
+  // AudioContext oscillators auto-stop via scheduled stop()
+}
+
+function seekMusic(e) {
+  stopMusic()
+  playMusic()
+}
+
+// Add article for admin
+const showAddArticle = computed(() => userStore.isAdmin)
+
+function onArticleLiked({ articleId, likeCount }) {
+  const update = (arr) => arr.forEach(a => { if (a.id === articleId) a.likeCount = likeCount })
+  update(allArticles.value)
+  update(filteredArticles.value)
+  recommendArticles.value.forEach(a => { if (a.id === articleId) a.likeCount = likeCount })
+}
 
 function safeJsonParse(str, fallback) {
   if (!str) return fallback
@@ -294,19 +429,6 @@ function getRandomPoem() {
 
 async function selectSort(cat) {
   pagination.sortId = cat.id; pagination.current = 1; pagination.size = 10
-  pagination.searchKey = ''; pagination.articleSearch = ''
-  filteredArticles.value = []; articleSearch.value = ''
-  await getArticles()
-  nextTick(() => {
-    indexType.value = 2
-    document.querySelector('.recent-posts')?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
-  })
-}
-async function selectArticle() {
-  if (!articleSearch.value.trim()) return
-  pagination.searchKey = ''; pagination.sortId = null
-  pagination.articleSearch = articleSearch.value.trim()
-  pagination.current = 1; pagination.size = 10
   filteredArticles.value = []
   await getArticles()
   nextTick(() => {
@@ -319,7 +441,6 @@ async function getArticles() {
   try {
     const params = { page: pagination.current, size: pagination.size }
     if (pagination.sortId) params.categoryId = pagination.sortId
-    if (pagination.articleSearch) params.keyword = pagination.articleSearch
     const data = await articleApi.list(params)
     if (data && data.records) {
       filteredArticles.value = [...filteredArticles.value, ...data.records]
@@ -329,8 +450,8 @@ async function getArticles() {
 }
 async function fetchAllArticles() {
   try {
-    const data = await articleApi.list({ page: 1, size: 100 })
-    if (data && data.records) { allArticles.value = data.records; total.value = data.total }
+    const data = await articleApi.list({ page: 1, size: 500 })
+    if (data && data.records) { allArticles.value = data.records; total.value = data.total || data.records.length }
   } catch (e) { console.error('Failed to fetch all articles:', e) }
 }
 async function fetchRecommendArticles() {
@@ -338,6 +459,17 @@ async function fetchRecommendArticles() {
     const data = await articleApi.list({ page: 1, size: 5 })
     if (data && data.records) recommendArticles.value = data.records
   } catch (e) { console.error('Failed to fetch recommended articles:', e) }
+}
+async function fetchArticleComments() {
+  try {
+    const { commentApi } = await import('../../api/modules')
+    const data = await commentApi.listAll({ page: 1, size: 1000 })
+    const records = data?.records || data || []
+    const counts = {}
+    records.forEach(c => { const aid = c.articleId || c.sourceId; if (aid) counts[aid] = (counts[aid] || 0) + 1 })
+    allArticles.value.forEach(a => { a._cc = counts[a.id] || 0 })
+    filteredArticles.value.forEach(a => { a._cc = counts[a.id] || 0 })
+  } catch (e) { /* silent */ }
 }
 async function fetchCategories() {
   try { categories.value = await categoryApi.list('article') }
@@ -351,7 +483,7 @@ function scrollToContent() {
 onMounted(async () => {
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
   startTypewriter()
-  await Promise.all([fetchAllArticles(), fetchCategories(), fetchRecommendArticles()])
+  await Promise.all([fetchAllArticles(), fetchCategories(), fetchRecommendArticles(), fetchArticleComments()])
 })
 </script>
 
@@ -418,12 +550,42 @@ onMounted(async () => {
 }
 .scroll-arrow { position: absolute; bottom: 40px; z-index: 15; cursor: pointer; animation: my-shake 1.5s ease-out infinite; }
 
+/* Full-page PixelSnow overlay */
+:deep(.full-page-snow) {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 50;
+  pointer-events: none;
+}
+
 /* ============================
    Content Area
    ============================ */
 .page-container-wrap {
-  background: var(--background);
   position: relative;
+  overflow: hidden;
+}
+/* Blurred background image layer */
+.bg-blur-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.bg-blur-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.55);
+}
+.bg-blur-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(6px);
+  transform: scale(1.05);
 }
 .page-container {
   display: flex;
@@ -433,6 +595,8 @@ onMounted(async () => {
   margin: 0 auto;
   flex-direction: row;
   max-width: 1650px;
+  position: relative;
+  z-index: 2;
 }
 .recent-posts { width: 72%; }
 
@@ -470,6 +634,18 @@ onMounted(async () => {
   background-clip: text; margin-bottom: 6px;
 }
 .web-bio { font-size: 13px; color: var(--greyFont); margin-bottom: 18px; text-align: center; }
+.motto-text {
+  font-size: 14px; font-weight: 600; letter-spacing: 2px;
+  background: linear-gradient(90deg, #ff6b6b, #ffa07a, #ffd700, #ff6b6b);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: mottoShine 3s ease-in-out infinite;
+}
+@keyframes mottoShine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
 .web-info { width: 100%; display: flex; justify-content: space-around; margin-bottom: 18px; }
 .blog-info-box { display: flex; flex-direction: column; align-items: center; color: var(--articleGreyFontColor); font-size: 13px; }
 .blog-info-num { margin-top: 8px; font-size: 22px; font-weight: 700; color: var(--articleFontColor); }
@@ -487,18 +663,29 @@ onMounted(async () => {
 }
 .collection-btn:hover::before { transform: scaleX(1); }
 
-.search-box-card { padding: 16px; border-radius: 14px; animation: hideToShow 1s ease-in-out; }
-.search-title { color: var(--lightGreen); font-size: 18px; font-weight: 700; margin-bottom: 10px; }
-.search-row { display: flex; }
-.ais-SearchBox-input {
-  padding: 0 14px; height: 32px; width: calc(100% - 50px); outline: 0;
-  border: 2px solid var(--lightGreen); border-right: 0; border-radius: 40px 0 0 40px;
-  color: var(--maxGreyFont); background: rgba(255,255,255,0.6);
+.music-card { padding: 18px 16px; border-radius: 22px; animation: hideToShow 1s ease-in-out; }
+.music-title { color: #ff6b9d; font-size: 16px; font-weight: 800; margin-bottom: 10px; letter-spacing: 1.5px; font-family: 'Ma Shan Zheng', 'KaiTi', cursive; text-align: center; }
+.music-player { display: flex; flex-direction: column; gap: 8px; }
+.music-lyrics { text-align: center; min-height: 44px; width: 100%; }
+.lyric-line { font-size: 12px; color: #bbb; line-height: 1.6; font-style: italic; font-weight: 600; transition: all 0.4s ease; }
+.lyric-line.active { color: #ff4757; font-size: 15px; transform: scale(1.05); font-weight: 700; }
+.music-song-name { font-size: 12px; font-weight: 600; color: #666; text-align: center; }
+.music-song-artist { font-size: 11px; color: #bbb; text-align: center; }
+.music-controls { display: flex; align-items: center; gap: 10px; }
+.music-play-btn {
+  width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ff6b9d;
+  background: linear-gradient(135deg, #fff0f5, #ffe0ec); color: #ff6b9d;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255,107,157,0.2);
 }
-.ais-SearchBox-submit {
-  height: 32px; width: 50px; border: 2px solid var(--lightGreen); border-left: 0;
-  border-radius: 0 40px 40px 0; background: rgba(255,255,255,0.6); cursor: pointer;
+.music-play-btn:hover {
+  background: #ff6b9d; color: #fff;
+  transform: scale(1.2);
+  box-shadow: 0 4px 16px rgba(255,107,157,0.4);
 }
+.music-progress { flex: 1; height: 4px; background: #f0e0e8; border-radius: 2px; cursor: pointer; overflow: hidden; }
+.music-progress-fill { height: 100%; background: linear-gradient(90deg, #ff6b9d, #ffa07a); border-radius: 2px; transition: width 0.3s linear; }
 
 .recommend-card { padding: 20px; border-radius: 14px; animation: hideToShow 1s ease-in-out; }
 .card-content2-title { font-size: 16px; margin-bottom: 16px; color: var(--lightGreen); font-weight: 700; }

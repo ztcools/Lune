@@ -32,6 +32,7 @@
         <el-menu-item index="/admin/records"><el-icon><Notebook /></el-icon><span>记录管理</span></el-menu-item>
         <el-menu-item index="/admin/essays"><el-icon><EditPen /></el-icon><span>随笔管理</span></el-menu-item>
         <el-menu-item index="/admin/family"><el-icon><House /></el-icon><span>家园管理</span></el-menu-item>
+        <el-menu-item index="/admin/diaries"><el-icon><Notebook /></el-icon><span>日记管理</span></el-menu-item>
       </el-menu>
     </div>
     <div class="content-box" :style="{ left: collapsed ? '44px' : '130px' }">

@@ -81,4 +81,13 @@ public class ArticleServiceImpl implements ArticleService {
     public void deleteArticle(Long id) {
         articleMapper.deleteById(id);
     }
+
+    @Override
+    public void updateLikeCount(Long id, int delta) {
+        var article = articleMapper.selectById(id);
+        if (article != null) {
+            article.setLikeCount(Math.max(0, (article.getLikeCount() == null ? 0 : article.getLikeCount()) + delta));
+            articleMapper.updateById(article);
+        }
+    }
 }

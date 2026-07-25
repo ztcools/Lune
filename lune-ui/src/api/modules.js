@@ -60,10 +60,19 @@ export const recordApi = {
 
 export const familyApi = {
   list: () => request.get('/family'),
-  listAll: () => request.get('/admin/family'),
+  listAll: () => request.get('/family'),
   create: (data) => request.post('/admin/family', data),
   update: (id, data) => request.put(`/admin/family/${id}`, data),
   delete: (id) => request.delete(`/admin/family/${id}`)
+}
+
+export const diaryApi = {
+  list: (params) => request.get('/diaries', { params }),
+  getById: (id) => request.get(`/diaries/${id}`),
+  adminList: (params) => request.get('/admin/diaries', { params }),
+  create: (data) => request.post('/admin/diaries', data),
+  update: (id, data) => request.put(`/admin/diaries/${id}`, data),
+  delete: (id) => request.delete(`/admin/diaries/${id}`)
 }
 
 export const siteConfigApi = {

@@ -6,7 +6,7 @@
       <div class="bg-overlay"></div>
       <div class="hero-info">
         <h1>记录</h1>
-        <p>记录生活的每一个精彩瞬间 ✨</p>
+        <p class="hero-subtitle">记录生活的每一个精彩瞬间 ✨</p>
       </div>
     </div>
 

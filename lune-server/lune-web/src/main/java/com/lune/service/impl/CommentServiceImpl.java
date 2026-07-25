@@ -19,12 +19,18 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public PageResult<Comment> listByArticle(Long articleId, int page, int size) {
+    public PageResult<Comment> listByArticle(Long articleId, String type, Long sourceId, int page, int size) {
         var wrapper = new LambdaQueryWrapper<Comment>()
                 .eq(Comment::getStatus, 1)
                 .orderByDesc(Comment::getCreateTime);
-        if (articleId != null) {
+        if (articleId != null && articleId > 0) {
             wrapper.eq(Comment::getArticleId, articleId);
+        }
+        if (type != null && !type.isEmpty()) {
+            wrapper.eq(Comment::getType, type);
+        }
+        if (sourceId != null && sourceId > 0) {
+            wrapper.eq(Comment::getSourceId, sourceId);
         }
         var result = commentMapper.selectPage(new Page<>(page, size), wrapper);
         return PageResult.of(result.getRecords(), result.getTotal(), page, size);
@@ -34,6 +40,8 @@ public class CommentServiceImpl implements CommentService {
     public Comment createComment(CommentRequest request) {
         var comment = new Comment();
         comment.setArticleId(request.getArticleId() != null ? request.getArticleId() : 0L);
+        comment.setType(request.getType());
+        comment.setSourceId(request.getSourceId());
         comment.setContent(request.getContent());
         comment.setUserId(1L);
         comment.setParentId(request.getParentId());
