@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lune.common.BusinessException;
 import com.lune.entity.Diary;
 import com.lune.mapper.DiaryMapper;
+import com.lune.security.SecurityUtils;
 import com.lune.service.DiaryService;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +37,7 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Override
     public Diary createDiary(Diary diary) {
-        diary.setUserId(1L);
+        diary.setUserId(SecurityUtils.getCurrentUserId());
         diary.setStatus(1);
         if (diary.getPageOrder() == null) diary.setPageOrder(0);
         diaryMapper.insert(diary);

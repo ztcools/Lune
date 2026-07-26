@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lune.common.BusinessException;
 import com.lune.entity.Family;
 import com.lune.mapper.FamilyMapper;
+import com.lune.security.SecurityUtils;
 import com.lune.service.FamilyService;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +28,7 @@ public class FamilyServiceImpl implements FamilyService {
 
     @Override
     public Family createFamily(Family family) {
-        family.setUserId(1L);
+        family.setUserId(SecurityUtils.getCurrentUserId());
         family.setStatus(1);
         familyMapper.insert(family);
         return family;

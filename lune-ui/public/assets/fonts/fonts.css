@@ -1,0 +1,118 @@
+/* ============================================================
+ * Lune 自托管字体
+ * Latin 字体通过 @font-face 声明，从本地加载
+ * 中文字体使用系统默认回退（Noto Sans SC / ZCOOL XiaoWei）
+ *
+ * Google Fonts 原始引用（保留作为备用）:
+ *   Noto Sans SC: 400,500,600,700,900
+ *   ZCOOL XiaoWei: 400
+ *   Fredoka: 400,500,600,700
+ *   Comfortaa: 400,500,600,700
+ *   Quicksand: 400,500,600,700
+ * ============================================================ */
+
+/* ========== Fredoka ========== */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./Fredoka-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./Fredoka-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./Fredoka-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./Fredoka-700.woff2') format('woff2');
+}
+
+/* ========== Comfortaa ========== */
+@font-face {
+  font-family: 'Comfortaa';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./Comfortaa-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Comfortaa';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./Comfortaa-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Comfortaa';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./Comfortaa-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Comfortaa';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./Comfortaa-700.woff2') format('woff2');
+}
+
+/* ========== Quicksand ========== */
+@font-face {
+  font-family: 'Quicksand';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./Quicksand-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Quicksand';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./Quicksand-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Quicksand';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./Quicksand-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Quicksand';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./Quicksand-700.woff2') format('woff2');
+}
+
+/**
+ * 中文字体说明：
+ * Noto Sans SC 和 ZCOOL XiaoWei 体积较大（单个字重约 3-5MB），
+ * 已通过 CSS 变量配置系统回退：
+ *
+ *   --globalFont: -apple-system, BlinkMacSystemFont, 'PingFang SC',
+ *                 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+ *
+ *   系统会自动使用用户设备上的中文字体（苹方/微软雅黑/思源黑体）。
+ *
+ * 如需自托管中文字体，请：
+ *   1. 从 https://fonts.google.com 下载 Noto Sans SC + ZCOOL XiaoWei
+ *   2. 添加对应的 @font-face 声明到此文件
+ *   3. 将 woff2 文件放入 public/assets/fonts/ 目录
+ */

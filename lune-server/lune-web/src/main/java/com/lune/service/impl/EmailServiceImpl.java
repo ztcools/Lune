@@ -7,7 +7,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.util.Random;
+import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -27,7 +27,7 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendVerificationCode(String toEmail) {
-        String code = String.format("%06d", new Random().nextInt(1000000));
+        String code = String.format("%06d", new SecureRandom().nextInt(1000000));
         redisTemplate.opsForValue().set("code:" + toEmail, code, 5, TimeUnit.MINUTES);
         var message = new SimpleMailMessage();
         message.setFrom(from);

@@ -6,15 +6,14 @@ import com.lune.common.PageResult;
 import com.lune.entity.Resource;
 import com.lune.mapper.ResourceMapper;
 import com.lune.service.ResourceService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +22,8 @@ import java.util.UUID;
 
 @Service
 public class ResourceServiceImpl implements ResourceService {
+
+    private static final Logger log = LoggerFactory.getLogger(ResourceServiceImpl.class);
 
     private final ResourceMapper resourceMapper;
     private final Path uploadDir;
@@ -113,7 +114,9 @@ public class ResourceServiceImpl implements ResourceService {
             try {
                 Path filePath = uploadDir.resolve(Paths.get(resource.getPath()).getFileName());
                 Files.deleteIfExists(filePath);
-            } catch (IOException ignored) {}
+            } catch (IOException e) {
+                log.warn("删除文件失败: {}", resource.getPath(), e);
+            }
             resourceMapper.deleteById(id);
         }
     }

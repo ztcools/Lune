@@ -7,6 +7,7 @@ import com.lune.common.PageResult;
 import com.lune.entity.Record;
 import com.lune.mapper.RecordMapper;
 import com.lune.mapper.UserMapper;
+import com.lune.security.SecurityUtils;
 import com.lune.service.RecordService;
 import org.springframework.stereotype.Service;
 
@@ -59,7 +60,7 @@ public class RecordServiceImpl implements RecordService {
 
     @Override
     public Record createRecord(Record record) {
-        record.setUserId(1L);
+        record.setUserId(SecurityUtils.getCurrentUserId());
         recordMapper.insert(record);
         var user = userMapper.selectById(1L);
         if (user != null) {

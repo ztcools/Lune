@@ -6,6 +6,9 @@ import com.lune.entity.User;
 import com.lune.mapper.CategoryMapper;
 import com.lune.mapper.SiteConfigMapper;
 import com.lune.mapper.UserMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -13,10 +16,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
     private final SiteConfigMapper siteConfigMapper;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.admin.default-password:admin123}")
+    private String defaultAdminPassword;
 
     public DataInitializer(UserMapper userMapper, CategoryMapper categoryMapper,
                            SiteConfigMapper siteConfigMapper, PasswordEncoder passwordEncoder) {
@@ -31,11 +39,12 @@ public class DataInitializer implements CommandLineRunner {
         if (userMapper.selectCount(null) == 0) {
             var admin = new User();
             admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setPassword(passwordEncoder.encode(defaultAdminPassword));
             admin.setNickname("Lune");
             admin.setRole("ADMIN");
             admin.setStatus(1);
             userMapper.insert(admin);
+            log.info("默认管理员已创建: admin / (请通过环境变量 ADMIN_DEFAULT_PASSWORD 修改默认密码)");
         }
         if (categoryMapper.selectCount(null) == 0) {
             String[][] cats = {{"技术", "技术相关文章", "article"}, {"生活", "生活随笔", "article"},

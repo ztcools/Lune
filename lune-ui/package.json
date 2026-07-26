@@ -12,10 +12,8 @@
     "@element-plus/icons-vue": "^2.3.0",
     "axios": "^1.7.0",
     "element-plus": "^2.8.0",
-    "node-7z": "^3.0.0",
     "pinia": "^2.1.0",
     "three": "^0.185.1",
-    "ttf2woff2": "^8.0.1",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
   },

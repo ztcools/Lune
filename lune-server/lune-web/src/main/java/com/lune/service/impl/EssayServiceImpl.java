@@ -7,6 +7,7 @@ import com.lune.common.PageResult;
 import com.lune.entity.Essay;
 import com.lune.mapper.EssayMapper;
 import com.lune.mapper.UserMapper;
+import com.lune.security.SecurityUtils;
 import com.lune.service.EssayService;
 import org.springframework.stereotype.Service;
 
@@ -70,7 +71,7 @@ public class EssayServiceImpl implements EssayService {
 
     @Override
     public Essay createEssay(Essay essay) {
-        essay.setUserId(1L);
+        essay.setUserId(SecurityUtils.getCurrentUserId());
         essay.setStatus(1);
         essayMapper.insert(essay);
         var user = userMapper.selectById(1L);

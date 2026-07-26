@@ -312,8 +312,8 @@ function formatFullDate(d) {
 </script>
 
 <style scoped>
-/* ====== Font imports ====== */
-@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&display=swap');
+/* ====== 字体：Ma Shan Zheng + Liu Jian Mao Cao ====== */
+/* 使用系统回退字体，如需自托管请将 woff2 放入 public/assets/fonts/ */
 
 /* ====== Hero ====== */
 .hero-section {

@@ -1,0 +1,19 @@
+# ============================================================
+# Lune Frontend - 开发环境 Dockerfile（支持热更新 HMR）
+# 使用: docker compose -f docker-compose.dev.yml up
+# ============================================================
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 复制 package 文件
+COPY package*.json /app/
+
+# 安装依赖
+RUN npm ci
+
+# 暴露 Vite 端口
+EXPOSE 5173
+
+# 启动 Vite dev server（监听所有网卡以支持 Docker 网络）
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

@@ -8,6 +8,7 @@ import com.lune.dto.ArticleRequest;
 import com.lune.entity.Article;
 import com.lune.mapper.ArticleMapper;
 import com.lune.security.JwtTokenProvider;
+import com.lune.security.SecurityUtils;
 import com.lune.service.ArticleService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -58,7 +59,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setSummary(request.getSummary());
         article.setCover(request.getCover());
         article.setCategoryId(request.getCategoryId());
-        article.setUserId(1L);
+        article.setUserId(SecurityUtils.getCurrentUserId());
         article.setStatus(1);
         articleMapper.insert(article);
         return article;

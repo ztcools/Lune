@@ -1,30 +1,46 @@
-# Maven
+# ============================================================
+# Lune .gitignore
+# ============================================================
+
+# --- Maven ---
 target/
 *.jar
 *.war
 
-# Node
+# --- Node ---
 node_modules/
 dist/
 
-# IDE
+# --- IDE ---
 .idea/
 .vscode/
 *.iml
 
-# OS
+# --- OS ---
 .DS_Store
 Thumbs.db
 
-# Uploads
+# --- 上传目录 ---
 upload/
 
-# 部署文档 (不需要提交到仓库)
-部署文档.md
-
-# Logs
+# --- 日志 ---
 *.log
 
-# 本地环境配置（含敏感信息）
+# --- 环境变量（含敏感信息，仅模板可提交）---
+.env
+.env.local
+.env.prod
+
+# --- Docker 本地覆盖 ---
+docker-compose.override.yml
+docker/data/
+
+# --- 本地开发配置（含敏感信息）---
 application-local.yml
-start-dev.sh
+.env.local
+
+# --- 备份 ---
+backups/
+
+# --- 部署文档（不需要提交）---
+部署文档.md

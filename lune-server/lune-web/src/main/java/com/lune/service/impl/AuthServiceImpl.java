@@ -13,8 +13,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -79,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
         if (exist != null) {
             throw new BusinessException("邮箱已被注册");
         }
-        Random rnd = new Random();
+        var rnd = new SecureRandom();
         var user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
