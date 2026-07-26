@@ -10,6 +10,9 @@ public class LoginResponse {
     private Long userId;
     private String username;
     private String nickname;
+    private String email;
     private String avatar;
+    private String gender;
+    private String signature;
     private String role;
 }

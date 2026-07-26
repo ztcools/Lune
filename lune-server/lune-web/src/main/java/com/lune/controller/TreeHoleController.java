@@ -4,6 +4,8 @@ import com.lune.common.PageResult;
 import com.lune.common.Result;
 import com.lune.entity.TreeHole;
 import com.lune.service.TreeHoleService;
+import io.jsonwebtoken.Claims;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,6 +26,10 @@ public class TreeHoleController {
 
     @PostMapping
     public Result<TreeHole> create(@RequestBody TreeHole treeHole) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Claims claims) {
+            treeHole.setUserId(claims.get("userId", Long.class));
+        }
         return Result.success(treeHoleService.createTreeHole(treeHole));
     }
 }

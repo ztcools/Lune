@@ -3,7 +3,16 @@ import request from './request'
 export const authApi = {
   login: (data) => request.post('/auth/login', data),
   register: (data) => request.post('/auth/register', data),
+  sendCode: (email) => request.post('/auth/send-code', { email }),
   logout: () => request.post('/auth/logout')
+}
+
+export const userProfileApi = {
+  get: () => request.get('/user/profile'),
+  update: (data) => request.put('/user/profile', data),
+  changePassword: (data) => request.put('/user/password', data),
+  sendDeleteCode: () => request.post('/user/send-delete-code'),
+  deleteAccount: (code) => request.delete('/user/account', { data: { code } })
 }
 
 export const articleApi = {

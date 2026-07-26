@@ -45,3 +45,24 @@ img { max-width: 100%; height: auto; }
   margin: 0 auto;
   padding: 0 20px;
 }
+
+.el-message { z-index: 10000 !important; }
+.el-message-box { z-index: 10001 !important; }
+.el-notification { z-index: 10000 !important; }
+.el-dialog { z-index: 9998 !important; }
+.el-popper { z-index: 9998 !important; }
+
+@media (max-width: 768px) {
+  .page-container { padding: 0 8px; max-width: 100%; }
+  .toolbar-title { margin-left: 10px !important; }
+  .toolbar-title h2 { font-size: 16px !important; }
+  .scroll-menu { margin: 0 5px 0 0 !important; gap: 0 !important; }
+  .scroll-menu li { margin: 0 4px !important; font-size: 13px !important; }
+  .feed-list, .essay-feed { max-width: 100% !important; }
+  .hero-banner { min-height: 25vh !important; }
+  .hero-banner h1 { font-size: 24px !important; }
+  .feed-card { margin: 0 4px 12px !important; border-radius: 14px !important; }
+  .tags-bar { padding: 8px 4px !important; overflow-x: auto; }
+  .tag-chip { font-size: 12px !important; padding: 4px 12px !important; }
+  .site-footer { padding: 12px !important; font-size: 12px !important; }
+}

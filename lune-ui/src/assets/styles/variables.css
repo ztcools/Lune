@@ -38,6 +38,26 @@
   --black: #000000;
   --lightYellow: #f4e1c0;
   --globalFont: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+
+  --nature-green: #4caf50;
+  --nature-green-light: #81c784;
+  --nature-green-dark: #388e3c;
+  --nature-green-pale: #e8f5e9;
+  --nature-gold: #ffb74d;
+  --nature-brown: #8d6e63;
+  --nature-cream: #fff8e1;
+  --nature-gradient: linear-gradient(135deg, #43a047, #66bb6a, #81c784);
+  --nature-gradient-soft: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 30%, #fff8e1 100%);
+  --card-glass: rgba(255, 255, 255, 0.18);
+  --card-glass-dark: rgba(255, 255, 255, 0.12);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --card-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --card-radius: 28px;
+  --card-radius-sm: 18px;
+  --card-border: 1px solid rgba(255, 255, 255, 0.25);
+  --input-bg: rgba(255, 255, 255, 0.6);
+  --input-focus-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+  --trendy-font: 'Fredoka', 'Comfortaa', 'Quicksand', sans-serif;
 }
 
 [data-theme='dark'] {

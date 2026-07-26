@@ -58,8 +58,10 @@
           <div class="myAside-container">
             <!-- Info card -->
             <div class="card-content1 glass-card shadow-box">
-              <el-avatar class="user-avatar" :size="120" :src="appStore.webInfo.avatar || '/assets/头像1.jpg'" />
-              <div class="web-name">{{ appStore.webInfo.webName || 'Lune' }}</div>
+              <el-avatar class="user-avatar" :size="120" :src="appStore.ownerInfo.avatar || appStore.webInfo.avatar || '/assets/头像1.jpg'">
+                {{ (appStore.ownerInfo.nickname || appStore.webInfo.webName || 'L').charAt(0) }}
+              </el-avatar>
+              <div class="web-name">{{ appStore.ownerInfo.nickname || appStore.webInfo.webName || 'Lune' }}</div>
               <div class="web-bio"><span class="motto-text">时刻保持思考！</span></div>
               <div class="web-info">
                 <div class="blog-info-box">
@@ -232,6 +234,7 @@
       :key="readerArticleId"
       :articleId="readerArticleId"
       @close="readerArticleId = null"
+      @commented="onArticleCommented"
       @liked="onArticleLiked"
     />
   </div>
@@ -243,6 +246,7 @@ import { useRouter } from 'vue-router'
 import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
 import { articleApi, categoryApi } from '../../api/modules'
+import { usePageBackground } from '../../composables/usePageBackground'
 import PixelSnow from '../../components/PixelSnow/PixelSnow.vue'
 import ArticleReader from '../../components/ArticleReader.vue'
 
@@ -254,26 +258,8 @@ const titleChars = ref([])
 const printerText = ref('')
 const fullPrinterText = ref('你看对面的青山多漂亮')
 
-const bgImage = computed(() => {
-  const bg = appStore.webInfo.backgroundImage
-  if (bg) return bg
-  const covers = safeJsonParse(appStore.webInfo.randomCover, [])
-  const idx = Math.floor(Math.random() * 11) + 1
-  return covers.length > 0 ? covers[Math.floor(Math.random() * covers.length)] : `/assets/背景${idx}.jpg`
-})
-
-// Background image for content area (different random pick for visual depth)
-const contentBgImage = computed(() => {
-  const covers = safeJsonParse(appStore.webInfo.randomCover, [])
-  if (covers.length >= 2) {
-    // Pick a random one different from the hero bg when possible
-    const pick = covers[Math.floor(Math.random() * covers.length)]
-    return pick
-  }
-  // Fallback to hero bg or random
-  const idx = (Math.floor(Math.random() * 11) + 1)
-  return `/assets/背景${idx}.jpg`
-})
+const bgImage = usePageBackground('homeHero')
+const contentBgImage = usePageBackground('homeContent')
 
 const notices = computed(() => safeJsonParse(appStore.webInfo.notices, []))
 
@@ -395,6 +381,12 @@ function onArticleLiked({ articleId, likeCount }) {
   update(filteredArticles.value)
   recommendArticles.value.forEach(a => { if (a.id === articleId) a.likeCount = likeCount })
 }
+function onArticleCommented() {
+  const aid = readerArticleId.value
+  const upd = (arr) => arr.forEach(a => { if (a.id === aid) a._cc = (a._cc || 0) + 1 })
+  upd(allArticles.value)
+  upd(filteredArticles.value)
+}
 
 function safeJsonParse(str, fallback) {
   if (!str) return fallback
@@ -431,9 +423,9 @@ async function selectSort(cat) {
   pagination.sortId = cat.id; pagination.current = 1; pagination.size = 10
   filteredArticles.value = []
   await getArticles()
+  indexType.value = 1
   nextTick(() => {
-    indexType.value = 2
-    document.querySelector('.recent-posts')?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+    document.querySelector('.recent-posts')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   })
 }
 async function pageArticles() { pagination.current++; await getArticles() }
@@ -463,10 +455,10 @@ async function fetchRecommendArticles() {
 async function fetchArticleComments() {
   try {
     const { commentApi } = await import('../../api/modules')
-    const data = await commentApi.listAll({ page: 1, size: 1000 })
+    const data = await commentApi.list({ page: 1, size: 1000 })
     const records = data?.records || data || []
     const counts = {}
-    records.forEach(c => { const aid = c.articleId || c.sourceId; if (aid) counts[aid] = (counts[aid] || 0) + 1 })
+    records.forEach(c => { const aid = c.articleId; if (aid && aid > 0) counts[aid] = (counts[aid] || 0) + 1 })
     allArticles.value.forEach(a => { a._cc = counts[a.id] || 0 })
     filteredArticles.value.forEach(a => { a._cc = counts[a.id] || 0 })
   } catch (e) { /* silent */ }
@@ -566,13 +558,16 @@ onMounted(async () => {
    ============================ */
 .page-container-wrap {
   position: relative;
-  overflow: hidden;
 }
 /* Blurred background image layer */
 .bg-blur-layer {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 50vh;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 0;
+  pointer-events: none;
 }
 .bg-blur-layer::after {
   content: '';

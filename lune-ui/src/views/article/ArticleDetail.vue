@@ -134,7 +134,7 @@
                 :size="36"
                 :src="userStore.user.avatar"
                 class="comment-form-avatar"
-              />
+              >{{ (userStore.nickname || '?').charAt(0) }}</el-avatar>
               <span v-if="replyTarget" class="reply-target">
                 回复 @{{ replyTarget.username }}&nbsp;
                 <el-button :icon="Close" circle size="small" @click="cancelReply" />
@@ -160,11 +160,11 @@
             <div v-for="comment in comments" :key="comment.id" class="comment-item">
               <div class="comment-main">
                 <el-avatar :size="40" :src="comment.avatar" class="comment-avatar">
-                  <el-icon :size="20"><UserFilled /></el-icon>
+                  {{ (comment.nickname || comment.username || `U`).charAt(0) }}
                 </el-avatar>
                 <div class="comment-body">
                   <div class="comment-meta">
-                    <span class="comment-username">{{ comment.username || comment.nickname || `用户${comment.userId}` }}</span>
+                    <span class="comment-username">{{ comment.nickname || comment.username || `用户${comment.userId}` }}</span>
                     <span class="comment-time">{{ formatDateTime(comment.createTime) }}</span>
                   </div>
                   <div class="comment-content">{{ comment.content }}</div>
@@ -178,11 +178,11 @@
                   <div v-if="comment.children && comment.children.length > 0" class="replies-wrap">
                     <div v-for="reply in comment.children" :key="reply.id" class="reply-item">
                       <el-avatar :size="32" :src="reply.avatar" class="reply-avatar">
-                        <el-icon :size="16"><UserFilled /></el-icon>
+                        {{ (reply.nickname || reply.username || 'R').charAt(0) }}
                       </el-avatar>
                       <div class="reply-body">
                         <div class="reply-meta">
-                          <span class="reply-username">{{ reply.username || reply.nickname || `用户${reply.userId}` }}</span>
+                          <span class="reply-username">{{ reply.nickname || reply.username || `用户${reply.userId}` }}</span>
                           <span v-if="reply.replyToUsername" class="reply-to">
                             &nbsp;回复 @{{ reply.replyToUsername }}
                           </span>
@@ -266,6 +266,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Loading, Close, UserFilled, ChatLineSquare } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { requireLogin } from '../../composables/useAuth'
 import { articleApi, commentApi } from '../../api/modules'
 import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
@@ -364,7 +365,8 @@ async function submitComment() {
   if (!content) return
   const user = userStore.user
   if (!user) {
-    ElMessage.warning('请先登录后再评论')
+    const { requireLogin } = await import('../../composables/useAuth')
+    if (!requireLogin()) return
     return
   }
   submitting.value = true

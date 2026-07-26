@@ -84,12 +84,12 @@
                 </div>
 
                 <div v-else v-for="item in comments" :key="item.id" class="comment-item">
-                  <el-avatar :size="36" :src="item.avatar" class="comment-avatar">
-                    <el-icon :size="18"><UserFilled /></el-icon>
+                  <el-avatar :size="36" :src="item.avatar" class="comment-avatar" @click.stop="showMiniProfile(item, $event)">
+                    {{ (item.nickname || item.username || '匿').charAt(0) }}
                   </el-avatar>
                   <div class="comment-body">
                     <div class="comment-top">
-                      <span class="comment-nick">{{ item.username || item.nickname || '匿名' }}</span>
+                      <span class="comment-nick">{{ item.nickname || item.username || '匿名' }}</span>
                       <span class="comment-time">{{ timeAgo(item.createTime) }}</span>
                     </div>
                     <div class="comment-text">{{ item.content }}</div>
@@ -107,7 +107,7 @@
                     <!-- Replies -->
                     <div v-if="item.children && item.children.length" class="replies-wrap">
                       <div v-for="reply in item.children" :key="reply.id" class="reply-item">
-                        <span class="reply-nick">{{ reply.username || reply.nickname || '匿名' }}</span>
+                        <span class="reply-nick">{{ reply.nickname || reply.username || '匿名' }}</span>
                         <span v-if="reply.replyToUsername" class="reply-to"> 回复 @{{ reply.replyToUsername }}</span>
                         <span class="reply-colon">：</span>
                         <span class="reply-text">{{ reply.content }}</span>
@@ -170,22 +170,30 @@
     </div>
   </Transition>
   </Teleport>
+  <MiniProfileCard
+    :userId="miniProfile.userId"
+    :position="miniProfile.position"
+    :show="miniProfile.show"
+    @close="miniProfile.show = false"
+  />
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onUnmounted } from 'vue'
 import { Loading, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { requireLogin } from '../composables/useAuth'
 import request from '../api/request'
 import { articleApi, commentApi } from '../api/modules'
 import { useUserStore } from '../stores/user'
 import { useAppStore } from '../stores/app'
+import MiniProfileCard from './MiniProfileCard.vue'
 
 const props = defineProps({
   articleId: { type: Number, required: true }
 })
 
-const emit = defineEmits(['close', 'liked'])
+const emit = defineEmits(['close', 'liked', 'commented'])
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -210,6 +218,15 @@ const commentText = ref('')
 const submitting = ref(false)
 const replyTarget = ref(null)
 const commentListRef = ref(null)
+
+const miniProfile = reactive({ show: false, userId: null, position: { x: 0, y: 0 } })
+function showMiniProfile(item, event) {
+  if (!item.userId) return
+  const rect = event.target.getBoundingClientRect()
+  miniProfile.userId = item.userId
+  miniProfile.position = { x: rect.left + rect.width / 2, y: rect.top }
+  miniProfile.show = true
+}
 
 const authorName = computed(() => appStore.webInfo.webName || 'Lune')
 
@@ -254,7 +271,13 @@ async function fetchComments() {
   try {
     const data = await commentApi.list({ articleId: props.articleId, page: 1, size: 50 })
     if (data) {
-      comments.value = data.records || []
+      const flat = data.records || []
+      const parents = flat.filter(c => !c.parentId || c.parentId === 0)
+      const replies = flat.filter(c => c.parentId && c.parentId > 0)
+      parents.forEach(p => {
+        p.children = replies.filter(r => r.parentId === p.id)
+      })
+      comments.value = parents
       commentTotal.value = data.total || 0
     }
   } catch (e) { /* silent */ }
@@ -262,7 +285,7 @@ async function fetchComments() {
 }
 
 function toggleLike() {
-  if (!userStore.isLoggedIn) { ElMessage.warning('请先登录后再点赞'); return }
+  if (!requireLogin()) return
   const delta = isLiked.value ? -1 : 1
   isLiked.value = !isLiked.value
   likeCount.value += delta
@@ -300,7 +323,7 @@ async function submitComment() {
   const text = commentText.value.trim()
   if (!text) return
   const user = userStore.user
-  if (!user) { ElMessage.warning('请先登录'); return }
+  if (!requireLogin()) return
   submitting.value = true
   try {
     const payload = {
@@ -317,6 +340,7 @@ async function submitComment() {
     replyTarget.value = null
     ElMessage.success('评论成功')
     commentTotal.value++
+    emit('commented')
     await fetchComments()
   } catch (e) { ElMessage.error('评论失败') }
   finally { submitting.value = false }
@@ -335,6 +359,7 @@ watch(() => props.articleId, async (id) => {
     document.addEventListener('keydown', onKeydown)
     document.body.style.overflow = 'hidden'
     await fetchArticle()
+    fetchComments()
     await nextTick()
     visible.value = true
   }
@@ -681,7 +706,8 @@ onUnmounted(() => {
 
 /* --- Comment Item --- */
 .comment-item { display: flex; gap: 10px; padding: 14px 0; border-bottom: 1px solid #f5f5f5; }
-.comment-avatar { flex-shrink: 0; }
+.comment-avatar { flex-shrink: 0; cursor: pointer; transition: all 0.2s ease; }
+.comment-avatar:hover { transform: scale(1.12); box-shadow: 0 0 0 3px rgba(76,175,80,0.25); }
 .comment-body { flex: 1; min-width: 0; }
 .comment-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .comment-nick { font-size: 13px; font-weight: 600; color: #555; }

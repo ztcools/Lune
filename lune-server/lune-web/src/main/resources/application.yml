@@ -27,6 +27,20 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+
 app:
   jwt:
     secret: ${JWT_SECRET:lune-jwt-secret-key-change-in-production-min-256bits}

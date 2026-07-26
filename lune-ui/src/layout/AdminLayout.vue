@@ -5,10 +5,21 @@
       <div class="header-right">
         <div class="admin-index" @click="$router.push({path: '/'})">首页</div>
         <div class="header-user-con">
-          <el-dropdown placement="bottom">
-            <el-avatar class="user-avatar" :size="40" :src="userStore.user?.avatar" />
+          <el-dropdown placement="bottom" trigger="hover" :hide-on-click="false">
+            <span class="admin-avatar-wrap">
+              <el-avatar class="user-avatar" :size="40" :src="userStore.user?.avatar">
+                {{ (userStore.nickname || 'A').charAt(0) }}
+              </el-avatar>
+            </span>
             <template #dropdown>
-              <el-dropdown-menu><el-dropdown-item @click="handleLogout">退出</el-dropdown-item></el-dropdown-menu>
+              <el-dropdown-menu>
+                <el-dropdown-item>
+                  <span style="font-weight:600">{{ userStore.nickname }}</span>
+                  <span style="color:#999;font-size:12px;margin-left:8px">{{ userStore.user?.role === 'ADMIN' ? '管理员' : '用户' }}</span>
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="$router.push({path:'/'})">🏠 返回首页</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">🚪 退出登录</el-dropdown-item>
+              </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>

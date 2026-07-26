@@ -2,6 +2,7 @@ package com.lune.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -14,6 +15,9 @@ public class User {
     private String nickname;
     private String email;
     private String avatar;
+    private String gender;
+    private LocalDate birthday;
+    private String signature;
     private String role;
     private Integer status;
     @TableField(fill = FieldFill.INSERT)

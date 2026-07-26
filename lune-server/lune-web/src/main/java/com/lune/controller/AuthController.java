@@ -1,9 +1,7 @@
 package com.lune.controller;
 
 import com.lune.common.Result;
-import com.lune.dto.LoginRequest;
-import com.lune.dto.LoginResponse;
-import com.lune.dto.RegisterRequest;
+import com.lune.dto.*;
 import com.lune.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -25,8 +23,13 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public Result<Void> register(@Valid @RequestBody RegisterRequest request) {
+    public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
+    }
+
+    @PostMapping("/send-code")
+    public Result<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
+        return authService.sendCode(request);
     }
 
     @PostMapping("/logout")

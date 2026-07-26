@@ -24,3 +24,7 @@ upload/
 
 # Logs
 *.log
+
+# 本地环境配置（含敏感信息）
+application-local.yml
+start-dev.sh

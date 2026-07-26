@@ -23,7 +23,6 @@ request.interceptors.response.use(
     if (data.code === 401 || data.code === 403) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/admin/login'
       return Promise.reject(new Error(data.message))
     }
     ElMessage.error(data.message || '请求失败')

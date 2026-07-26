@@ -20,17 +20,17 @@
         >
           <!-- Avatar — square with rounded corners -->
           <div class="moment-avatar">
-            <img
+            <el-avatar
               class="avatar-square"
-              :src="essay.avatar || appStore.webInfo.avatar || '/assets/头像1.jpg'"
-              alt="avatar"
-            />
+              :size="53"
+              :src="essay.avatar"
+            >{{ (essay.nickname || essay.username || 'L').charAt(0) }}</el-avatar>
           </div>
 
           <!-- Content -->
           <div class="moment-body">
             <div class="moment-header">
-              <span class="moment-username">{{ essay.username || '随笔' }}</span>
+              <span class="moment-username">{{ essay.nickname || essay.username || 'Lune' }}</span>
               <span class="moment-time">{{ formatRelative(essay.createTime) }}</span>
             </div>
 
@@ -66,12 +66,12 @@
               <div class="comments-list">
                 <div v-if="!essayComments.length" class="comment-empty">暂无评论，来说点什么吧</div>
                 <div v-for="c in essayComments" :key="c.id" class="comment-item">
-                  <el-avatar :size="32" :src="c.avatar" class="c-avatar">
-                    <el-icon :size="16"><UserFilled /></el-icon>
+                  <el-avatar :size="32" :src="c.avatar" class="c-avatar" @click.stop="showMiniProfile(c, $event)">
+                    {{ (c.nickname || c.username || '匿').charAt(0) }}
                   </el-avatar>
                   <div class="c-body">
                     <div class="c-top">
-                      <span class="c-nick">{{ c.username || '匿名' }}</span>
+                      <span class="c-nick">{{ c.nickname || c.username || '匿名' }}</span>
                       <span class="c-time">{{ formatRelative(c.createTime) }}</span>
                     </div>
                     <div class="c-text">{{ c.content }}</div>
@@ -136,15 +136,24 @@
       </div>
     </el-dialog>
   </div>
+  <MiniProfileCard
+    :userId="miniProfile.userId"
+    :position="miniProfile.position"
+    :show="miniProfile.show"
+    @close="miniProfile.show = false"
+  />
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { essayApi, commentApi } from '../../api/modules'
+import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
 import { useAppStore } from '../../stores/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
+import { requireLogin } from '../../composables/useAuth'
+import MiniProfileCard from '../../components/MiniProfileCard.vue'
 
 const userStore = useUserStore()
 const appStore = useAppStore()
@@ -158,10 +167,18 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const essayContent = ref('')
 const posting = ref(false)
-const bannerImage = ref('/assets/背景2.jpg')
+const bannerImage = usePageBackground('essayHero')
+
+const miniProfile = reactive({ show: false, userId: null, position: { x: 0, y: 0 } })
+function showMiniProfile(c, event) {
+  if (!c.userId) return
+  const rect = event.target.getBoundingClientRect()
+  miniProfile.userId = c.userId
+  miniProfile.position = { x: rect.left + rect.width / 2, y: rect.top }
+  miniProfile.show = true
+}
 
 onMounted(() => {
-  if (appStore.webInfo.backgroundImage) bannerImage.value = appStore.webInfo.backgroundImage
   fetchEssays()
 })
 
@@ -223,7 +240,7 @@ async function fetchComments(sourceId) {
 async function submitComment(essay) {
   const text = (commentText.value[essay.id] || '').trim()
   if (!text) return
-  if (!userStore.isLoggedIn) { ElMessage.error('请先登录！'); return }
+  if (!requireLogin()) return
   try {
     await commentApi.create({ content: text, sourceId: essay.id, type: 'essay' })
     commentText.value[essay.id] = ''
@@ -242,7 +259,7 @@ async function submitEssay() {
   finally { posting.value = false }
 }
 async function handleDelete(id) {
-  if (!userStore.isLoggedIn) { ElMessage.error('请先登录！'); return }
+  if (!requireLogin()) return
   try {
     await ElMessageBox.confirm('确认删除？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning', center: true })
     await essayApi.delete(id)
@@ -390,7 +407,8 @@ function formatRelative(d) {
 .comments-list { max-height: 240px; overflow-y: auto; }
 .comment-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
 .comment-item:last-child { border-bottom: none; }
-.c-avatar { flex-shrink: 0; }
+.c-avatar { flex-shrink: 0; cursor: pointer; transition: all 0.2s ease; }
+.c-avatar:hover { transform: scale(1.15); box-shadow: 0 0 0 3px rgba(76,175,80,0.25); }
 .c-body { flex: 1; min-width: 0; }
 .c-top { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
 .c-nick { font-size: 13px; font-weight: 600; color: #576b95; }

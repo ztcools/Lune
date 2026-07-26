@@ -1,7 +1,7 @@
 <template>
   <div class="family-page">
     <!-- Sakura background -->
-    <SakuraFall :count="35" :fallSpeed="1.2" :wind="0.3" />
+    <SakuraFall :count="80" :fallSpeed="1.0" :wind="0.4" />
 
     <!-- Hero Banner -->
     <div class="hero-section">
@@ -14,7 +14,7 @@
         <!-- Avatars + Lightning Connection -->
         <div class="couple-area">
           <div class="person-card">
-            <el-avatar class="couple-avatar" shape="square" :size="160" :src="family.manCover || defaultMan" @click="sendHeart('left')" />
+            <el-avatar class="couple-avatar" shape="square" :size="100" :src="family.manCover || defaultMan" @click="sendHeart('left')" />
             <div class="couple-name">{{ family.manName || '他' }}</div>
           </div>
 
@@ -41,7 +41,7 @@
           </div>
 
           <div class="person-card">
-            <el-avatar class="couple-avatar" shape="square" :size="160" :src="family.womanCover || defaultWoman" @click="sendHeart('right')" />
+            <el-avatar class="couple-avatar" shape="square" :size="100" :src="family.womanCover || defaultWoman" @click="sendHeart('right')" />
             <div class="couple-name">{{ family.womanName || '她' }}</div>
           </div>
         </div>
@@ -152,6 +152,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { familyApi, diaryApi, commentApi } from '../../api/modules'
 import { useUserStore } from '../../stores/user'
 import { ElMessage } from 'element-plus'
+import { requireLogin } from '../../composables/useAuth'
 import { UserFilled } from '@element-plus/icons-vue'
 import SakuraFall from '../../components/SakuraFall.vue'
 
@@ -256,7 +257,7 @@ async function fetchBlessings() {
 
 async function submitBlessing() {
   if (!blessingText.value.trim()) return
-  if (!userStore.isLoggedIn) { ElMessage.error('请先登录！'); return }
+  if (!requireLogin()) return
   blessingPosting.value = true
   try {
     await commentApi.create({ content: blessingText.value, type: 'love', sourceId: 0 })
@@ -316,7 +317,7 @@ function formatFullDate(d) {
 
 /* ====== Hero ====== */
 .hero-section {
-  position: relative; min-height: 60vh; display: flex; align-items: center; justify-content: center;
+  position: relative; min-height: 28vh; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(180deg, #2d1b2e 0%, #4a2c3f 40%, #7a4b5c 70%, #c8a08c 100%);
   overflow: hidden;
 }
@@ -326,7 +327,7 @@ function formatFullDate(d) {
   z-index: 2;
 }
 .hero-content {
-  position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 20px;
+  position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 
 /* Couple area */
@@ -337,10 +338,10 @@ function formatFullDate(d) {
   border: 3px solid rgba(255,255,255,0.3) !important;
   box-shadow: 0 0 30px rgba(255,200,150,0.3);
 }
-.couple-name { color: #fff; font-size: 22px; font-weight: 600; letter-spacing: 2px; }
+.couple-name { color: #fff; font-size: 17px; font-weight: 600; letter-spacing: 1px; }
 
 /* Lightning connector */
-.connector-wrap { position: relative; width: 120px; height: 160px; display: flex; align-items: center; justify-content: center; }
+.connector-wrap { position: relative; width: 80px; height: 90px; display: flex; align-items: center; justify-content: center; }
 .lightning-svg { position: absolute; z-index: 2; }
 .beam-rays { position: absolute; width: 100px; height: 100px; }
 .beam-ray {
@@ -374,32 +375,32 @@ function formatFullDate(d) {
 }
 
 /* Timer */
-.timer-row { color: #ffe8d0; font-size: 20px; letter-spacing: 2px; }
-.timer-num { font-size: 36px; font-weight: 700; color: #fff; margin: 0 2px; font-family: 'Ma Shan Zheng', cursive; }
-.countdown-text { color: #ffccaa; font-size: 16px; letter-spacing: 1px; }
+.timer-row { color: #ffe8d0; font-size: 16px; letter-spacing: 1px; }
+.timer-num { font-size: 26px; font-weight: 700; color: #fff; margin: 0 2px; font-family: 'Ma Shan Zheng', cursive; }
+.countdown-text { color: #ffccaa; font-size: 13px; letter-spacing: 1px; }
 
 /* ====== Tab Nav ====== */
 .tab-nav {
-  display: flex; justify-content: center; gap: 12px; padding: 24px 16px;
+  display: flex; justify-content: center; gap: 16px; padding: 14px 12px;
   background: rgba(255,255,255,0.8); backdrop-filter: blur(8px);
   position: sticky; top: 0; z-index: 10;
 }
 .tab-nav button {
-  padding: 10px 28px; border: 1.5px solid #d4a574; background: transparent;
-  color: #6b4c3b; border-radius: 24px; font-size: 15px; cursor: pointer;
+  padding: 10px 30px; border: 2px solid #d4a574; background: transparent;
+  color: #6b4c3b; border-radius: 28px; font-size: 17px; cursor: pointer;
   transition: all 0.3s; font-family: 'Ma Shan Zheng', cursive; letter-spacing: 1px;
 }
 .tab-nav button.active,
 .tab-nav button:hover { background: #6b4c3b; color: #fff; border-color: #6b4c3b; }
 
 /* ====== World Painting Card ====== */
-.painting-card { display: flex; justify-content: center; padding: 30px 16px 60px; }
+.painting-card { display: flex; justify-content: center; padding: 20px 16px 20px; min-height: 62vh; }
 .painting-inner { max-width: 800px; width: 100%; }
 .painting-frame {
   position: relative; border-radius: 16px; overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 0 0 8px #f5e6d3, 0 0 0 10px #c8a882, 0 0 0 18px #f5e6d3;
 }
-.painting-img { width: 100%; min-height: 400px; object-fit: cover; display: block; filter: sepia(0.2) brightness(0.95); }
+.painting-img { width: 100%; min-height: 55vh; max-height: 65vh; object-fit: cover; display: block; filter: sepia(0.2) brightness(0.95); }
 .painting-vignette {
   position: absolute; inset: 0;
   box-shadow: inset 0 0 80px rgba(0,0,0,0.4);
@@ -407,14 +408,14 @@ function formatFullDate(d) {
 }
 .painting-label {
   position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-  color: #f5e6d3; font-size: 28px; letter-spacing: 8px;
+  color: #f5e6d3; font-size: 20px; letter-spacing: 4px;
   font-family: 'Ma Shan Zheng', cursive;
   text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 /* ====== Blessing Board ====== */
-.blessing-section { padding: 20px 16px 40px; max-width: 760px; margin: 0 auto; }
-.blessing-carousel-wrap { overflow: hidden; margin-bottom: 20px; border-radius: 18px; background: linear-gradient(135deg, rgba(255,248,240,0.8), rgba(255,240,245,0.8)); height: 360px; }
+.blessing-section { padding: 16px 16px 20px; max-width: 760px; margin: 0 auto; min-height: 60vh; }
+.blessing-carousel-wrap { overflow: hidden; margin-bottom: 16px; border-radius: 18px; background: linear-gradient(135deg, rgba(255,248,240,0.8), rgba(255,240,245,0.8)); height: 52vh; }
 .blessing-track {
   display: flex; flex-direction: column; gap: 6px;
   animation: blessScroll var(--dur, 20s) linear infinite;
@@ -461,16 +462,16 @@ function formatFullDate(d) {
 .blessing-send-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ====== Diary Book ====== */
-.diary-book { display: flex; flex-direction: column; align-items: center; padding: 30px 16px 60px; }
+.diary-book { display: flex; flex-direction: column; align-items: center; padding: 24px 16px 20px; min-height: 60vh; }
 .book-container {
   display: flex; gap: 0; max-width: 860px; width: 100%;
   perspective: 1500px;
   background: linear-gradient(to right, #e8d5c0 0%, #f0e0cc 2%, #faf3e8 4%, #faf3e8 96%, #f0e0cc 98%, #e8d5c0 100%);
   border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,0.15), inset 0 0 30px rgba(0,0,0,0.05);
-  min-height: 500px;
+  min-height: 55vh;
 }
 .book-page {
-  flex: 1; padding: 40px 32px;
+  flex: 1; padding: 18px 20px;
   font-family: 'Ma Shan Zheng', 'Liu Jian Mao Cao', 'KaiTi', cursive;
   position: relative;
 }
@@ -481,8 +482,8 @@ function formatFullDate(d) {
   background: repeating-linear-gradient(transparent, transparent 33px, rgba(0,0,0,0.04) 33px, rgba(0,0,0,0.04) 34px);
 }
 .page-record-time {
-  font-size: 15px; color: #8b7355; margin-bottom: 16px;
-  border-bottom: 1px dashed #c8b898; padding-bottom: 8px;
+  font-size: 14px; color: #8b7355; margin-bottom: 10px;
+  border-bottom: 1px dashed #c8b898; padding-bottom: 6px;
 }
 .page-image {
   width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px;

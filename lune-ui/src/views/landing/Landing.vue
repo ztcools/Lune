@@ -53,6 +53,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { useAppStore } from '../../stores/app'
+import { usePageBackground } from '../../composables/usePageBackground'
 
 const appStore = useAppStore()
 
@@ -61,18 +62,7 @@ const typedText = ref('')
 const fullText = computed(() => '记录美好生活，分享成长点滴 ✨')
 
 // 从 store 获取随机封面，或使用默认图片
-const coverImage = computed(() => {
-  const bg = appStore.webInfo.backgroundImage
-  if (bg) return bg
-  try {
-    const covers = JSON.parse(appStore.webInfo.randomCover || '[]')
-    if (covers.length > 0) {
-      return covers[Math.floor(Math.random() * covers.length)]
-    }
-  } catch (e) { /* ignore */ }
-  const idx = Math.floor(Math.random() * 11) + 1
-  return `/assets/背景${idx}.jpg`
-})
+const coverImage = usePageBackground('landing')
 
 let typingTimer = null
 

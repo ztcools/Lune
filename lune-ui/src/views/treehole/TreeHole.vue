@@ -13,7 +13,7 @@
           class="danmaku-item"
           :style="msg.style"
         >
-          <img class="danmaku-avatar" :src="msg.avatar || defaultAvatar" />
+          <el-avatar class="danmaku-avatar" :size="28" :src="msg.avatar">{{ (msg.nickname || '?').charAt(0) }}</el-avatar>
           <span class="danmaku-text">{{ msg.text }}</span>
         </div>
       </div>
@@ -66,15 +66,16 @@
                     ? 'leftTreeHole'
                     : 'rightTreeHole'"
               >
-                <img
+                <el-avatar
                   class="avatar-img"
-                  :src="userStore.user?.avatar || appStore.webInfo.avatar || defaultAvatar"
-                  alt="avatar"
-                />
+                  :size="40"
+                  :src="treeHole.avatar"
+                >{{ (treeHole.nickname || treeHole.username || '?').charAt(0) }}</el-avatar>
                 <div
                   class="tree-hole-box"
                   :style="{ background: colors[index % colors.length] }"
                 >
+                  <div class="tree-hole-nick">{{ treeHole.nickname || treeHole.username || '匿名' }}</div>
                   <div
                     class="box-tag"
                     :class="mobile || index % 2 !== 0 ? 'tag-left' : 'tag-right'"
@@ -137,49 +138,48 @@
       </div>
     </div>
 
-    <!-- Send Dialog -->
-    <el-dialog
-      v-model="dialogVisible"
-      title="微言"
-      width="40%"
-      :close-on-click-modal="false"
-      destroy-on-close
-      center
-      :before-close="handleDialogClose"
-    >
-      <div class="dialog-body">
-        <div class="dialog-radio-wrap">
-          <el-radio-group v-model="isPublic">
-            <el-radio-button :value="true">公开</el-radio-button>
-            <el-radio-button :value="false">私密</el-radio-button>
-          </el-radio-group>
+    <!-- Send Card -->
+    <teleport to="body">
+      <transition name="card-fade">
+        <div v-if="dialogVisible" class="treehole-card-overlay" @click.self="dialogVisible = false">
+          <transition name="card-pop">
+            <div v-if="dialogVisible" class="treehole-send-card">
+              <div class="card-glow" />
+              <button class="card-close" @click="dialogVisible = false">✕</button>
+              <div class="card-inner">
+                <h3 class="card-title">🌳 微言</h3>
+                <p class="card-sub">把想说的话放进树洞里</p>
+                <textarea
+                  v-model="content"
+                  placeholder="说点什么吧..."
+                  maxlength="500"
+                  class="card-textarea"
+                  rows="5"
+                ></textarea>
+                <div class="card-foot">
+                  <span class="char-count">{{ content.length }}/500</span>
+                  <button class="nature-btn nature-btn-primary" @click="submitWeiYan" :disabled="posting">
+                    <span v-if="!posting">✨ 发布</span>
+                    <span v-else>发送中...</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
-        <div class="dialog-textarea-wrap">
-          <textarea
-            v-model="content"
-            placeholder="说点什么吧..."
-            maxlength="500"
-            class="dialog-textarea"
-            rows="5"
-          ></textarea>
-          <div class="dialog-actions">
-            <span class="char-count">{{ content.length }}/500</span>
-            <el-button type="primary" @click="submitWeiYan" :loading="posting">
-              发布
-            </el-button>
-          </div>
-        </div>
-      </div>
-    </el-dialog>
+      </transition>
+    </teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { treeHoleApi } from '../../api/modules'
+import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
 import { useAppStore } from '../../stores/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { requireLogin } from '../../composables/useAuth'
 
 const userStore = useUserStore()
 const appStore = useAppStore()
@@ -188,7 +188,7 @@ const appStore = useAppStore()
 const danmakuList = ref([])
 const danmakuContent = ref('')
 const showSendBtn = ref(false)
-const danmakuBg = ref('/assets/背景5.jpg')
+const danmakuBg = usePageBackground('treeholeDanmaku')
 
 // --- timeline state ---
 const treeHoleList = ref([])
@@ -198,7 +198,6 @@ const total = ref(0)
 const content = ref('')
 const posting = ref(false)
 const dialogVisible = ref(false)
-const isPublic = ref(true)
 const mobile = ref(false)
 
 const timelineRef = ref(null)
@@ -218,18 +217,6 @@ function checkMobile() {
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
-
-  // Random background from randomCover or fallback
-  try {
-    const covers = JSON.parse(appStore.webInfo.randomCover || '[]')
-    if (covers.length > 0) {
-      danmakuBg.value = covers[Math.floor(Math.random() * covers.length)]
-    } else if (appStore.webInfo.backgroundImage) {
-      danmakuBg.value = appStore.webInfo.backgroundImage
-    }
-  } catch (e) {
-    danmakuBg.value = '/assets/背景5.jpg'
-  }
 
   fetchDanmaku()
   fetchTreeHoles()
@@ -270,7 +257,8 @@ async function fetchDanmaku() {
       danmakuList.value = data.records.map((m, i) => ({
         id: m.id,
         text: m.content?.replace(/<[^>]+>/g, '').replace(/\n/g, ' ') || '',
-        avatar: userStore.user?.avatar || appStore.webInfo.avatar || defaultAvatar,
+        avatar: m.avatar,
+        nickname: m.nickname,
         style: makeDanmakuStyle(i)
       }))
     }
@@ -281,7 +269,7 @@ async function sendDanmaku() {
   const text = danmakuContent.value.trim()
   if (!text) return
   if (!userStore.isLoggedIn) {
-    ElMessage.error('请先登录！')
+    if (!requireLogin()) return
     return
   }
   try {
@@ -290,7 +278,8 @@ async function sendDanmaku() {
     danmakuList.value.push({
       id: res?.id || Date.now(),
       text: text,
-      avatar: userStore.user?.avatar || appStore.webInfo.avatar || defaultAvatar,
+      avatar: res?.avatar || userStore.user?.avatar,
+      nickname: res?.nickname || userStore.nickname,
       style: makeDanmakuStyle(danmakuList.value.length)
     })
     danmakuContent.value = ''
@@ -330,12 +319,12 @@ async function fetchTreeHoles() {
 async function submitWeiYan() {
   if (!content.value.trim()) return
   if (!userStore.isLoggedIn) {
-    ElMessage.error('请先登录！')
+    if (!requireLogin()) return
     return
   }
   posting.value = true
   try {
-    await treeHoleApi.create({ content: content.value, isPublic: isPublic.value })
+    await treeHoleApi.create({ content: content.value, isPublic: true })
     ElMessage.success('发布成功')
     content.value = ''
     dialogVisible.value = false
@@ -352,7 +341,7 @@ async function submitWeiYan() {
 
 async function handleDelete(id) {
   if (!userStore.isLoggedIn) {
-    ElMessage.error('请先登录！')
+    if (!requireLogin()) return
     return
   }
   try {
@@ -380,14 +369,10 @@ function handlePageChange(p) {
 
 function openDialog() {
   if (!userStore.isLoggedIn) {
-    ElMessage.error('请先登录！')
+    if (!requireLogin()) return
     return
   }
   dialogVisible.value = true
-}
-
-function handleDialogClose() {
-  dialogVisible.value = false
 }
 
 function formatDate(d) {
@@ -447,12 +432,9 @@ function formatDate(d) {
 }
 
 .danmaku-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  width: 28px; height: 28px; border-radius: 50%;
+  flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.35);
+  font-size: 11px;
 }
 
 .danmaku-text {
@@ -742,6 +724,10 @@ function formatDate(d) {
 }
 
 /* Content area */
+.tree-hole-nick {
+  font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.5);
+  padding: 0 10px 4px; font-family: var(--trendy-font);
+}
 .my-content {
   margin: 0 10px 10px;
   line-height: 34px;
@@ -791,36 +777,79 @@ function formatDate(d) {
   padding-bottom: 40px;
 }
 
-/* ====== Dialog ====== */
-.dialog-body {
-  padding: 10px 0;
+/* ====== Send Card ====== */
+.treehole-card-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.35); backdrop-filter: blur(8px);
 }
-.dialog-radio-wrap {
-  text-align: center;
-  padding-bottom: 20px;
+.treehole-send-card {
+  position: relative; width: 420px; max-width: 92vw;
+  background: linear-gradient(155deg, rgba(255,255,255,0.9) 0%, rgba(232,245,233,0.93) 50%, rgba(200,230,201,0.9) 100%);
+  backdrop-filter: blur(24px);
+  border-radius: 32px;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  box-shadow: 0 8px 40px rgba(56,142,60,0.18), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+  overflow: hidden;
+  font-family: var(--trendy-font);
 }
-.dialog-textarea {
-  width: 100%;
-  border: 2px solid var(--lightGreen);
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 14px;
-  resize: vertical;
-  outline: none;
-  background: var(--background);
-  color: var(--fontColor);
-  box-sizing: border-box;
+.treehole-send-card .card-glow {
+  position: absolute; top: -30%; left: -30%; width: 160%; height: 160%;
+  background: radial-gradient(circle at 30% 20%, rgba(129,199,132,0.15) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(255,183,77,0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
-.dialog-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
+.treehole-send-card .card-close {
+  position: absolute; top: 14px; right: 14px; z-index: 2;
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,0.06); color: #999; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s ease;
 }
-.char-count {
-  font-size: 12px;
-  color: var(--greyFont);
+.treehole-send-card .card-close:hover { background: #ff5252; color: #fff; transform: rotate(90deg); }
+.treehole-send-card .card-inner { position: relative; z-index: 1; padding: 32px 28px 24px; }
+.treehole-send-card .card-title {
+  font-size: 22px; font-weight: 700; color: #2e7d32; margin: 0 0 4px; text-align: center;
 }
+.treehole-send-card .card-sub {
+  font-size: 13px; color: #689f63; margin: 0 0 20px; text-align: center;
+}
+.treehole-send-card .card-textarea {
+  width: 100%; border: 1.5px solid rgba(129,199,132,0.4); border-radius: 18px;
+  padding: 14px; font-size: 15px; resize: vertical; outline: none;
+  background: rgba(255,255,255,0.7); color: #333;
+  font-family: var(--trendy-font); font-weight: 500;
+  transition: all 0.3s ease; box-sizing: border-box;
+}
+.treehole-send-card .card-textarea:focus {
+  border-color: #66bb6a; box-shadow: 0 0 0 4px rgba(76,175,80,0.1);
+  background: #fff;
+}
+.treehole-send-card .card-foot {
+  display: flex; justify-content: space-between; align-items: center; margin-top: 12px;
+}
+.treehole-send-card .char-count { font-size: 12px; color: #aaa; }
+.treehole-send-card .nature-btn {
+  border: none; outline: none; font-size: 15px; font-weight: 600;
+  padding: 10px 24px; border-radius: 16px; cursor: pointer;
+  font-family: var(--trendy-font);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.treehole-send-card .nature-btn-primary {
+  background: var(--nature-gradient); color: #fff;
+  box-shadow: 0 4px 16px rgba(76,175,80,0.35);
+}
+.treehole-send-card .nature-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76,175,80,0.45); filter: brightness(1.08);
+}
+.treehole-send-card .nature-btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.card-fade-enter-active, .card-fade-leave-active { transition: opacity 0.3s ease; }
+.card-fade-enter-from, .card-fade-leave-to { opacity: 0; }
+.card-pop-enter-active { transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.card-pop-leave-active { transition: all 0.2s ease-in; }
+.card-pop-enter-from { opacity: 0; transform: scale(0.85) translateY(20px); }
+.card-pop-leave-to { opacity: 0; transform: scale(0.9) translateY(10px); }
 
 /* ====== Responsive ====== */
 @media screen and (max-width: 1000px) {

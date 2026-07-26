@@ -22,6 +22,9 @@ CREATE TABLE `user` (
     `nickname` VARCHAR(50) DEFAULT NULL,
     `email` VARCHAR(100) DEFAULT NULL,
     `avatar` VARCHAR(500) DEFAULT NULL,
+    `gender` VARCHAR(10) DEFAULT '保密',
+    `birthday` DATE DEFAULT '2000-01-01',
+    `signature` VARCHAR(200) DEFAULT NULL,
     `role` VARCHAR(20) NOT NULL DEFAULT 'USER',
     `status` TINYINT NOT NULL DEFAULT 1,
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -82,7 +85,9 @@ CREATE TABLE `article_tag` (
 
 CREATE TABLE `comment` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
-    `article_id` BIGINT NOT NULL,
+    `article_id` BIGINT DEFAULT NULL,
+    `type` VARCHAR(20) DEFAULT NULL COMMENT '评论类型(article/essay/love/family/treehole)',
+    `source_id` BIGINT DEFAULT NULL COMMENT '来源ID',
     `user_id` BIGINT NOT NULL,
     `parent_id` BIGINT DEFAULT NULL,
     `reply_to` BIGINT DEFAULT NULL,
@@ -91,7 +96,8 @@ CREATE TABLE `comment` (
     `status` TINYINT NOT NULL DEFAULT 1,
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `idx_article_id` (`article_id`)
+    KEY `idx_article_id` (`article_id`),
+    KEY `idx_type_source` (`type`, `source_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tree_hole` (
@@ -146,6 +152,10 @@ CREATE TABLE `family` (
     `content` TEXT,
     `cover` VARCHAR(500) DEFAULT NULL,
     `bg_cover` VARCHAR(500) DEFAULT NULL,
+    `man_cover` VARCHAR(500) DEFAULT NULL,
+    `woman_cover` VARCHAR(500) DEFAULT NULL,
+    `man_name` VARCHAR(50) DEFAULT NULL,
+    `woman_name` VARCHAR(50) DEFAULT NULL,
     `timing` VARCHAR(100) DEFAULT NULL,
     `countdown_title` VARCHAR(200) DEFAULT NULL,
     `countdown_time` DATETIME DEFAULT NULL,

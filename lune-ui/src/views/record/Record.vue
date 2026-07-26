@@ -39,12 +39,12 @@
         >
           <!-- Header: avatar + nickname -->
           <div class="feed-header">
-            <img
+            <el-avatar
               class="feed-avatar"
-              :src="appStore.webInfo.avatar || '/assets/头像1.jpg'"
-              alt="avatar"
-            />
-            <span class="feed-nickname">{{ userStore.nickname || appStore.webInfo.webName || 'Lune' }}</span>
+              :size="53"
+              :src="item.avatar || appStore.webInfo.avatar"
+            >{{ (item.nickname || item.username || 'L').charAt(0) }}</el-avatar>
+            <span class="feed-nickname">{{ item.nickname || item.username || 'Lune' }}</span>
           </div>
 
           <!-- Text content -->
@@ -126,6 +126,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { recordApi, categoryApi } from '../../api/modules'
+import { usePageBackground } from '../../composables/usePageBackground'
 import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
 
@@ -142,7 +143,7 @@ const totalCount = ref(0)
 const expandedMedia = ref(null)
 
 // --- constants ---
-const bannerImage = ref('/assets/背景3.jpg')
+const bannerImage = usePageBackground('recordHero')
 const tagColors = [
   '#FF7744', '#e73c7e', '#23a6d5', '#39c5bb',
   '#ff4b2b', '#9370db', '#FF9D3A', '#67c23a'
@@ -150,9 +151,6 @@ const tagColors = [
 
 // --- lifecycle ---
 onMounted(() => {
-  if (appStore.webInfo.backgroundImage) {
-    bannerImage.value = appStore.webInfo.backgroundImage
-  }
   fetchCategories()
   fetchRecords()
 })
@@ -332,10 +330,6 @@ function formatRelative(d) {
   margin-bottom: 14px;
 }
 .feed-avatar {
-  width: 53px;
-  height: 53px;
-  border-radius: 8px;
-  object-fit: cover;
   flex-shrink: 0;
 }
 .feed-nickname {
@@ -518,7 +512,7 @@ function formatRelative(d) {
   .hero-info p { font-size: 14px; }
   .feed-container { padding: 16px 8px 40px; }
   .feed-card { padding: 14px; }
-  .feed-avatar { width: 44px; height: 44px; border-radius: 6px; }
+  .feed-avatar { width: 44px; height: 44px; }
   .feed-nickname { font-size: 17px; }
   .feed-text { font-size: 15px; line-height: 1.85; }
   .media-grid-1 .media-img { height: 260px; }
