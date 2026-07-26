@@ -49,8 +49,8 @@
     </div>
 
     <!-- ====== Timeline Section ====== -->
-    <div class="bg-image" :style="{ backgroundImage: `url(${timelineBg})` }" v-if="timelineBg" />
     <div class="timeline-section" ref="timelineRef">
+      <div class="bg-image" :style="{ backgroundImage: `url(${timelineBg})` }" v-if="timelineBg" />
       <div class="timeline-wrapper my-animation-hideToShow">
         <div class="tree-hole-container">
           <ol class="tree-hole-list" v-if="treeHoleList.length > 0">
@@ -190,6 +190,7 @@ const danmakuList = ref([])
 const danmakuContent = ref('')
 const showSendBtn = ref(false)
 const danmakuBg = usePageBackground('treeholeDanmaku')
+const timelineBg = usePageBackground('treeholeContent')
 
 // --- timeline state ---
 const treeHoleList = ref([])
@@ -925,4 +926,5 @@ function formatDate(d) {
     border-width: 15px 10px 5px 0 !important;
   }
 }
+.bg-image.content-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; opacity: 0.12; }
 </style>

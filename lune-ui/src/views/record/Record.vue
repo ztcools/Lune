@@ -31,8 +31,9 @@
 
     <!-- ====== Feed ====== -->
     <div class="feed-container">
-      <div class="bg-image content-bg" :style="{ backgroundImage: `url(${contentBg})` }" v-if="contentBg" />
-      <div class="feed-list" v-if="recordList.length > 0">
+      <div class="feed-list">
+        <div class="bg-image content-bg" :style="{ backgroundImage: `url(${contentBg})` }" v-if="contentBg" />
+        <div v-if="recordList.length > 0">
         <div
           v-for="item in recordList"
           :key="item.id"
@@ -145,6 +146,7 @@ const expandedMedia = ref(null)
 
 // --- constants ---
 const bannerImage = usePageBackground('recordHero')
+const contentBg = usePageBackground('recordContent')
 const tagColors = [
   '#FF7744', '#e73c7e', '#23a6d5', '#39c5bb',
   '#ff4b2b', '#9370db', '#FF9D3A', '#67c23a'
@@ -301,6 +303,7 @@ function formatRelative(d) {
 
 /* ====== Feed ====== */
 .feed-container {
+  position: relative; overflow: hidden;
   max-width: 760px;
   margin: 0 auto;
   padding: 20px 16px 60px;
@@ -527,4 +530,5 @@ function formatRelative(d) {
   .media-grid-9 .media-img { height: 130px; }
 }
 .feed-list { position: relative; overflow: hidden; }
+.bg-image.content-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; opacity: 0.12; }
 </style>

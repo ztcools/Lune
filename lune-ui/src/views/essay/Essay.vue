@@ -12,6 +12,7 @@
 
     <!-- Moments-style feed -->
     <div class="moments-container">
+      <div class="bg-image content-bg" :style="{ backgroundImage: `url(${contentBg})` }" v-if="contentBg" />
       <div class="moments-list" v-if="essayList.length > 0">
         <div
           v-for="essay in essayList"
@@ -168,6 +169,7 @@ const dialogVisible = ref(false)
 const essayContent = ref('')
 const posting = ref(false)
 const bannerImage = usePageBackground('essayHero')
+const contentBg = usePageBackground('essayContent')
 
 const miniProfile = reactive({ show: false, userId: null, position: { x: 0, y: 0 } })
 function showMiniProfile(c, event) {
@@ -483,5 +485,7 @@ function formatRelative(d) {
   .moment-text { font-size: 15px; line-height: 1.85; }
   .add-fab { bottom: 24px; right: 14px; width: 48px; height: 48px; }
 }
+.moments-container { position: relative; overflow: hidden; }
 .moment-feed { position: relative; overflow: hidden; }
+.bg-image.content-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; opacity: 0.12; }
 </style>

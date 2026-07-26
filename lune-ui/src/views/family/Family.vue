@@ -71,7 +71,7 @@
     <div v-show="activeTab === 'painting'" class="painting-card">
       <div class="painting-inner">
         <div class="painting-frame">
-          <img src="/assets/背景4.jpg" class="painting-img" alt="世界名画" />
+          <el-image src="" class="painting-img" alt="世界名画" v-if="false" />
           <div class="painting-vignette" />
           <div class="painting-label">世界名画</div>
         </div>
@@ -154,16 +154,19 @@ import { familyApi, diaryApi, commentApi } from '../../api/modules'
 import { useUserStore } from '../../stores/user'
 import { ElMessage } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
+import { usePageBackground } from '../../composables/usePageBackground'
 import { UserFilled } from '@element-plus/icons-vue'
 import SakuraFall from '../../components/SakuraFall.vue'
 
-const avatarColors = ['#ff6b6b','#ffa07a','#ffd700','#51c492','#409eff','#a78bfa','#f472b6','#fb923c']
-function randomAvatar(i) { return '' } // will use default icon
+const familyHeroBg = usePageBackground('familyHero')
+const familyContentBg = usePageBackground('familyContent')
+
+function randomAvatar(i) { return '' }
 function randomNick() { const nicks=['小星星','月亮船','阳光','微风','彩虹糖','云朵','海浪','樱花','蒲公英','小太阳']; return nicks[Math.floor(Math.random()*nicks.length)] }
 
 const userStore = useUserStore()
-const defaultMan = '/assets/头像1.jpg'
-const defaultWoman = '/assets/头像2.jpg'
+const defaultMan = ''
+const defaultWoman = ''
 
 // Family
 const family = ref({})
