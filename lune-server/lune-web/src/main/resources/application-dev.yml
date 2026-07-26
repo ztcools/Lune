@@ -13,9 +13,3 @@ logging:
   level:
     com.lune: DEBUG
     org.springframework.security: DEBUG
-
-# 开发环境禁用邮件健康检查（邮件服务可能不可用）
-management:
-  health:
-    mail:
-      enabled: false
