@@ -5,6 +5,7 @@
 
     <!-- Hero Banner -->
     <div class="hero-section">
+      <div class="bg-image" :style="{ backgroundImage: `url(${familyHeroBg})` }" v-if="familyHeroBg" />
       <div class="hero-overlay" />
       <!-- Meteors -->
       <div class="meteors-container">
@@ -549,4 +550,8 @@ function formatFullDate(d) {
   15% { opacity: 0; }
   100% { opacity: 0; transform: rotate(-35deg) translateY(400px) translateX(-100px); }
 }
+.tab-content { position: relative; overflow: hidden; }
+/* bg-image overlay */
+.bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
+.content-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; opacity: 0.15; }
 </style>

@@ -31,6 +31,7 @@
 
     <!-- ====== Feed ====== -->
     <div class="feed-container">
+      <div class="bg-image content-bg" :style="{ backgroundImage: `url(${contentBg})` }" v-if="contentBg" />
       <div class="feed-list" v-if="recordList.length > 0">
         <div
           v-for="item in recordList"
@@ -525,4 +526,5 @@ function formatRelative(d) {
   .media-grid-8 .media-img,
   .media-grid-9 .media-img { height: 130px; }
 }
+.feed-list { position: relative; overflow: hidden; }
 </style>

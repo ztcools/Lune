@@ -483,4 +483,5 @@ function formatRelative(d) {
   .moment-text { font-size: 15px; line-height: 1.85; }
   .add-fab { bottom: 24px; right: 14px; width: 48px; height: 48px; }
 }
+.moment-feed { position: relative; overflow: hidden; }
 </style>

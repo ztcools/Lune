@@ -49,6 +49,7 @@
     </div>
 
     <!-- ====== Timeline Section ====== -->
+    <div class="bg-image" :style="{ backgroundImage: `url(${timelineBg})` }" v-if="timelineBg" />
     <div class="timeline-section" ref="timelineRef">
       <div class="timeline-wrapper my-animation-hideToShow">
         <div class="tree-hole-container">
@@ -565,6 +566,7 @@ function formatDate(d) {
 
 /* ====== Timeline Section ====== */
 .timeline-section {
+  position: relative; overflow: hidden;
   min-height: 100vh;
 }
 
