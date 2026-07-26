@@ -1,6 +1,7 @@
 CREATE DATABASE IF NOT EXISTS lune DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE lune;
 
+DROP TABLE IF EXISTS `diary`;
 DROP TABLE IF EXISTS `visit_log`;
 DROP TABLE IF EXISTS `resource`;
 DROP TABLE IF EXISTS `site_config`;
@@ -129,6 +130,21 @@ CREATE TABLE `essay` (
     KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `diary` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `title` VARCHAR(200) DEFAULT NULL,
+    `content` TEXT,
+    `images` TEXT DEFAULT NULL,
+    `record_time` DATETIME DEFAULT NULL,
+    `page_order` INT NOT NULL DEFAULT 0,
+    `status` TINYINT NOT NULL DEFAULT 1,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `record` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT NOT NULL,
@@ -218,9 +234,18 @@ INSERT INTO `site_config` (`config_key`, `config_value`, `config_type`, `descrip
 ('site_description', '个人博客，记录成长，分享生活', 'public', '网站描述'),
 ('site_logo', '', 'public', '网站Logo'),
 ('site_footer', '© 2024 Lune. All Rights Reserved.', 'public', '页脚信息'),
-('site_notice', '欢迎来到 Lune！', 'public', '网站公告'),
-('site_background', '', 'public', '网站背景图'),
-('site_avatar', '', 'public', '默认头像'),
+('notices', '["欢迎来到 Lune！"]', 'public', '网站公告'),
 ('about_content', '', 'public', '关于页面内容'),
 ('enable_register', 'true', 'public', '是否开放注册'),
-('enable_comment', 'true', 'public', '是否开放评论');
+('enable_comment', 'true', 'public', '是否开放评论'),
+('landing_bg', '[]', 'public', 'Landing页背景图'),
+('home_hero_bg', '[]', 'public', '首页顶部背景图'),
+('home_content_bg', '[]', 'public', '首页内容区背景图'),
+('family_hero_bg', '[]', 'public', '家页顶部背景图'),
+('family_content_bg', '[]', 'public', '家页内容区背景图'),
+('treehole_danmaku_bg', '[]', 'public', '树洞弹幕背景图'),
+('treehole_content_bg', '[]', 'public', '树洞时间线背景图'),
+('essay_hero_bg', '[]', 'public', '随笔页顶部背景图'),
+('essay_content_bg', '[]', 'public', '随笔页内容区背景图'),
+('record_hero_bg', '[]', 'public', '记录页顶部背景图'),
+('record_content_bg', '[]', 'public', '记录页内容区背景图');

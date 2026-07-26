@@ -41,7 +41,7 @@
               <template v-if="userStore.isLoggedIn">
                 <div class="avatar-hover-zone" ref="avatarZoneRef">
                   <el-avatar class="user-avatar" :size="36" style="margin-top:12px"
-                    :src="userStore.user?.avatar || appStore.webInfo.avatar"
+                    :src="userStore.user?.avatar"
                     @click.stop="toggleDropdown">
                     {{ (userStore.nickname || '?').charAt(0) }}
                   </el-avatar>

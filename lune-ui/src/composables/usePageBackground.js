@@ -1,16 +1,17 @@
 import { computed } from 'vue'
 import { useAppStore } from '../stores/app'
 
-const FALLBACKS = [
-  '/assets/背景1.jpg', '/assets/背景2.jpg', '/assets/背景3.jpg',
-  '/assets/背景4.jpg', '/assets/背景5.jpg', '/assets/背景6.jpg'
-]
-
+/**
+ * 获取页面背景图
+ * 优先使用后台配置的图片数组（随机选取），无配置时返回空字符串
+ */
 export function usePageBackground(key) {
   const appStore = useAppStore()
   return computed(() => {
-    const configured = appStore.bgImages[key]
-    if (configured) return configured
-    return FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)]
+    const images = appStore.bgImages[key]
+    if (Array.isArray(images) && images.length > 0) {
+      return images[Math.floor(Math.random() * images.length)]
+    }
+    return ''
   })
 }

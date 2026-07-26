@@ -9,6 +9,7 @@ export const authApi = {
 
 export const userProfileApi = {
   get: () => request.get('/user/profile'),
+  getPublic: (userId) => request.get(`/user/profile/${userId}`),
   update: (data) => request.put('/user/profile', data),
   changePassword: (data) => request.put('/user/password', data),
   sendDeleteCode: () => request.post('/user/send-delete-code'),

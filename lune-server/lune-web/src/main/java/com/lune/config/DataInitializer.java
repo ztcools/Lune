@@ -67,9 +67,20 @@ public class DataInitializer implements CommandLineRunner {
                 {"site_title", "Lune - 记录美好生活", "public", "网站标题"},
                 {"site_description", "个人博客，记录成长，分享生活", "public", "网站描述"},
                 {"site_footer", "© 2024 Lune. All Rights Reserved.", "public", "页脚信息"},
-                {"site_notice", "欢迎来到 Lune！", "public", "网站公告"},
+                {"notices", "[\"欢迎来到 Lune！\"]", "public", "网站公告"},
                 {"enable_register", "true", "public", "是否开放注册"},
-                {"enable_comment", "true", "public", "是否开放评论"}
+                {"enable_comment", "true", "public", "是否开放评论"},
+                {"landing_bg", "[]", "public", "Landing页背景图"},
+                {"home_hero_bg", "[]", "public", "首页顶部背景图"},
+                {"home_content_bg", "[]", "public", "首页内容区背景图"},
+                {"family_hero_bg", "[]", "public", "家页顶部背景图"},
+                {"family_content_bg", "[]", "public", "家页内容区背景图"},
+                {"treehole_danmaku_bg", "[]", "public", "树洞弹幕背景图"},
+                {"treehole_content_bg", "[]", "public", "树洞时间线背景图"},
+                {"essay_hero_bg", "[]", "public", "随笔页顶部背景图"},
+                {"essay_content_bg", "[]", "public", "随笔页内容区背景图"},
+                {"record_hero_bg", "[]", "public", "记录页顶部背景图"},
+                {"record_content_bg", "[]", "public", "记录页内容区背景图"}
             };
             for (String[] c : configs) {
                 var sc = new SiteConfig();

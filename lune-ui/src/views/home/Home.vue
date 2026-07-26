@@ -58,10 +58,10 @@
           <div class="myAside-container">
             <!-- Info card -->
             <div class="card-content1 glass-card shadow-box">
-              <el-avatar class="user-avatar" :size="120" :src="appStore.ownerInfo.avatar || appStore.webInfo.avatar || '/assets/头像1.jpg'">
-                {{ (appStore.ownerInfo.nickname || appStore.webInfo.webName || 'L').charAt(0) }}
+              <el-avatar class="user-avatar" :size="120" :src="appStore.ownerInfo.avatar">
+                {{ (appStore.ownerInfo.nickname || 'L').charAt(0) }}
               </el-avatar>
-              <div class="web-name">{{ appStore.ownerInfo.nickname || appStore.webInfo.webName || 'Lune' }}</div>
+              <div class="web-name">{{ appStore.ownerInfo.nickname || 'Lune' }}</div>
               <div class="web-bio"><span class="motto-text">时刻保持思考！</span></div>
               <div class="web-info">
                 <div class="blog-info-box">
