@@ -1,5 +1,6 @@
 package com.lune.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lune.entity.SiteConfig;
 import com.lune.mapper.SiteConfigMapper;
 import com.lune.service.SiteConfigService;
@@ -20,12 +21,12 @@ public class SiteConfigServiceImpl implements SiteConfigService {
 
     @Override
     public Map<String, String> getPublicConfigs() {
-        var configs = siteConfigMapper.selectList(null);
+        var configs = siteConfigMapper.selectList(
+            new LambdaQueryWrapper<SiteConfig>().eq(SiteConfig::getConfigType, "public")
+        );
         var map = new LinkedHashMap<String, String>();
         for (var c : configs) {
-            if ("public".equals(c.getConfigType())) {
-                map.put(c.getConfigKey(), c.getConfigValue());
-            }
+            map.put(c.getConfigKey(), c.getConfigValue());
         }
         return map;
     }

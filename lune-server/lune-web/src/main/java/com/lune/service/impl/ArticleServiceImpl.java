@@ -46,8 +46,12 @@ public class ArticleServiceImpl implements ArticleService {
         if (article == null || article.getStatus() != 1) {
             throw new BusinessException("文章不存在");
         }
+        // 原子更新阅读数（避免并发丢失）
+        var updateWrapper = new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Article>()
+                .eq(Article::getId, id)
+                .setSql("view_count = view_count + 1");
+        articleMapper.update(null, updateWrapper);
         article.setViewCount(article.getViewCount() + 1);
-        articleMapper.updateById(article);
         return article;
     }
 
@@ -85,10 +89,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public void updateLikeCount(Long id, int delta) {
-        var article = articleMapper.selectById(id);
-        if (article != null) {
-            article.setLikeCount(Math.max(0, (article.getLikeCount() == null ? 0 : article.getLikeCount()) + delta));
-            articleMapper.updateById(article);
-        }
+        var updateWrapper = new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Article>()
+                .eq(Article::getId, id)
+                .setSql("like_count = GREATEST(0, COALESCE(like_count, 0) + " + delta + ")");
+        articleMapper.update(null, updateWrapper);
     }
 }

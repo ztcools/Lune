@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,6 +20,8 @@ import java.util.Collections;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
+
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -31,7 +35,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = extractToken(request);
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            String blacklisted = redisTemplate.opsForValue().get("token:blacklist:" + token);
+            String blacklisted = null;
+            try {
+                blacklisted = redisTemplate.opsForValue().get("token:blacklist:" + token);
+            } catch (Exception e) {
+                log.warn("Redis 不可用，跳过 token 黑名单检查: {}", e.getMessage());
+            }
             if (blacklisted == null) {
                 var claims = jwtTokenProvider.parseToken(token);
                 String role = claims.get("role", String.class);

@@ -192,12 +192,13 @@ async function handleLogout() {
   router.push({ path: '/' })
 }
 
+const checkMobile = () => { appStore.mobile = document.body.clientWidth < 1100 }
+
 onMounted(async () => {
   appStore.initDarkMode()
   await appStore.fetchConfig()
   window.addEventListener('scroll', onScrollPage)
   document.addEventListener('click', handleClickOutside)
-  const checkMobile = () => { appStore.mobile = document.body.clientWidth < 1100 }
   checkMobile()
   window.addEventListener('resize', checkMobile)
   appStore.changeToolbarStatus({ enter: false, visible: true })
@@ -206,6 +207,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScrollPage)
+  window.removeEventListener('resize', checkMobile)
   document.removeEventListener('click', handleClickOutside)
 })
 </script>

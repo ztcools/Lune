@@ -241,7 +241,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
@@ -398,9 +398,9 @@ function formatDate(d) {
 }
 function startTypewriter() {
   const text = fullPrinterText.value
-  let i = 0, forward = true, pauseCount = 0
+  let i = 0, forward = true, pauseCount = 0, typewriterTimer = null
   const PAUSE_FRAMES = 30
-  setInterval(() => {
+  typewriterTimer = setInterval(() => {
     if (forward) {
       printerText.value = text.slice(0, i + 1); i++
       if (i > text.length) { forward = false; pauseCount = 0 }
@@ -476,6 +476,11 @@ onMounted(async () => {
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
   startTypewriter()
   await Promise.all([fetchAllArticles(), fetchCategories(), fetchRecommendArticles(), fetchArticleComments()])
+})
+onUnmounted(() => {
+  if (typewriterTimer) clearInterval(typewriterTimer)
+  if (progressTimer) clearInterval(progressTimer)
+  if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null }
 })
 </script>
 

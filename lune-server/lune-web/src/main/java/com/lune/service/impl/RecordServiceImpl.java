@@ -62,7 +62,7 @@ public class RecordServiceImpl implements RecordService {
     public Record createRecord(Record record) {
         record.setUserId(SecurityUtils.getCurrentUserId());
         recordMapper.insert(record);
-        var user = userMapper.selectById(1L);
+        var user = userMapper.selectById(record.getUserId());
         if (user != null) {
             record.setUsername(user.getUsername());
             record.setNickname(user.getNickname());

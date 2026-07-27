@@ -17,6 +17,8 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -62,6 +64,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public Result<LoginResponse> register(RegisterRequest request) {
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException("两次密码不一致");

@@ -177,17 +177,18 @@ const countdownText = ref('')
 // Tabs
 const activeTab = ref('painting')
 
-// Lightning
-const lightningPath = computed(() => {
-  const segs = 8, dx = 120 / segs, dy = 160 / segs
+// Lightning: 定时刷新，避免 computed 中 Math.random() 导致频繁重渲染
+const lightningPath = ref(generateLightning())
+function generateLightning() {
+  const segs = 8, dy = 160 / segs
   let path = 'M60,0'
   for (let i = 1; i <= segs; i++) {
     const x = 60 + (Math.random() - 0.5) * 50 + (i % 2 ? 15 : -15)
-    const y = i * dy
-    path += ` L${x},${y}`
+    path += ` L${x},${i * dy}`
   }
   return path
-})
+}
+let lightningTimer = null
 
 // Blessings
 const blessingList = ref([])
@@ -213,12 +214,24 @@ const defaultBlessings = [
   { id:3, username:'阳光', avatar:'', content:'看到你们就觉得爱情真美好 ☀️', createTime: new Date().toISOString() },
 ]
 
+const meteorStyles = ref(Array.from({ length: 15 }, () => generateMeteorStyle()))
+function generateMeteorStyle() {
+  const top = Math.random() * 100, left = Math.random() * 100
+  const dur = 2 + Math.random() * 4, delay = Math.random() * 5
+  return { top: `${top}%`, left: `${left}%`, animationDuration: `${dur}s`, animationDelay: `${delay}s` }
+}
+function meteorStyle(i) { return meteorStyles.value[i - 1] || {} }
+
 onMounted(async () => {
   await fetchFamily()
   fetchBlessings()
   fetchDiaries()
+  lightningTimer = setInterval(() => { lightningPath.value = generateLightning() }, 3000)
 })
-onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
+  if (lightningTimer) clearInterval(lightningTimer)
+})
 
 async function fetchFamily() {
   try {

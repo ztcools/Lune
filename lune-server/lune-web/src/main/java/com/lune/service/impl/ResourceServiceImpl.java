@@ -42,10 +42,18 @@ public class ResourceServiceImpl implements ResourceService {
         }
     }
 
+    private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of("jpg","jpeg","png","gif","svg","webp","bmp","ico","mp4","webm","mp3","wav","pdf","zip");
+    private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
     @Override
     public Resource upload(MultipartFile file) {
+        if (file.isEmpty()) throw new BusinessException("文件不能为空");
+        if (file.getSize() > MAX_FILE_SIZE) throw new BusinessException("文件大小不能超过 50MB");
+        String ext = getExtension(file.getOriginalFilename());
+        if (!ALLOWED_EXTENSIONS.contains(ext.toLowerCase())) {
+            throw new BusinessException("不支持的文件类型: ." + ext);
+        }
         try {
-            String ext = getExtension(file.getOriginalFilename());
             String filename = UUID.randomUUID().toString() + "." + ext;
             File target = uploadDir.resolve(filename).toFile();
             file.transferTo(target);

@@ -218,13 +218,16 @@ async function fetchCommentCounts() {
   } catch (e) { /* silent */ }
 }
 
+function stripEmoji(s) { return s ? s.replace(/^[\u{1F000}-\u{1FFFF}]\S*\s*/u, '') : s }
 function getWeatherEmoji(w) {
+  const clean = stripEmoji(w)
   const map = { '晴': '☀️ 晴', '多云': '⛅ 多云', '阴': '☁️ 阴', '雨': '🌧️ 雨', '雪': '❄️ 雪', '风': '💨 风' }
-  return map[w] || w
+  return map[clean] || clean
 }
 function getMoodEmoji(m) {
+  const clean = stripEmoji(m)
   const map = { '开心': '😊 开心', '难过': '😢 难过', '平静': '😌 平静', '兴奋': '🤩 兴奋', '疲惫': '😫 疲惫', '期待': '✨ 期待' }
-  return map[m] || m
+  return map[clean] || clean
 }
 
 function loadMore() {

@@ -109,6 +109,7 @@ public class UserServiceImpl implements UserService {
         var wrapper = new LambdaQueryWrapper<User>()
                 .orderByDesc(User::getCreateTime);
         var result = userMapper.selectPage(new Page<>(page, size), wrapper);
+        result.getRecords().forEach(u -> u.setPassword(null));
         return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 
@@ -120,6 +121,7 @@ public class UserServiceImpl implements UserService {
         exist.setEmail(user.getEmail());
         exist.setAvatar(user.getAvatar());
         userMapper.updateById(exist);
+        exist.setPassword(null);
         return exist;
     }
 

@@ -2,313 +2,200 @@
 
 ## Project Overview
 
-Lune is a full-stack personal blog and lifestyle web application. It features articles, essays (WeChat Moments style), love notes (Record, QQ Moments style), tree holes (full-screen danmaku + timeline), family/friends list, and a full admin dashboard.
+Lune is a full-stack personal blog and lifestyle web application. Fully containerized with Docker Compose for both dev and production.
 
 - **Backend**: Spring Boot 3.3.5 + Java 17 + Maven
 - **Frontend**: Vue 3 + Vite 5 + Pinia + Vue Router 4 + Element Plus
-- **Database**: MySQL + Redis
-- **Persistence**: MyBatis-Plus 3.5.7 (logic delete enabled)
+- **Database**: MySQL 8.0 + Redis 7 (Docker containers)
+- **Persistence**: MyBatis-Plus 3.5.7 (logic delete on User/Article/Essay/Record)
 - **Security**: Spring Security + JWT (jjwt 0.12.6) + BCrypt
-- **Fonts**: Google Fonts — Noto Sans SC (400/500/600/700/900) + ZCOOL XiaoWei
+- **Fonts**: Google Fonts CDN (Noto Sans SC, ZCOOL XiaoWei, Fredoka, Comfortaa, Quicksand)
+- **DevOps**: Docker Compose, Nginx reverse proxy, multi-stage Dockerfiles
 
 ---
 
 ## Project Structure
 
 ```
-lune-server/                   # Maven parent POM (pom packaging)
-├── pom.xml                    # Parent: Spring Boot 3.3.5, Java 17, dependency management
-└── lune-web/                  # Spring Boot web module (the actual app)
+lune-server/                   # Maven parent POM
+├── pom.xml
+└── lune-web/                  # Spring Boot web module
     ├── pom.xml
     └── src/main/java/com/lune/
-        ├── LuneApplication.java          # @SpringBootApplication + @MapperScan("com.lune.mapper")
-        ├── common/
-        │   ├── Result.java               # Unified response: { code, message, data }
-        │   ├── PageResult.java            # Paginated response wrapper
-        │   ├── BusinessException.java     # Custom business exception
-        │   └── GlobalExceptionHandler.java
-        ├── config/
-        │   ├── SecurityConfig.java        # Spring Security: stateless, CORS, permitAll GET + POST(comments/treeholes), /api/admin/** → ADMIN only
-        │   ├── CorsConfig.java
-        │   ├── MyBatisPlusConfig.java
-        │   ├── RedisConfig.java
-        │   ├── WebMvcConfig.java
-        │   └── DataInitializer.java       # Seed data: admin/admin123, sample categories, site configs
-        ├── security/
-        │   ├── JwtTokenProvider.java      # Create/parse/validate JWT (userId, username, role claims)
-        │   └── JwtAuthFilter.java         # OncePerRequestFilter: extracts Bearer token, sets SecurityContext
-        ├── entity/                        # MyBatis-Plus entities (@TableName, @TableId, @TableLogic)
-        │   ├── User.java                  # id, username, password, nickname, email, avatar, role, status
-        │   ├── Article.java               # title, content, summary, cover, viewCount, likeCount, status, isTop
-        │   ├── Category.java
-        │   ├── Tag.java
-        │   ├── Comment.java
-        │   ├── Essay.java                 # Short essays/notes (weather, mood, location, likeCount)
-        │   ├── Record.java                # Love notes: title, content, cover, media (JSON), categoryId
-        │   ├── TreeHole.java              # Anonymous messages
-        │   ├── Family.java                # Friends/family members
-        │   ├── SiteConfig.java            # Site settings (key-value)
-        │   ├── Resource.java              # Uploaded file resources
-        │   └── VisitLog.java
-        ├── dto/                           # Request/Response DTOs
-        │   ├── ArticleRequest.java
-        │   ├── CommentRequest.java
-        │   ├── LoginRequest.java / LoginResponse.java
-        │   └── RegisterRequest.java
-        ├── mapper/                        # MyBatis-Plus BaseMapper interfaces
-        ├── service/                       # Service interfaces
-        └── service/impl/                  # Service implementations
-            ├── controller/                # Public REST controllers (/api/...)
-            │   ├── ArticleController.java
-            │   ├── AuthController.java
-            │   ├── CategoryController.java
-            │   ├── CommentController.java
-            │   ├── EssayController.java
-            │   ├── FamilyController.java
-            │   ├── RecordController.java
-            │   ├── SiteConfigController.java
-            │   ├── TagController.java
-            │   └── TreeHoleController.java
-            └── controller/admin/          # Admin REST controllers (/api/admin/...)
-                ├── AdminArticleController.java
-                ├── AdminCategoryController.java
-                ├── AdminCommentController.java
-                ├── AdminEssayController.java
-                ├── AdminFamilyController.java
-                ├── AdminRecordController.java
-                ├── AdminResourceController.java
-                ├── AdminSiteConfigController.java
-                ├── AdminTagController.java
-                ├── AdminTreeHoleController.java
-                └── AdminUserController.java
+        ├── LuneApplication.java
+        ├── common/            # Result, PageResult, BusinessException, GlobalExceptionHandler
+        ├── config/            # Security, CORS, MyBatis-Plus, Redis, WebMvc, DataInitializer
+        ├── security/          # JwtTokenProvider, JwtAuthFilter, SecurityUtils
+        ├── entity/            # User, Article, Category, Tag, Comment, Essay, Record, TreeHole, Family, Diary, SiteConfig, Resource, VisitLog
+        ├── dto/               # Request/Response DTOs
+        ├── mapper/            # MyBatis-Plus BaseMapper interfaces
+        ├── service/           # Service interfaces + impl/
+        └── controller/        # Public + admin REST controllers
 
-lune-ui/                                 # Vue 3 frontend
-├── index.html                           # zh-CN, Google Fonts preconnect, title: "Lune - 记录美好生活"
-├── vite.config.js                       # Port 5173, proxy /api and /upload → localhost:8081
-├── package.json                         # vue 3.4, vue-router 4, pinia 2, element-plus 2, axios 1
+lune-ui/                       # Vue 3 frontend
+├── index.html                 # Google Fonts CDN
+├── vite.config.js             # Port 5173, proxy /api & /upload → localhost:8081
+├── package.json               # vue 3.4, pinia 2, element-plus 2, three, axios
 └── src/
-    ├── main.js                          # createApp, use Pinia/Router/ElementPlus/Icons, mount #app
-    ├── App.vue                          # Just <router-view />
-    ├── api/
-    │   ├── request.js                   # Axios instance: baseURL=/api, Bearer token interceptor, response unwraps data.data
-    │   └── modules.js                   # All API functions (authApi, articleApi, categoryApi, tagApi, ...)
-    ├── router/index.js                  # Routes: Landing → PublicLayout(children) + AdminLogin + AdminLayout(children, requiresAuth)
-    ├── stores/
-    │   ├── user.js                      # Pinia store: token, user, login/logout actions
-    │   └── app.js                       # App config, webInfo, manual dark mode toggle (no time-based auto)
-    ├── layout/
-    │   ├── PublicLayout.vue             # Public page layout with header/footer, no dark mode toggle
-    │   └── AdminLayout.vue              # Admin dashboard layout with sidebar
-    ├── views/                           # Public-facing pages
-    │   ├── landing/Landing.vue          # Landing/splash page (route: /)
-    │   ├── home/Home.vue                # 2-column layout: sidebar + article grid (route: /home)
-    │   ├── article/ArticleDetail.vue    # Article detail (route: /article/:id)
-    │   ├── family/Family.vue            # Friends & family page with blessing board
-    │   ├── treehole/TreeHole.vue        # Full-screen danmaku + timeline (route: /treehole)
-    │   ├── essay/Essay.vue              # WeChat Moments-style feed (route: /essay)
-    │   ├── record/Record.vue            # QQ Moments-style feed with media support (route: /record)
-    ├── admin/                           # Admin management pages
-    │   ├── Login.vue                    # Admin login page (/admin/login)
-    │   ├── Dashboard.vue                # Dashboard with stats
-    │   ├── ArticleManage.vue            # Article CRUD
-    │   ├── CategoryManage.vue
-    │   ├── CommentManage.vue
-    │   ├── EssayManage.vue
-    │   ├── RecordManage.vue
-    │   ├── TreeHoleManage.vue
-    │   ├── FamilyManage.vue
-    │   ├── UserManage.vue
-    │   ├── ResourceManage.vue           # File upload management
-    │   └── Settings.vue                 # Site configuration
-    └── assets/styles/
-        ├── variables.css
-        ├── global.css
-        └── animations.css
+    ├── api/                   # request.js (axios) + modules.js (all API functions)
+    ├── router/                # Landing → PublicLayout(children) + AdminLogin + AdminLayout
+    ├── stores/                # user.js (auth), app.js (config + bgImages)
+    ├── composables/           # usePageBackground, useAuth
+    ├── layout/                # PublicLayout, AdminLayout
+    ├── views/                 # landing, home, article, family, treehole, essay, record
+    ├── admin/                 # Login, Dashboard, Settings, CRUD management pages
+    ├── components/            # ProfileCard, MiniProfileCard, LoginCard, ArticleReader, SakuraFall, PixelSnow
+    └── assets/styles/         # variables.css, global.css, animations.css
+
+docker/                        # Docker configuration
+├── backend/Dockerfile         # Multi-stage: Maven build + JRE Alpine
+├── frontend/Dockerfile.dev    # Vite dev server with HMR
+├── nginx/                     # Dockerfile (prod) + nginx.dev.conf + nginx.prod.conf
+├── mysql/                     # my.cnf + init/01-init.sql
+├── redis/                     # redis.conf (AOF persistence)
+└── fonts/                     # download-fonts.sh + fonts.css
+
+docker-compose.dev.yml         # Development: nginx + backend + frontend(Vite HMR) + mysql + redis
+docker-compose.prod.yml        # Production: nginx(含前端) + backend + mysql + redis
+.env.template                  # 生产环境变量模板（提交Git）
+.env.local.template            # 本地开发环境变量模板（提交Git）
+deploy.sh                      # 服务器一键部署脚本
+backup.sh                      # 数据库自动备份
+Makefile                       # 便捷命令集合
 ```
 
 ---
 
 ## Architecture Patterns
 
-### Backend (Spring Boot)
+### Backend
 
-**Layered architecture**: Controller → Service → Mapper → Entity
+- **Layered**: Controller → Service → Mapper → Entity
+- **Response**: `Result<T>` = `{ code, message, data }`
+- **Pagination**: `PageResult.of(records, total, page, size)`
+- **Constructor injection** (not `@Autowired`), `var` for locals (Java 17)
+- **Dual controllers**: Public (`/api/{resource}`) + Admin (`/api/admin/{resource}`, `@PreAuthorize`)
+- **LambdaQueryWrapper** for all queries, no XML mappers
+- **Soft delete**: `@TableLogic` on User, Article, Essay, Record; hard delete on others
+- **Security**: Stateless JWT, CSRF disabled, BCrypt passwords
+- **Health**: Spring Actuator at `/api/actuator/health`
+- **GlobalExceptionHandler**: Returns HTTP 500 for unhandled exceptions (not 200)
+- **JwtAuthFilter**: Redis token blacklist with graceful fallback if Redis is down
+- **ResourceServiceImpl**: File type whitelist validation, 50MB size limit
+- **ArticleServiceImpl**: Atomic SQL for view/like counts (avoids race conditions)
+- **AuthServiceImpl**: `@Transactional` on register, `SecureRandom` for codes
 
-**Response format** — All endpoints return `Result<T>`:
-```json
-{ "code": 200, "message": "success", "data": { ... } }
-```
-- Success: `Result.success(data)` — code 200
-- Failure: `Result.fail("message")` — code 500
-- Unauthorized: `Result.unauthorized()` — code 401
-- Forbidden: `Result.forbidden()` — code 403
+### Frontend
 
-**Pagination** — Public list endpoints use `PageResult<T>`:
-```java
-PageResult.of(records, total, page, size)
-```
-
-**Service pattern** every module follows:
-- Interface in `service/XxxService.java`
-- Implementation in `service/impl/XxxServiceImpl.java` — constructor injection, `@Service`
-- Mapper: `XxxMapper extends BaseMapper<Xxx>` (empty interface, MyBatis-Plus handles CRUD)
-- Queries use `LambdaQueryWrapper<Xxx>` for type-safe conditions
-
-**Dual controller pattern** for most entities:
-- Public controller at `/api/{resource}` — read-only GET endpoints, no auth required
-- Admin controller at `/api/admin/{resource}` — full CRUD, annotated `@PreAuthorize("hasRole('ADMIN')")`
-
-**Security flow**:
-1. `/api/auth/login` → validates credentials (BCrypt) → returns JWT token
-2. All subsequent requests: `Authorization: Bearer <token>` header
-3. `JwtAuthFilter` extracts token, validates, sets `SecurityContext` with userId/username/role
-4. `/api/admin/**` requires ADMIN role; GET on public `/api/**` is permitAll; POST on `/api/comments/**` and `/api/treeholes/**` is also permitAll
-5. Stateless sessions (`SessionCreationPolicy.STATELESS`), CSRF disabled
-
-**Logic delete**: All entities use MyBatis-Plus `@TableLogic` — `deleted=0` (not deleted), `deleted=1` (deleted). `deleteById()` performs soft delete automatically.
-
-**Database initialization**: `DataInitializer` creates default admin user (`admin`/`admin123`) and sample categories on first startup.
-
-### Frontend (Vue 3)
-
-**Request flow** — `request.js` wraps axios:
-1. `baseURL: '/api'` — proxied by Vite to `localhost:8081`
-2. Request interceptor: attaches `Authorization: Bearer <token>` from localStorage
-3. Response interceptor: unwraps response → if `data.code === 200`, returns `data.data` directly; on 401/403, clears auth and redirects to `/admin/login`
-
-**All API functions in `modules.js`** are exported as named objects grouped by domain:
-```js
-export const articleApi = { list, getById, create, update, delete }
-export const authApi = { login, register, logout }
-// ... etc.
-```
-Callers use them as: `await articleApi.list({ page: 1, size: 10, categoryId: 5 })`
-
-**Routing**: Two layout trees
-- `PublicLayout` wraps: Home, ArticleDetail, Family, TreeHole, Essay, Record
-- `AdminLayout` wraps: Dashboard, CRUD management pages (requires auth via `router.beforeEach` + token check)
-
-**State management** — Pinia stores:
-- `user.js`: token, user object, `login()`/`logout()` actions, computed getters (isAdmin, isLoggedIn, nickname, username)
-- `app.js`: app config, webInfo (site name, background, avatar, randomCover, etc.), dark mode (manual toggle via localStorage only), toolbar visibility
-
-**Typography** — Google Fonts loaded in `index.html`:
-- `Noto Sans SC` (weights 400–900): primary body font for all content
-- `ZCOOL XiaoWei`: decorative font (minimal usage)
-- All feed-style pages use `font-style: italic` for a casual, handwritten feel
+- **Axios**: `baseURL: '/api'`, Bearer token interceptor, unwraps `data.data` on success
+- **State**: Pinia stores — `user.js` (auth), `app.js` (config, bgImages, dark mode)
+- **Routing**: `PublicLayout` wraps public pages, `AdminLayout` wraps admin (auth guard)
+- **Backgrounds**: `usePageBackground(key)` composable — ref-based with random pick from JSON array, reactive to config changes
+- **Settings.vue**: Card-based layout, per-page multi-image background management with preview
+- No `Math.random()` in computed properties (all use refs with explicit triggers)
 
 ---
 
-## Page Design Details
+## Environment Configuration
 
-### Home (`/home`) — `Home.vue`
-- 2-column layout: sidebar (glass-morphism info card) + 3-column article grid
-- Article cards: cover image on top, transparent background, hover-triggered glass effect (rgba white + blur)
-- Cards: `border-radius: 14px`, hover lifts 3px with shadow
-- Responsive: ≤1200px 2-col grid, ≤768px single column
+### .env.local (本地开发，gitignored)
+```bash
+DB_ROOT_PASSWORD=xxx    DB_USERNAME=root    DB_PASSWORD=xxx
+REDIS_PASSWORD=         JWT_SECRET=xxx
+MAIL_HOST=smtp.qq.com   MAIL_USERNAME=xxx   MAIL_PASSWORD=xxx
+NGINX_PORT=8080         MYSQL_PORT=3306      REDIS_PORT=6379
+```
 
-### Essay (`/essay`) — `Essay.vue` — WeChat Moments style
-- Full-viewport hero banner with background image
-- Linear feed layout, max-width 680px
-- Each item: square avatar (48px, 8px radius) + username (19px, italic, #3d5a99) + relative time + content + tags
-- Inline comment section with gray background (#f5f5f5)
-- FAB add button for admins (fixed bottom-right)
-- Font: Noto Sans SC with `font-style: italic`
+### application.yml (parameterized, no hardcoded secrets)
+```yaml
+spring.datasource.url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/lune
+spring.datasource.password: ${DB_PASSWORD:}    # no default fallback
+app.jwt.secret: ${JWT_SECRET:}                 # no default fallback
+app.upload.path: ${UPLOAD_PATH:./upload}
+app.admin.default-password: ${ADMIN_DEFAULT_PASSWORD:admin123}
+```
 
-### TreeHole (`/treehole`) — `TreeHole.vue` — Full-screen danmaku
-- **Upper section (100vh)**: Full-screen background image (random from site config `randomCover`), dark overlay, CSS-animated danmaku messages floating right-to-left across 6 lanes
-- Centered input area: title "树洞" + text input + "发射" button
-- Scroll-down hint arrow, clicking scrolls to timeline
-- **Lower section**: Alternating left/right timeline bubbles with colored backgrounds, center line, date/footer
-- Messages sync between danmaku and timeline
-
-### Record (`/record`) — `Record.vue` — QQ Moments style
-- Full-viewport hero banner with background image
-- Category tag chips (centered, with active highlight)
-- Feed layout, max-width 760px
-- Each card: avatar (53px, 8px radius) + nickname + content + media grid + category tag + relative time (bottom-right)
-- **Media support**: parses `media` JSON field:
-  - Images: responsive grid (1→full, 2→side-by-side, 3→L-shape, 4→2×2, 5+→3 columns)
-  - Video: HTML5 `<video>` player
-  - Legacy `cover` field as fallback
-- Cards: `border-radius: 14px`, transparent bg, hover glass effect
-- Font: Noto Sans SC with `font-style: italic`
-
-### Family (`/family`)
-- Family member profiles with blessing board (POST `/api/comments` with type `family`)
+### Profiles
+- `application-dev.yml`: Docker hostnames (mysql/redis), DEBUG logging
+- `application-prod.yml`: Connection pooling, graceful shutdown, WARN logging
+- `application-local.yml` (gitignored): mail overrides via env vars
 
 ---
 
-## Configuration
+## Background Image System
 
-### application.yml key settings
-| Setting | Value |
-|---------|-------|
-| Server port | `8081` |
-| DB URL | `jdbc:mysql://localhost:3306/lune` |
-| DB credentials | `${DB_USERNAME:root}` / `${DB_PASSWORD:zt921921}` |
-| Redis | `${REDIS_HOST:localhost}:${REDIS_PORT:6379}` |
-| JWT secret | `${JWT_SECRET:lune-jwt-secret-key-change-in-production-min-256bits}` |
-| JWT expiration | `86400000` (24 hours) |
-| Upload path | `${UPLOAD_PATH:./upload}` |
-| Max upload size | `100MB` |
+Each page section has a dedicated `site_config` key storing a JSON array of image URLs:
 
-### Vite proxy
-| Frontend path | Proxied to |
-|--------------|------------|
-| `/api` | `http://localhost:8081` |
-| `/upload` | `http://localhost:8081` |
+| Config Key | Page Section |
+|------------|-------------|
+| `landing_bg` | Landing 页 |
+| `home_hero_bg` | 首页顶部 Banner |
+| `home_content_bg` | 首页内容区 |
+| `family_hero_bg` | 家页顶部 Banner |
+| `family_content_bg` | 家页内容区 |
+| `treehole_danmaku_bg` | 树洞弹幕区 |
+| `treehole_content_bg` | 树洞时间线 |
+| `essay_hero_bg` | 随笔顶部 Banner |
+| `essay_content_bg` | 随笔内容区 |
+| `record_hero_bg` | 记录顶部 Banner |
+| `record_content_bg` | 记录内容区 |
+
+Value format: `["/upload/xxx.jpg", "/upload/yyy.png"]`
+
+Each page uses `const bg = usePageBackground('key')` → returns `ref<string>` with random image picked from array on config change.
 
 ---
 
 ## How to Run
 
-### Backend
+### Docker (推荐)
 ```bash
-cd lune-server/lune-web
-# Requires: Java 17, MySQL (database: lune), Redis
-# Default admin: admin / admin123
-mvn spring-boot:run
-# Runs on http://localhost:8081
+# 本地开发
+cp .env.local.template .env.local   # 编辑填入凭据
+make dev                             # http://localhost:8080
+
+# 服务器生产
+bash deploy.sh --prod                # 一键部署
 ```
 
-### Frontend
+### 裸机（不推荐）
 ```bash
-cd lune-ui
-npm install
-npm run dev
-# Runs on http://localhost:5173
+cd lune-server/lune-web && mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd lune-ui && npm install && npm run dev
 ```
 
-### Database
-SQL schema is at `lune-server/lune-web/src/main/resources/sql/lune.sql`.
+Default admin: `admin` / `admin123` (可配置 `ADMIN_DEFAULT_PASSWORD`)
+
+---
+
+## Docker Services
+
+| Service | Dev Port | Prod Port | Image |
+|---------|----------|-----------|-------|
+| nginx | 8080 | 80 | nginx:1.27-alpine (prod: 含前端构建) |
+| backend | 8081 | 127.0.0.1:8081 | eclipse-temurin:17-jre-alpine |
+| mysql | 3306 | 127.0.0.1:3306 | mysql:8.0 |
+| redis | 6379 | 127.0.0.1:6379 | redis:7-alpine |
+| frontend (dev) | 5173 | — | node:20-alpine (Vite HMR) |
+
+---
+
+## Database
+
+- SQL schema: `lune-server/lune-web/src/main/resources/sql/lune.sql`
+- Docker init: `docker/mysql/init/01-init.sql`
+- `DataInitializer.java` auto-creates admin user + categories + site configs on empty DB
+- `user.email` has `UNIQUE` constraint
+- Backup: `make backup` or `bash backup.sh --cron` (daily at 3am)
 
 ---
 
 ## Key Conventions
 
-- **Use constructor injection** (not `@Autowired`) — all service and controller classes use `private final` fields with constructor injection
-- **Use `var` for local variables** in service implementations (Java 17)
-- **Use Lombok `@Data`** on all entities
-- **MyBatis-Plus `LambdaQueryWrapper`** for all queries — type-safe, no magic strings
-- **No XML mappers** needed — all queries are LambdaQueryWrapper-based; `mapper-locations` is configured but currently no XML files exist
-- **Admin UIs follow a pattern**: Each `XxxManage.vue` has a table listing + dialog for create/edit, calls the corresponding API module
-- **Static assets** are in `lune-ui/public/assets/` (fonts, logos, background images) and `lune-ui/public/upload/` (user-uploaded images)
-- **Frontend styles**: Three CSS files in `assets/styles/` — `variables.css` (CSS custom properties), `global.css` (base styles), `animations.css`
-- **Feed-style pages** (Essay, Record, TreeHole) share common patterns: hero banner with bg-image+overlay, Noto Sans SC italic typography, centered max-width container, rounded cards with glass hover effect
-
-## Business Domains
-
-| Module | Path prefix | Description |
-|--------|-----------|-------------|
-| Auth | `/api/auth` | Login, register, logout |
-| Article | `/api/articles` | Blog articles with categories, tags |
-| Category | `/api/categories` | Categories filterable by type (article/record) |
-| Comment | `/api/comments` | Comments (article, essay, family) — POST is permitAll |
-| Essay | `/api/essays` | Short essays with weather/mood tags |
-| Record | `/api/records` | QQ Moments-style feed with text/images/video |
-| TreeHole | `/api/treeholes` | Anonymous danmaku + timeline — POST is permitAll |
-| Family | `/api/family` | Friends/family member profiles |
-| SiteConfig | `/api/site-config` | Key-value site settings (name, background, randomCover, etc.) |
-| Resource | `/api/admin/resources` | File upload/management (admin only) |
-| User | `/api/admin/users` | User management (admin only) |
+- No hardcoded credentials in source code — all via env vars
+- Sensitive files (`.env`, `.env.local`, `application-local.yml`) are gitignored
+- Templates (`.env.template`, `.env.local.template`, `application-local.yml.template`) are committed
+- `Math.random()` never inside `computed()` — always in `ref` + explicit trigger
+- All `setInterval`/event listeners cleaned up in `onUnmounted`
+- Atomic SQL updates for counters (avoid race conditions)
+- File uploads validated (extension whitelist + size limit)

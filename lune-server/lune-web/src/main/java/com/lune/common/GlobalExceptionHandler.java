@@ -42,6 +42,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<?> handleException(Exception e) {
         log.error("未捕获的异常", e);
         return Result.fail("服务器内部错误，请稍后重试");

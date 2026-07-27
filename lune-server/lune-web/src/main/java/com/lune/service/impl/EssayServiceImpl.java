@@ -74,7 +74,7 @@ public class EssayServiceImpl implements EssayService {
         essay.setUserId(SecurityUtils.getCurrentUserId());
         essay.setStatus(1);
         essayMapper.insert(essay);
-        var user = userMapper.selectById(1L);
+        var user = userMapper.selectById(essay.getUserId());
         if (user != null) {
             essay.setUsername(user.getUsername());
             essay.setNickname(user.getNickname());

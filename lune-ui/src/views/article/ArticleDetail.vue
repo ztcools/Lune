@@ -289,13 +289,13 @@ const currentPage = ref(1)
 const pageSize = 10
 const replyTarget = ref(null)
 
-const randomCover = computed(() => {
+const randomCover = ref('')
+watch(() => appStore.webInfo.randomCover, (val) => {
   try {
-    const covers = JSON.parse(appStore.webInfo.randomCover || '[]')
-    if (covers.length > 0) return covers[Math.floor(Math.random() * covers.length)]
-  } catch (e) { /* ignore */ }
-  return ''
-})
+    const covers = JSON.parse(val || '[]')
+    randomCover.value = covers.length > 0 ? covers[Math.floor(Math.random() * covers.length)] : ''
+  } catch { randomCover.value = '' }
+}, { immediate: true })
 
 const categoryLabel = computed(() => {
   if (!article.value) return ''
