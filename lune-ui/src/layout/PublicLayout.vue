@@ -2,7 +2,7 @@
   <div class="public-layout">
     <transition name="el-fade-in-linear">
       <div
-        v-show="appStore.toolbar.visible"
+        v-show="appStore.toolbar.visible && !isLanding"
         :class="{ enter: appStore.toolbar.enter }"
         class="toolbar-content myBetween"
       >
@@ -65,10 +65,10 @@
     </transition>
 
     <main class="main-container">
-      <router-view />
+      <router-view :key="$route.fullPath" />
     </main>
 
-    <footer class="site-footer">
+    <footer v-if="!isLanding" class="site-footer">
       <div class="footer-inner">
         <p>{{ appStore.webInfo.footer || '© 2024 Lune. All Rights Reserved.' }}</p>
       </div>
@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, provide } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '../stores/app'
 import { useUserStore } from '../stores/user'
@@ -119,6 +119,8 @@ import { setLoginCardTrigger } from '../composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
+
+const isLanding = computed(() => route.name === 'Landing')
 
 function goHome() {
   if (route.path === '/') return

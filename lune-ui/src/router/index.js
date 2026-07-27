@@ -3,13 +3,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   {
     path: '/',
-    name: 'Landing',
-    component: () => import('../views/landing/Landing.vue')
-  },
-  {
-    path: '/',
     component: () => import('../layout/PublicLayout.vue'),
     children: [
+      { path: '', name: 'Landing', component: () => import('../views/landing/Landing.vue') },
       { path: 'home', name: 'Home', component: () => import('../views/home/Home.vue') },
       { path: 'article/:id', name: 'ArticleDetail', component: () => import('../views/article/ArticleDetail.vue') },
       { path: 'family', name: 'Family', component: () => import('../views/family/Family.vue') },

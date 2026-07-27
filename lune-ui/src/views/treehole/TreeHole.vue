@@ -1,8 +1,9 @@
 <template>
   <div class="treehole-page">
+    <div class="page-bg" :style="{ backgroundImage: `url(${danmakuBg})` }"></div>
+
     <!-- ====== Full-screen Danmaku Section ====== -->
     <div class="danmaku-section">
-      <div class="bg-image" :style="{ backgroundImage: `url(${danmakuBg})` }"></div>
       <div class="bg-overlay"></div>
 
       <!-- Danmaku floating messages -->
@@ -48,7 +49,6 @@
 
     <!-- ====== Timeline Section ====== -->
     <div class="timeline-section" ref="timelineRef">
-      <div class="bg-image" :style="{ backgroundImage: `url(${timelineBg})` }" v-if="timelineBg" />
       <div class="timeline-wrapper my-animation-hideToShow">
         <div class="tree-hole-container">
           <ol class="tree-hole-list" v-if="treeHoleList.length > 0">
@@ -187,7 +187,6 @@ const appStore = useAppStore()
 const danmakuList = ref([])
 const danmakuContent = ref('')
 const danmakuBg = usePageBackground('treeholeDanmaku')
-const timelineBg = usePageBackground('treeholeContent')
 
 // --- timeline state ---
 const treeHoleList = ref([])
@@ -361,28 +360,18 @@ function formatDate(d) {
 
 <style scoped>
 /* ====== Full-screen Danmaku Section ====== */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+}
 .danmaku-section {
   position: relative;
   width: 100%;
   height: 100vh;
   overflow: hidden;
-}
-.danmaku-section::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: linear-gradient(to bottom, transparent, var(--background));
-  z-index: 5;
-  pointer-events: none;
-}
-.bg-image {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
 }
 .bg-overlay {
   position: absolute;
@@ -555,7 +544,8 @@ function formatDate(d) {
 }
 
 .timeline-wrapper {
-  background: var(--background);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
   padding: 20px;
 }
 
@@ -909,5 +899,5 @@ function formatDate(d) {
     border-width: 15px 10px 5px 0 !important;
   }
 }
-.bg-image.content-bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; opacity: 0.12; }
+
 </style>
