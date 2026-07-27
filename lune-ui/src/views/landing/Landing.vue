@@ -4,7 +4,6 @@
     <el-image
       style="animation: header-effect 2s"
       class="background-image-index"
-      v-once
       lazy
       :src="coverImage"
       fit="cover"
@@ -66,7 +65,8 @@ const coverImage = usePageBackground('landing')
 
 let typingTimer = null
 
-onMounted(() => {
+onMounted(async () => {
+  await appStore.fetchConfig()
   // 标题拆分
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
 

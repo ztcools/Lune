@@ -4,7 +4,6 @@
     <el-image
       style="animation: header-effect 2s"
       class="background-image-index"
-      v-once
       lazy
       :src="bgImage"
       fit="cover"
@@ -491,7 +490,7 @@ onUnmounted(() => {
 .background-image-index {
   width: 100vw;
   height: 50vh;
-  position: fixed;
+  position: absolute;
   z-index: -1;
 }
 .background-image-index::before {
@@ -505,7 +504,7 @@ onUnmounted(() => {
   background-color: var(--lightGreen);
   width: 100vw;
   height: 50vh;
-  position: fixed;
+  position: absolute;
   z-index: -1;
 }
 
@@ -566,8 +565,8 @@ onUnmounted(() => {
 }
 /* Blurred background image layer */
 .bg-blur-layer {
-  position: fixed;
-  top: 50vh;
+  position: absolute;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;

@@ -29,10 +29,8 @@
             placeholder="留下点什么啦~"
             maxlength="60"
             @keyup.enter="sendDanmaku"
-            @focus="showSendBtn = true"
           />
           <button
-            v-show="showSendBtn"
             class="danmaku-send-btn"
             @click="sendDanmaku"
           >发射</button>
@@ -188,7 +186,6 @@ const appStore = useAppStore()
 // --- danmaku state ---
 const danmakuList = ref([])
 const danmakuContent = ref('')
-const showSendBtn = ref(false)
 const danmakuBg = usePageBackground('treeholeDanmaku')
 const timelineBg = usePageBackground('treeholeContent')
 
@@ -222,20 +219,11 @@ onMounted(() => {
 
   fetchDanmaku()
   fetchTreeHoles()
-
-  // Hide send button when clicking outside
-  document.addEventListener('click', onDocumentClick)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', onDocumentClick)
+  window.removeEventListener('resize', checkMobile)
 })
-
-function onDocumentClick(e) {
-  if (!e.target.closest('.danmaku-input-row')) {
-    showSendBtn.value = false
-  }
-}
 
 // --- Danmaku ---
 function makeDanmakuStyle(index) {
@@ -285,7 +273,6 @@ async function sendDanmaku() {
       style: makeDanmakuStyle(danmakuList.value.length)
     })
     danmakuContent.value = ''
-    showSendBtn.value = false
     // Refresh timeline
     page.value = 1
     await fetchTreeHoles()

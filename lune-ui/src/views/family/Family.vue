@@ -314,13 +314,6 @@ function sendHeart(from) {
   setTimeout(() => { flyingHeart.value = null }, 1200)
 }
 
-function meteorStyle(i) {
-  const left = Math.random() * 100
-  const delay = Math.random() * 8
-  const dur = 2 + Math.random() * 4
-  const top = Math.random() * 60
-  return { left: left + '%', top: top + '%', animationDelay: delay + 's', animationDuration: dur + 's' }
-}
 
 function formatFullDate(d) {
   if (!d) return ''

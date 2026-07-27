@@ -44,7 +44,7 @@
             <el-avatar
               class="feed-avatar"
               :size="53"
-              :src="item.avatar || appStore.webInfo.avatar"
+              :src="item.avatar || appStore.ownerInfo.avatar"
             >{{ (item.nickname || item.username || 'L').charAt(0) }}</el-avatar>
             <span class="feed-nickname">{{ item.nickname || item.username || 'Lune' }}</span>
           </div>
@@ -120,6 +120,7 @@
       </div>
       <div v-else-if="recordList.length > 0" class="pagination-wrap">
         <span class="pagination-end">— THE END —</span>
+      </div>
       </div>
     </div>
   </div>
