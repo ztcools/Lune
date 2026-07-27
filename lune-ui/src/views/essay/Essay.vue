@@ -63,7 +63,7 @@
             </div>
 
             <!-- Inline comments (Douyin style) -->
-            <div v-if="currentEssay && essay.id === currentEssay.id" class="moment-comments">
+            <div v-if="expandedEssayId === essay.id" class="moment-comments">
               <div class="comments-list">
                 <div v-if="!essayComments.length" class="comment-empty">暂无评论，来说点什么吧</div>
                 <div v-for="c in essayComments" :key="c.id" class="comment-item">
@@ -159,7 +159,7 @@ const userStore = useUserStore()
 const appStore = useAppStore()
 
 const essayList = ref([])
-const currentEssay = ref(null)
+const expandedEssayId = ref(null)
 const essayComments = ref([])
 const commentText = ref({})
 const pagination = ref({ current: 1, size: 10 })
@@ -195,7 +195,7 @@ async function fetchEssays(reset = false) {
         if (c.weather) c.weather = getWeatherEmoji(c.weather)
         if (c.mood) c.mood = getMoodEmoji(c.mood)
       })
-      if (reset) { pagination.value.current = 1; essayList.value = []; currentEssay.value = null }
+      if (reset) { pagination.value.current = 1; essayList.value = []; expandedEssayId.value = null }
       essayList.value = essayList.value.concat(data.records)
       total.value = data.total
       fetchCommentCounts()
@@ -233,12 +233,15 @@ function loadMore() {
   if (total.value > essayList.value.length) { pagination.value.current++; fetchEssays() }
 }
 function toggleComment(essay) {
-  if (currentEssay.value && currentEssay.value.id === essay.id) { currentEssay.value = null; essayComments.value = [] }
-  else { currentEssay.value = essay; fetchComments(essay.id) }
+  if (expandedEssayId.value === essay.id) { expandedEssayId.value = null; essayComments.value = [] }
+  else { expandedEssayId.value = essay.id; fetchComments(essay.id) }
 }
 async function fetchComments(sourceId) {
   try { const data = await commentApi.list({ sourceId: sourceId, type: 'essay' }); essayComments.value = data?.records || data || []
-    if (currentEssay.value) currentEssay.value._cc = essayComments.value.length
+    if (expandedEssayId.value) {
+      const target = essayList.value.find(e => e.id === expandedEssayId.value)
+      if (target) target._cc = essayComments.value.length
+    }
   } catch (e) { essayComments.value = [] }
 }
 async function submitComment(essay) {
