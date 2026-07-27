@@ -109,7 +109,7 @@
               <div v-for="(article, index) in recommendArticles" :key="'rec' + index" @click="readerArticleId = article.id">
                 <div class="aside-post-detail">
                   <div class="aside-post-image">
-                    <el-image lazy class="my-el-image" :src="article.cover || '/assets/背景1.jpg'" fit="cover">
+                    <el-image lazy class="my-el-image" :src="article.cover || ''" fit="cover">
                       <div slot="error" class="image-slot"><div class="error-aside-image">{{ article.title }}</div></div>
                     </el-image>
                   </div>
@@ -169,7 +169,7 @@
                     @click="readerArticleId = article.id"
                   >
                     <div class="article-cover-wrap">
-                      <el-image lazy class="article-cover-img" :src="article.cover || '/assets/背景1.jpg'" fit="cover">
+                      <el-image lazy class="article-cover-img" :src="article.cover || ''" fit="cover">
                         <div slot="error" class="image-slot article-cover-error">{{ article.title }}</div>
                       </el-image>
                     </div>
@@ -202,7 +202,7 @@
                 @click="readerArticleId = article.id"
               >
                 <div class="article-cover-wrap">
-                  <el-image lazy class="article-cover-img" :src="article.cover || '/assets/背景1.jpg'" fit="cover">
+                  <el-image lazy class="article-cover-img" :src="article.cover || ''" fit="cover">
                     <div slot="error" class="image-slot article-cover-error">{{ article.title }}</div>
                   </el-image>
                 </div>

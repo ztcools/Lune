@@ -45,11 +45,11 @@
 
             <!-- Actions -->
             <div class="moment-actions">
-              <div class="moment-comment-toggle" @click="toggleComment(essay)">
-                <svg viewBox="0 0 1024 1024" width="18" height="18" style="vertical-align: -3px; margin-right: 4px;">
+              <div class="moment-comment-toggle" @click.stop="toggleComment(essay)">
+                <svg viewBox="0 0 1024 1024" width="18" height="18" style="vertical-align: -3px; margin-right: 4px; pointer-events: none;">
                   <path d="M512 82.464153c-244.63772 0-442.955484 171.85302-442.955484 383.832945 0 125.44199 69.434395 236.8258 176.814008 306.863946-0.502443 56.870242 0.00307 168.373779 0.00307 168.373779s107.36938-70.083172 159.796426-102.527095c34.066887 7.272637 69.684082 11.135618 106.34198 11.135618 244.63772 0 442.955484-171.85302 442.955484-383.846248C954.955484 254.318196 756.63772 82.464153 512 82.464153z" fill="#999"/>
                 </svg>
-                <span>{{ essay._cc || 0 }}</span>
+                <span style="pointer-events: none;">{{ essay._cc || 0 }}</span>
               </div>
               <span
                 v-if="userStore.isLoggedIn && userStore.user?.userId === essay.userId"

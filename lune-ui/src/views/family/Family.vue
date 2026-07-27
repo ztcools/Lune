@@ -71,7 +71,11 @@
     <div v-show="activeTab === 'painting'" class="painting-card">
       <div class="painting-inner">
         <div class="painting-frame">
-          <el-image src="" class="painting-img" alt="世界名画" v-if="false" />
+          <el-image :src="paintingUrl" class="painting-img" fit="cover">
+            <template #error>
+              <div class="painting-fallback"></div>
+            </template>
+          </el-image>
           <div class="painting-vignette" />
           <div class="painting-label">世界名画</div>
         </div>
@@ -160,13 +164,14 @@ import SakuraFall from '../../components/SakuraFall.vue'
 
 const familyHeroBg = usePageBackground('familyHero')
 const familyContentBg = usePageBackground('familyContent')
+const paintingUrl = ref('https://picsum.photos/seed/love/800/600')
 
 function randomAvatar(i) { return '' }
 function randomNick() { const nicks=['小星星','月亮船','阳光','微风','彩虹糖','云朵','海浪','樱花','蒲公英','小太阳']; return nicks[Math.floor(Math.random()*nicks.length)] }
 
 const userStore = useUserStore()
-const defaultMan = ''
-const defaultWoman = ''
+const defaultMan = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#5b8cce" width="100" height="100"/><circle cx="50" cy="38" r="18" fill="#fff" opacity="0.9"/><ellipse cx="50" cy="85" rx="28" ry="18" fill="#fff" opacity="0.9"/></svg>')
+const defaultWoman = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#e88ba8" width="100" height="100"/><circle cx="50" cy="38" r="18" fill="#fff" opacity="0.9"/><path d="M28 65 Q50 55 72 65 L72 88 L28 88 Z" fill="#fff" opacity="0.9"/></svg>')
 
 // Family
 const family = ref({})
@@ -411,6 +416,11 @@ function formatFullDate(d) {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 0 0 8px #f5e6d3, 0 0 0 10px #c8a882, 0 0 0 18px #f5e6d3;
 }
 .painting-img { width: 100%; min-height: 55vh; max-height: 65vh; object-fit: cover; display: block; filter: sepia(0.2) brightness(0.95); }
+.painting-fallback {
+  width: 100%; min-height: 55vh;
+  background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c0 25%, #d4a574 50%, #c8a08c 75%, #f5e6d3 100%);
+  background-size: 400% 400%; animation: gradientBG 8s ease infinite;
+}
 .painting-vignette {
   position: absolute; inset: 0;
   box-shadow: inset 0 0 80px rgba(0,0,0,0.4);
