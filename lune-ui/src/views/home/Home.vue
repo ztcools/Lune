@@ -298,6 +298,7 @@ const currentLyric = ref('')
 const lyricIdx = ref(0)
 let audioCtx = null
 let progressTimer = null
+let typewriterTimer = null
 
 // Pentatonic scale melodies (C D E G A)
 const pentatonic = [262, 294, 330, 392, 440, 523, 587, 659, 784, 880]
@@ -397,8 +398,9 @@ function formatDate(d) {
 }
 function startTypewriter() {
   const text = fullPrinterText.value
-  let i = 0, forward = true, pauseCount = 0, typewriterTimer = null
+  let i = 0, forward = true, pauseCount = 0
   const PAUSE_FRAMES = 30
+  clearInterval(typewriterTimer)
   typewriterTimer = setInterval(() => {
     if (forward) {
       printerText.value = text.slice(0, i + 1); i++

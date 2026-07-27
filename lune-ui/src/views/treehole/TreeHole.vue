@@ -361,7 +361,7 @@ function formatDate(d) {
 <style scoped>
 /* ====== Full-screen Danmaku Section ====== */
 .page-bg {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background-size: cover;
   background-position: center;

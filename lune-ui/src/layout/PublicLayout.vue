@@ -65,7 +65,7 @@
     </transition>
 
     <main class="main-container">
-      <router-view :key="$route.fullPath" />
+      <router-view />
     </main>
 
     <footer v-if="!isLanding" class="site-footer">
