@@ -258,22 +258,16 @@ async function fetchDanmaku() {
 async function sendDanmaku() {
   const text = danmakuContent.value.trim()
   if (!text) return
-  if (!userStore.isLoggedIn) {
-    if (!requireLogin()) return
-    return
-  }
   try {
     const res = await treeHoleApi.create({ content: text, isPublic: true })
-    // Add to danmaku locally
     danmakuList.value.push({
       id: res?.id || Date.now(),
       text: text,
-      avatar: res?.avatar || userStore.user?.avatar,
-      nickname: res?.nickname || userStore.nickname,
+      avatar: res?.avatar || '',
+      nickname: res?.nickname || '匿名',
       style: makeDanmakuStyle(danmakuList.value.length)
     })
     danmakuContent.value = ''
-    // Refresh timeline
     page.value = 1
     await fetchTreeHoles()
     ElMessage.success('发射成功！')
@@ -307,10 +301,6 @@ async function fetchTreeHoles() {
 
 async function submitWeiYan() {
   if (!content.value.trim()) return
-  if (!userStore.isLoggedIn) {
-    if (!requireLogin()) return
-    return
-  }
   posting.value = true
   try {
     await treeHoleApi.create({ content: content.value, isPublic: true })
@@ -319,7 +309,6 @@ async function submitWeiYan() {
     dialogVisible.value = false
     page.value = 1
     await fetchTreeHoles()
-    // Also refresh danmaku
     await fetchDanmaku()
   } catch (e) {
     ElMessage.error('发布失败')
@@ -357,10 +346,6 @@ function handlePageChange(p) {
 }
 
 function openDialog() {
-  if (!userStore.isLoggedIn) {
-    if (!requireLogin()) return
-    return
-  }
   dialogVisible.value = true
 }
 
@@ -381,6 +366,17 @@ function formatDate(d) {
   width: 100%;
   height: 100vh;
   overflow: hidden;
+}
+.danmaku-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--background));
+  z-index: 5;
+  pointer-events: none;
 }
 .bg-image {
   position: absolute;

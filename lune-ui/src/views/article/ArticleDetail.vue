@@ -246,7 +246,7 @@
       center
     >
       <div class="copyright-dialog-body">
-        <el-avatar shape="square" :size="35" :src="appStore.webInfo.avatar" />
+        <el-avatar shape="square" :size="35" :src="appStore.ownerInfo.avatar" />
         <div class="copyright-text">
           <p>{{ appStore.webInfo.webName }}的网站版权声明：</p>
           <ul>
@@ -264,7 +264,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Loading, Close, UserFilled, ChatLineSquare } from '@element-plus/icons-vue'
+import { Loading, Close, ChatLineSquare } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
 import { articleApi, commentApi } from '../../api/modules'
@@ -290,12 +290,10 @@ const pageSize = 10
 const replyTarget = ref(null)
 
 const randomCover = ref('')
-watch(() => appStore.webInfo.randomCover, (val) => {
-  try {
-    const covers = JSON.parse(val || '[]')
-    randomCover.value = covers.length > 0 ? covers[Math.floor(Math.random() * covers.length)] : ''
-  } catch { randomCover.value = '' }
-}, { immediate: true })
+const coverPool = [
+  '/assets/背景1.jpg', '/assets/背景2.jpg', '/assets/背景3.jpg', '/assets/背景4.jpg'
+]
+randomCover.value = coverPool[Math.floor(Math.random() * coverPool.length)]
 
 const categoryLabel = computed(() => {
   if (!article.value) return ''

@@ -155,11 +155,9 @@ function onScrollPage() {
   oldScrollTop = scrollTop
   scrollTop = document.documentElement.scrollTop || document.body.scrollTop
   const enter = scrollTop > window.innerHeight / 2
-  const top = scrollTop - oldScrollTop < 0
   const isShow = scrollTop - window.innerHeight > 30
   showBackTop.value = isShow
-  const toolbarStatus = { enter: enter, visible: top }
-  appStore.changeToolbarStatus(toolbarStatus)
+  appStore.changeToolbarStatus({ enter: enter, visible: true })
 }
 
 function scrollToTop() {
@@ -194,9 +192,9 @@ async function handleLogout() {
 
 const checkMobile = () => { appStore.mobile = document.body.clientWidth < 1100 }
 
-onMounted(async () => {
+onMounted(() => {
   appStore.initDarkMode()
-  await appStore.fetchConfig()
+  appStore.fetchConfig()
   window.addEventListener('scroll', onScrollPage)
   document.addEventListener('click', handleClickOutside)
   checkMobile()

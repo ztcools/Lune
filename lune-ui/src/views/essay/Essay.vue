@@ -152,7 +152,6 @@ import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
 import { useAppStore } from '../../stores/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { UserFilled } from '@element-plus/icons-vue'
 import { requireLogin } from '../../composables/useAuth'
 import MiniProfileCard from '../../components/MiniProfileCard.vue'
 

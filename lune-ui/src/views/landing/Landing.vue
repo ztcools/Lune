@@ -65,9 +65,8 @@ const coverImage = usePageBackground('landing')
 
 let typingTimer = null
 
-onMounted(async () => {
-  await appStore.fetchConfig()
-  // 标题拆分
+onMounted(() => {
+  appStore.fetchConfig()
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
 
   // 打字机效果（渐进打出，然后回退）
