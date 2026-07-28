@@ -13,6 +13,8 @@ public class Essay {
     private String title;
     private String content;
     private String cover;
+    /** 媒体附件 JSON [{type:image|video, url}]，朋友圈式混排 */
+    private String media;
     private String weather;
     private String mood;
     private String location;

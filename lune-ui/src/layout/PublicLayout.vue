@@ -1,5 +1,12 @@
 <template>
   <div class="public-layout">
+    <!-- 全局装饰：柔和聚光灯 + 飘落花瓣 + 路过的小狗（移动端隐藏以省性能） -->
+    <template v-if="!isLanding && !appStore.mobile">
+      <Spotlight />
+      <FloatPetals type="leaf" :count="10" />
+      <WalkingDog />
+    </template>
+
     <transition name="el-fade-in-linear">
       <div
         v-show="appStore.toolbar.visible && !isLanding"
@@ -32,6 +39,9 @@
             </li>
             <li @click="$router.push({ path: '/record' })" :class="{ active: route.path === '/record' }">
               <div class="my-menu">📒 <span>记录</span></div>
+            </li>
+            <li @click="$router.push({ path: '/wish' })" :class="{ active: route.path === '/wish' }">
+              <div class="my-menu">🌠 <span>许愿池</span></div>
             </li>
             <li v-if="userStore.isAdmin" @click="goAdmin()">
               <div class="my-menu">💻️ <span>后台</span></div>
@@ -68,11 +78,12 @@
       <router-view />
     </main>
 
-    <footer v-if="!isLanding" class="site-footer">
-      <div class="footer-inner">
-        <p>{{ appStore.webInfo.footer || '© 2024 Lune. All Rights Reserved.' }}</p>
-      </div>
-    </footer>
+    <!-- 非 Landing 页：可爱的"到底啦"提示，无版权页脚 -->
+    <div v-if="!isLanding" class="cute-footer">
+      <span class="cute-footer-line"></span>
+      <span class="cute-footer-text">{{ cuteFooterText }}</span>
+      <span class="cute-footer-line"></span>
+    </div>
 
     <div class="toolButton">
       <div v-if="showBackTop" class="backTop" @click="scrollToTop()">
@@ -91,6 +102,8 @@
           <li @click="smallMenu('/treehole')"><div>🌳 <span>树洞</span></div></li>
           <li @click="smallMenu('/essay')"><div>🏖️ <span>随笔</span></div></li>
           <li @click="smallMenu('/record')"><div>📒 <span>记录</span></div></li>
+          <li @click="smallMenu('/wish')"><div>🌠 <span>许愿池</span></div></li>
+          <li @click="smallMenu('/resume')"><div>🌿 <span>简历</span></div></li>
           <li v-if="userStore.isAdmin" @click="goAdmin()"><div>💻️ <span>后台</span></div></li>
           <template v-if="!userStore.isLoggedIn">
             <li @click="smallMenuLogin()"><div><i class="fa fa-sign-in" aria-hidden="true"></i><span>&nbsp;登录</span></div></li>
@@ -115,12 +128,19 @@ import { useAppStore } from '../stores/app'
 import { useUserStore } from '../stores/user'
 import LoginCard from '../components/LoginCard.vue'
 import ProfileCard from '../components/ProfileCard.vue'
+import Spotlight from '../components/effects/Spotlight.vue'
+import FloatPetals from '../components/effects/FloatPetals.vue'
+import WalkingDog from '../components/effects/WalkingDog.vue'
 import { setLoginCardTrigger } from '../composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
 
 const isLanding = computed(() => route.name === 'Landing')
+
+// 可爱的"到底啦"提示（随机一条）
+const cuteTexts = ['～ 到底啦，去别处逛逛吧 ～', '🌸 被你发现啦，这里是最底部 🌸', '～ 到底啦，喝口水休息下 ～', '🍃 到底啦，风把秘密都吹走啦 🍃']
+const cuteFooterText = cuteTexts[Math.floor(Math.random() * cuteTexts.length)]
 
 function goHome() {
   if (route.path === '/') return
@@ -217,25 +237,36 @@ onUnmounted(() => {
   min-height: 100vh; display: flex; flex-direction: column;
 }
 .toolbar-content {
-  width: 100%; height: 60px; color: var(--white);
+  width: 100%; height: 60px; color: #fff;
   position: fixed; z-index: 100; user-select: none;
-  transition: all 0.3s ease-in-out;
+  transition: all 0.35s ease-in-out;
 }
+/* 顶部（透明）：文字深色描边阴影，确保白/亮背景下可读 */
+.toolbar-content:not(.enter) .scroll-menu li .my-menu span,
+.toolbar-content:not(.enter) .toolbar-mobile-menu {
+  text-shadow: 0 1px 6px rgba(0,0,0,0.55), 0 0 2px rgba(0,0,0,0.4);
+}
+/* 滚动后：毛玻璃白底，文字深色 */
 .toolbar-content.enter {
-  background: var(--toolbarBackground); color: var(--toolbarFont);
-  box-shadow: 0 1px 3px 0 rgba(0,34,77,0.05);
+  background: var(--toolbarBackground);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--toolbarFont);
+  box-shadow: 0 2px 16px rgba(67,160,71,0.1);
 }
 .toolbar-title { margin-left: 30px; cursor: pointer; }
 .toolbar-title h2 {
   font-size: 22px; white-space: nowrap; cursor: pointer;
-  font-family: 'ZCOOL XiaoWei', cursive;
-  letter-spacing: 3px; color: var(--themeBackground);
+  font-family: var(--calligraphy-font);
+  letter-spacing: 3px; color: var(--nature-green);
   transition: all 0.3s ease;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.25);
 }
+.toolbar-content.enter .toolbar-title h2 { text-shadow: none; }
 .toolbar-title h2:hover {
   transform: scale(1.12);
-  text-shadow: 0 0 12px rgba(255,165,0,0.5), 0 0 24px rgba(255,165,0,0.3);
-  filter: brightness(1.2);
+  text-shadow: 0 0 14px rgba(102,187,106,0.7), 0 0 28px rgba(102,187,106,0.4);
+  filter: brightness(1.15);
 }
 .site-clicked { animation: sitePop 0.6s ease; }
 @keyframes sitePop {
@@ -253,15 +284,16 @@ onUnmounted(() => {
   height: 60px; line-height: 60px; position: relative;
   cursor: pointer; display: flex; flex-direction: column; align-items: center;
 }
-.scroll-menu li:hover .my-menu span { color: var(--themeBackground); }
-.scroll-menu li .my-menu { height: 52px; line-height: 52px; }
+.scroll-menu li:hover .my-menu span { color: var(--nature-green-light); }
+.toolbar-content.enter .scroll-menu li:hover .my-menu span { color: var(--nature-green); }
+.scroll-menu li .my-menu { height: 52px; line-height: 52px; font-weight: 600; }
 .scroll-menu li.active .my-menu span {
-  color: var(--themeBackground); font-weight: 700;
-  text-shadow: 0 0 12px rgba(255,165,0,0.6), 0 0 24px rgba(255,165,0,0.3);
+  color: var(--nature-green); font-weight: 700;
+  text-shadow: 0 0 12px rgba(102,187,106,0.5);
 }
 .scroll-menu li .my-menu:after {
-  content: ''; display: block; position: absolute; bottom: 0; height: 6px;
-  background-color: var(--themeBackground); width: 100%;
+  content: ''; display: block; position: absolute; bottom: 0; height: 5px;
+  background: var(--nature-gradient); width: 100%; border-radius: 4px;
   max-width: 0; transition: max-width 0.25s ease-in-out;
 }
 .scroll-menu li:hover .my-menu:after { max-width: 100%; }
@@ -319,12 +351,24 @@ onUnmounted(() => {
 
 .main-container { flex: 1; }
 
-.site-footer {
-  background: var(--gradientBG); background-size: 400% 400%;
-  animation: gradientBG 10s ease infinite;
-  padding: 20px; text-align: center; color: var(--white); font-size: 14px;
+/* 可爱的"到底啦"提示 */
+.cute-footer {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  padding: 40px 20px 30px; user-select: none;
 }
-.footer-inner { max-width: 1200px; margin: 0 auto; }
+.cute-footer-line {
+  flex: 0 0 80px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--nature-green-light), transparent);
+}
+.cute-footer-text {
+  font-family: var(--handwriting-font); font-size: 17px; color: var(--nature-green);
+  letter-spacing: 2px; white-space: nowrap;
+  animation: cuteBounce 3s ease-in-out infinite;
+}
+@keyframes cuteBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
 
 .toolButton {
   position: fixed; right: 3vh; bottom: 3vh;

@@ -44,6 +44,8 @@
         <el-menu-item index="/admin/essays"><el-icon><EditPen /></el-icon><span>随笔管理</span></el-menu-item>
         <el-menu-item index="/admin/family"><el-icon><House /></el-icon><span>家园管理</span></el-menu-item>
         <el-menu-item index="/admin/diaries"><el-icon><Notebook /></el-icon><span>日记管理</span></el-menu-item>
+        <el-menu-item index="/admin/resume"><el-icon><Suitcase /></el-icon><span>简历管理</span></el-menu-item>
+        <el-menu-item index="/admin/wishes"><el-icon><MagicStick /></el-icon><span>许愿池</span></el-menu-item>
       </el-menu>
     </div>
     <div class="content-box" :style="{ left: collapsed ? '44px' : '130px' }">
@@ -64,15 +66,19 @@ async function handleLogout() { await userStore.logout(); router.push('/admin/lo
 </script>
 
 <style scoped>
-.my-header{position:relative;width:100%;height:70px;color:#000;background:#ebf1f6}
-.my-header .logo{line-height:70px;margin-left:70px;font-size:22px}
-.header-right{display:flex;justify-content:flex-end;margin-right:40px}
-.admin-index{height:70px;line-height:70px;font-size:15px;margin-right:20px;cursor:pointer}
+.my-header{position:relative;width:100%;height:70px;color:#fff;background:linear-gradient(135deg,#43a047,#66bb6a);box-shadow:0 2px 12px rgba(67,160,71,.25)}
+.my-header .logo{line-height:70px;margin-left:70px;font-size:22px;font-weight:700;font-family:var(--trendy-font);letter-spacing:1px}
+.header-right{display:flex;justify-content:flex-end;margin-right:40px;align-items:center;height:70px}
+.admin-index{height:70px;line-height:70px;font-size:15px;margin-right:24px;cursor:pointer;font-weight:600;transition:all .3s;border-radius:8px;padding:0 10px}
+.admin-index:hover{background:rgba(255,255,255,.18)}
 .header-user-con{display:flex;align-items:center}
-.sidebar{display:block;position:absolute;left:0;top:70px;bottom:0;overflow-y:scroll;width:130px;user-select:none;overflow-x:hidden;background:#ebf1f6;transition:width .3s ease-in-out}
+.sidebar{display:block;position:absolute;left:0;top:70px;bottom:0;overflow-y:scroll;width:130px;user-select:none;overflow-x:hidden;background:#f4f9f4;border-right:1px solid #e0eee0;transition:width .3s ease-in-out}
 .sidebar::-webkit-scrollbar{width:0}
-.sidebar-el-menu .el-menu-item{padding:0 10px!important}
-.content-box{position:absolute;left:130px;right:0;top:70px;bottom:0;transition:left .3s ease-in-out}
+.sidebar-el-menu{background:#f4f9f4!important;border-right:none}
+.sidebar-el-menu .el-menu-item{padding:0 10px!important;border-radius:12px;margin:4px 8px;transition:all .25s}
+.sidebar-el-menu .el-menu-item:hover{background:#e0f0e0!important}
+.sidebar-el-menu .el-menu-item.is-active{background:linear-gradient(135deg,#66bb6a,#81c784)!important;color:#fff!important;border-radius:12px}
+.content-box{position:absolute;left:130px;right:0;top:70px;bottom:0;transition:left .3s ease-in-out;background:#f4f9f4}
 .admin-content{width:auto;height:100%;padding:30px;overflow-y:scroll}
-@media screen and (max-width:550px){.admin-content{padding:5px}}
+@media screen and (max-width:768px){.admin-content{padding:14px}}
 </style>

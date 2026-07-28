@@ -36,7 +36,10 @@ export const useAppStore = defineStore('app', {
             essayHero: this.parseJsonArray(data.essay_hero_bg),
             essayContent: this.parseJsonArray(data.essay_content_bg),
             recordHero: this.parseJsonArray(data.record_hero_bg),
-            recordContent: this.parseJsonArray(data.record_content_bg)
+            recordContent: this.parseJsonArray(data.record_content_bg),
+            wishHero: this.parseJsonArray(data.wish_hero_bg),
+            wishContent: this.parseJsonArray(data.wish_content_bg),
+            resumeHero: this.parseJsonArray(data.resume_hero_bg)
           }
 
           if (data.site_logo) {

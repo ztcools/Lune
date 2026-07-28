@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onUnmounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { authApi } from '../api/modules'
 import { ElMessage } from 'element-plus'
@@ -117,10 +117,18 @@ const registerForm = reactive({ username: '', password: '', confirmPassword: '',
 watch(() => props.visible, (v) => {
   if (!v) {
     isRegister.value = false
+    clearCountdown()
     Object.assign(loginForm, { account: '', password: '' })
     Object.assign(registerForm, { username: '', password: '', confirmPassword: '', email: '', code: '' })
   }
 })
+
+function clearCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
+  countdown.value = 0
+}
+
+onUnmounted(clearCountdown)
 
 async function sendCode() {
   if (!registerForm.email) { ElMessage.warning('请先输入邮箱'); return }
@@ -128,10 +136,11 @@ async function sendCode() {
   try {
     await authApi.sendCode(registerForm.email)
     ElMessage.success('验证码已发送')
+    clearCountdown()
     countdown.value = 60
     countdownTimer = setInterval(() => {
       countdown.value--
-      if (countdown.value <= 0) clearInterval(countdownTimer)
+      if (countdown.value <= 0) clearCountdown()
     }, 1000)
   } catch (e) {
     ElMessage.error(e?.message || '发送失败')

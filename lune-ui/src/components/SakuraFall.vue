@@ -81,7 +81,9 @@ function resize() {
   if (!c) return
   w = c.width = window.innerWidth
   h = c.height = window.innerHeight
-  petals = Array.from({ length: props.count }, createPetal)
+  // 移动端减少花瓣数量以省性能
+  const n = w < 768 ? Math.ceil(props.count / 2) : props.count
+  petals = Array.from({ length: n }, createPetal)
 }
 
 onMounted(() => {

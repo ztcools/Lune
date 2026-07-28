@@ -239,6 +239,35 @@ deploy() {
 }
 
 # ============================================================
+# Step 4.5: 数据库增量迁移（幂等，安全重复执行）
+# ============================================================
+run_migrations() {
+    log_info "执行数据库增量迁移..."
+    cd "$PROJECT_DIR"
+    local mysql_container
+    if [ "$MODE" = "--dev" ]; then mysql_container="lune-mysql-dev"; else mysql_container="lune-mysql"; fi
+
+    set -a; source "$ENV_FILE"; set +a
+    local mig_dir="$PROJECT_DIR/lune-server/lune-web/src/main/resources/sql"
+
+    # 等待 MySQL 就绪
+    local retries=0
+    until docker exec "$mysql_container" mysqladmin ping -h localhost -u root -p"${DB_ROOT_PASSWORD}" &>/dev/null || [ $retries -ge 30 ]; do
+        sleep 2; retries=$((retries+1))
+    done
+
+    # 依次执行所有 migration-*.sql（若存在）
+    shopt -s nullglob
+    for mig in "$mig_dir"/migration-*.sql; do
+        log_info "应用迁移: $(basename "$mig")"
+        docker exec -i "$mysql_container" mysql -uroot -p"${DB_ROOT_PASSWORD}" lune < "$mig" 2>/dev/null \
+            && log_ok "迁移完成: $(basename "$mig")" \
+            || log_warn "迁移已应用或跳过: $(basename "$mig")"
+    done
+    shopt -u nullglob
+}
+
+# ============================================================
 # 部署完成
 # ============================================================
 post_deploy() {
@@ -295,6 +324,7 @@ main() {
     setup_env
     setup_dirs
     deploy
+    run_migrations
     post_deploy
 }
 

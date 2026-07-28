@@ -11,8 +11,9 @@
       <div slot="error" class="image-slot background-image-index-error"></div>
     </el-image>
 
-    <!-- PixelSnow full-page overlay -->
+    <!-- PixelSnow full-page overlay（移动端降级为轻量 CSS 雪花） -->
     <PixelSnow
+      v-if="!appStore.mobile"
       color="#ffffff"
       :flakeSize="0.023"
       :minFlakeSize="1.25"
@@ -26,6 +27,7 @@
       variant="snowflake"
       class-name="full-page-snow"
     />
+    <FloatPetals v-else type="snow" :count="12" />
 
     <!-- Hero text overlay -->
     <div class="signature-wall myCenter my-animation-hideToShow">
@@ -46,10 +48,8 @@
 
     <!-- Content area -->
     <div class="page-container-wrap">
-      <!-- Blurred background layer -->
-      <div class="bg-blur-layer" v-if="contentBgImage">
-        <img :src="contentBgImage" alt="" class="bg-blur-img" />
-      </div>
+      <!-- 透明内容背景（QQ空间风） -->
+      <PageBg :image="contentBgImage" variant="green" />
 
       <div class="page-container">
         <!-- Left sidebar -->
@@ -81,27 +81,8 @@
               </a>
             </div>
 
-            <!-- BGM Player -->
-            <div class="music-card glass-card shadow-box">
-              <div class="music-title">🎵 来听首小曲</div>
-              <div class="music-player">
-                <div class="music-lyrics" v-if="currentLyric">
-                  <div class="lyric-line" :class="{ active: currentLyric === lyrics[lyricIdx] }">{{ lyrics[lyricIdx] || '' }}</div>
-                  <div class="lyric-line">{{ lyrics[lyricIdx + 1] || '' }}</div>
-                </div>
-                <div class="music-song-name">{{ currentSong.name }}</div>
-                <div class="music-controls">
-                  <button class="music-play-btn" @click="toggleMusic">
-                    <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="18" height="18"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-                    <svg v-else viewBox="0 0 24 24" width="18" height="18"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
-                  </button>
-                  <div class="music-progress" @click="seekMusic">
-                    <div class="music-progress-fill" :style="{ width: musicProgress + '%' }" />
-                  </div>
-                </div>
-                <div class="music-song-artist">{{ currentSong.artist }}</div>
-              </div>
-            </div>
+            <!-- BGM Player（后台可配置真实音频歌单） -->
+            <MusicPlayer :fallback="fallbackSongs" />
 
             <!-- Recommended articles -->
             <div v-if="recommendArticles.length > 0" class="recommend-card glass-card shadow-box">
@@ -248,6 +229,9 @@ import { articleApi, categoryApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
 import PixelSnow from '../../components/PixelSnow/PixelSnow.vue'
 import ArticleReader from '../../components/ArticleReader.vue'
+import PageBg from '../../components/PageBg.vue'
+import MusicPlayer from '../../components/MusicPlayer.vue'
+import FloatPetals from '../../components/effects/FloatPetals.vue'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -290,87 +274,9 @@ const groupedArticles = computed(() => {
   return groups
 })
 
-// Music player with Web Audio melody generator
-const musicPlaying = ref(false)
-const musicProgress = ref(0)
-const currentSong = ref(null)
-const currentLyric = ref('')
-const lyricIdx = ref(0)
-let audioCtx = null
-let progressTimer = null
+// 兜底歌单（后台未配置真实音频时显示）
+const fallbackSongs = []
 let typewriterTimer = null
-
-// Pentatonic scale melodies (C D E G A)
-const pentatonic = [262, 294, 330, 392, 440, 523, 587, 659, 784, 880]
-const songList = [
-  { name:'晴天', artist:'周杰伦 · 纯音版', notes:[0,2,3,5,7,8,7,5,3,2,0,1,2,3,4,5,3,2,0,2,3,5,7], lyrics:['故事的小黄花 从出生那年就飘着','童年的荡秋千 随记忆一直晃到现在','Re So So Si Do Si La','So La Si Si Si Si La Si La So','吹着前奏 望着天空','我想起花瓣试着掉落','为你翘课的那一天 花落的那一天'] },
-  { name:'起风了', artist:'买辣椒也用券 · 纯音版', notes:[5,3,2,0,1,2,3,5,6,7,8,7,5,3,2,0,2,3,5,3,2,0,1,2], lyrics:['这一路上走走停停 顺着少年漂流的痕迹','迈出车站的前一刻 竟有些犹豫','不禁笑这近乡情怯 仍无可避免','而长野的天 依旧那么暖 风吹起了从前','从前初识这世间 万般流连','看着天边似在眼前','也甘愿赴汤蹈火去走它一遍'] }
-]
-currentSong.value = songList[0]
-const lyrics = computed(() => currentSong.value?.lyrics || [])
-
-function initAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-}
-
-function toggleMusic() {
-  if (musicPlaying.value) { stopMusic() }
-  else { playMusic() }
-}
-
-function playMusic() {
-  initAudio()
-  stopMusic()
-  if (audioCtx.state === 'suspended') audioCtx.resume()
-  const song = currentSong.value
-  const notes = song.notes
-  const noteLen = 0.5 // seconds per note
-  const totalDur = notes.length * noteLen
-
-  const now = audioCtx.currentTime
-  notes.forEach((ni, i) => {
-    const osc = audioCtx.createOscillator()
-    const g = audioCtx.createGain()
-    osc.type = 'triangle'
-    osc.frequency.value = pentatonic[ni % pentatonic.length]
-    g.gain.setValueAtTime(0, now + i * noteLen)
-    g.gain.linearRampToValueAtTime(0.07, now + i * noteLen + 0.02)
-    g.gain.setValueAtTime(0.07, now + (i + 1) * noteLen - 0.05)
-    g.gain.linearRampToValueAtTime(0, now + (i + 1) * noteLen)
-    osc.connect(g); g.connect(audioCtx.destination)
-    osc.start(now + i * noteLen); osc.stop(now + (i + 1) * noteLen)
-  })
-
-  musicPlaying.value = true
-  musicProgress.value = 0
-  lyricIdx.value = 0
-  currentLyric.value = lyrics.value[0] || ''
-
-  clearInterval(progressTimer)
-  progressTimer = setInterval(() => {
-    if (!audioCtx || !musicPlaying.value) return
-    const elapsed = audioCtx.currentTime - now
-    const pct = Math.min(elapsed / totalDur, 1)
-    musicProgress.value = pct * 100
-    const newIdx = Math.min(Math.floor(pct * lyrics.value.length), lyrics.value.length - 1)
-    if (newIdx !== lyricIdx.value) { lyricIdx.value = newIdx; currentLyric.value = lyrics.value[newIdx] || '' }
-    if (pct >= 1) {
-      const idx = (songList.indexOf(currentSong.value) + 1) % songList.length
-      currentSong.value = songList[idx]; stopMusic(); playMusic()
-    }
-  }, 250)
-}
-
-function stopMusic() {
-  clearInterval(progressTimer)
-  musicPlaying.value = false
-  // AudioContext oscillators auto-stop via scheduled stop()
-}
-
-function seekMusic(e) {
-  stopMusic()
-  playMusic()
-}
 
 // Add article for admin
 const showAddArticle = computed(() => userStore.isAdmin)
@@ -480,8 +386,6 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   if (typewriterTimer) clearInterval(typewriterTimer)
-  if (progressTimer) clearInterval(progressTimer)
-  if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null }
 })
 </script>
 
@@ -565,29 +469,6 @@ onUnmounted(() => {
 .page-container-wrap {
   position: relative;
 }
-/* Blurred background image layer */
-.bg-blur-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-.bg-blur-layer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.55);
-}
-.bg-blur-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(6px);
-  transform: scale(1.05);
-}
 .page-container {
   display: flex;
   justify-content: center;
@@ -664,30 +545,6 @@ onUnmounted(() => {
 }
 .collection-btn:hover::before { transform: scaleX(1); }
 
-.music-card { padding: 18px 16px; border-radius: 22px; animation: hideToShow 1s ease-in-out; }
-.music-title { color: #ff6b9d; font-size: 16px; font-weight: 800; margin-bottom: 10px; letter-spacing: 1.5px; font-family: 'Ma Shan Zheng', 'KaiTi', cursive; text-align: center; }
-.music-player { display: flex; flex-direction: column; gap: 8px; }
-.music-lyrics { text-align: center; min-height: 44px; width: 100%; }
-.lyric-line { font-size: 12px; color: #bbb; line-height: 1.6; font-style: italic; font-weight: 600; transition: all 0.4s ease; }
-.lyric-line.active { color: #ff4757; font-size: 15px; transform: scale(1.05); font-weight: 700; }
-.music-song-name { font-size: 12px; font-weight: 600; color: #666; text-align: center; }
-.music-song-artist { font-size: 11px; color: #bbb; text-align: center; }
-.music-controls { display: flex; align-items: center; gap: 10px; }
-.music-play-btn {
-  width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ff6b9d;
-  background: linear-gradient(135deg, #fff0f5, #ffe0ec); color: #ff6b9d;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(255,107,157,0.2);
-}
-.music-play-btn:hover {
-  background: #ff6b9d; color: #fff;
-  transform: scale(1.2);
-  box-shadow: 0 4px 16px rgba(255,107,157,0.4);
-}
-.music-progress { flex: 1; height: 4px; background: #f0e0e8; border-radius: 2px; cursor: pointer; overflow: hidden; }
-.music-progress-fill { height: 100%; background: linear-gradient(90deg, #ff6b9d, #ffa07a); border-radius: 2px; transition: width 0.3s linear; }
-
 .recommend-card { padding: 20px; border-radius: 14px; animation: hideToShow 1s ease-in-out; }
 .card-content2-title { font-size: 16px; margin-bottom: 16px; color: var(--lightGreen); font-weight: 700; }
 .aside-post-detail { display: flex; cursor: pointer; }
@@ -755,14 +612,18 @@ onUnmounted(() => {
 .article-cover-error { background: var(--themeBackground); color: var(--white); text-align: center; padding: 20px; height: 100%; display: flex; align-items: center; justify-content: center; }
 .article-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
 .article-title {
-  font-size: 17px; margin: 0 0 8px; color: var(--articleFontColor);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600;
+  font-size: 18px; margin: 0 0 8px; color: var(--articleFontColor);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700;
+  font-family: var(--trendy-font); letter-spacing: 0.5px;
+  transition: color 0.3s;
 }
+.article-card:hover .article-title { color: var(--nature-green); }
 .article-summary {
-  color: var(--articleGreyFontColor); font-size: 13px; flex: 1; margin: 0;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5;
+  color: var(--articleGreyFontColor); font-size: 14px; flex: 1; margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;
+  font-family: var(--article-font);
 }
-.article-meta { display: flex; gap: 14px; color: var(--greyFont); font-size: 12px; margin-top: 10px; }
+.article-meta { display: flex; gap: 14px; color: var(--greyFont); font-size: 12px; margin-top: 10px; font-family: var(--trendy-font); }
 
 /* ============================
    Pagination

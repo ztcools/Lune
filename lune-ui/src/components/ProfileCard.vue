@@ -99,7 +99,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, nextTick } from 'vue'
+import { ref, reactive, watch, nextTick, onUnmounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { userProfileApi, resourceApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -145,8 +145,17 @@ watch(() => props.visible, async (v) => {
       showDeleteConfirm.value = false
       deleteCode.value = ''
     } catch (e) { ElMessage.error('加载个人信息失败') }
+  } else {
+    clearDeleteTimer()
   }
 })
+
+function clearDeleteTimer() {
+  if (deleteTimer) { clearInterval(deleteTimer); deleteTimer = null }
+  deleteCountdown.value = 0
+}
+
+onUnmounted(clearDeleteTimer)
 
 function markDirty() { isDirty.value = true }
 
@@ -191,10 +200,11 @@ async function sendDeleteCode() {
   try {
     await userProfileApi.sendDeleteCode()
     ElMessage.success('验证码已发送')
+    clearDeleteTimer()
     deleteCountdown.value = 60
     deleteTimer = setInterval(() => {
       deleteCountdown.value--
-      if (deleteCountdown.value <= 0) clearInterval(deleteTimer)
+      if (deleteCountdown.value <= 0) clearDeleteTimer()
     }, 1000)
   } catch (e) { ElMessage.error(e?.message || '发送失败') }
   finally { deleteCodeSending.value = false }

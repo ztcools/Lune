@@ -70,7 +70,6 @@ export const recordApi = {
 
 export const familyApi = {
   list: () => request.get('/family'),
-  listAll: () => request.get('/family'),
   create: (data) => request.post('/admin/family', data),
   update: (id, data) => request.put(`/admin/family/${id}`, data),
   delete: (id) => request.delete(`/admin/family/${id}`)
@@ -110,4 +109,25 @@ export const userApi = {
   update: (id, data) => request.put(`/admin/users/${id}`, data),
   delete: (id) => request.delete(`/admin/users/${id}`),
   updateRole: (id, role) => request.put(`/admin/users/${id}/role`, null, { params: { role } })
+}
+
+export const resumeApi = {
+  getPublic: () => request.get('/resume'),
+  listWork: () => request.get('/admin/resume/work'),
+  createWork: (data) => request.post('/admin/resume/work', data),
+  updateWork: (id, data) => request.put(`/admin/resume/work/${id}`, data),
+  deleteWork: (id) => request.delete(`/admin/resume/work/${id}`),
+  listProject: () => request.get('/admin/resume/project'),
+  createProject: (data) => request.post('/admin/resume/project', data),
+  updateProject: (id, data) => request.put(`/admin/resume/project/${id}`, data),
+  deleteProject: (id) => request.delete(`/admin/resume/project/${id}`)
+}
+
+export const wishApi = {
+  list: (params) => request.get('/wishes', { params }),
+  create: (data) => request.post('/wishes', data),
+  toggleLike: (id) => request.post(`/wishes/${id}/like`),
+  listAll: (params) => request.get('/admin/wishes', { params }),
+  update: (id, data) => request.put(`/admin/wishes/${id}`, data),
+  delete: (id) => request.delete(`/admin/wishes/${id}`)
 }

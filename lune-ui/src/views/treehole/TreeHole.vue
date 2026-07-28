@@ -3,7 +3,7 @@
     <div class="page-bg" :style="{ backgroundImage: `url(${danmakuBg})` }"></div>
 
     <!-- ====== Full-screen Danmaku Section ====== -->
-    <div class="danmaku-section">
+    <div class="danmaku-section" @click="closeDanmakuCard">
       <div class="bg-overlay"></div>
 
       <!-- Danmaku floating messages -->
@@ -12,12 +12,34 @@
           v-for="msg in danmakuList"
           :key="msg.id"
           class="danmaku-item"
+          :class="{ 'is-paused': pausedId === msg.id, 'is-hover': hoverId === msg.id }"
           :style="msg.style"
+          @mouseenter="hoverId = msg.id"
+          @mouseleave="hoverId = null"
+          @click.stop="openDanmakuCard(msg, $event)"
         >
           <el-avatar class="danmaku-avatar" :size="28" :src="msg.avatar">{{ (msg.nickname || '?').charAt(0) }}</el-avatar>
           <span class="danmaku-text">{{ msg.text }}</span>
         </div>
       </div>
+
+      <!-- 弹幕发送者卡片（点击弹幕弹出，该弹幕暂停，退出恢复） -->
+      <transition name="danmaku-card-pop">
+        <div v-if="activeCard" class="danmaku-card" :style="cardPos" @click.stop>
+          <div class="dc-head">
+            <el-avatar :size="46" :src="activeCard.avatar" class="dc-avatar">{{ (activeCard.nickname || '匿').charAt(0) }}</el-avatar>
+            <div class="dc-info">
+              <div class="dc-name">{{ activeCard.nickname || '匿名' }}</div>
+              <div class="dc-sub">树洞悄悄话</div>
+            </div>
+            <button class="dc-close" @click="closeDanmakuCard">×</button>
+          </div>
+          <div class="dc-content">{{ activeCard.text }}</div>
+          <div class="dc-foot">
+            <span class="dc-tip">🌳 这条弹幕已为你暂停</span>
+          </div>
+        </div>
+      </transition>
 
       <!-- Centered input -->
       <div class="danmaku-input-area">
@@ -176,17 +198,33 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { treeHoleApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
-import { useAppStore } from '../../stores/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
 
 const userStore = useUserStore()
-const appStore = useAppStore()
 
 // --- danmaku state ---
 const danmakuList = ref([])
 const danmakuContent = ref('')
 const danmakuBg = usePageBackground('treeholeDanmaku')
+// 弹幕交互：悬停高亮 / 点击弹卡片并暂停该条
+const hoverId = ref(null)
+const pausedId = ref(null)
+const activeCard = ref(null)
+const cardPos = ref({ top: '50%', left: '50%', transform: 'translate(-50%,-50%)' })
+
+function openDanmakuCard(msg, e) {
+  pausedId.value = msg.id
+  activeCard.value = msg
+  // 卡片定位在点击附近（边界保护）
+  const x = Math.min(Math.max(e.clientX, 180), window.innerWidth - 180)
+  const y = Math.min(Math.max(e.clientY, 130), window.innerHeight - 160)
+  cardPos.value = { top: y + 'px', left: x + 'px', transform: 'translate(-50%,-50%)' }
+}
+function closeDanmakuCard() {
+  activeCard.value = null
+  pausedId.value = null
+}
 
 // --- timeline state ---
 const treeHoleList = ref([])
@@ -206,7 +244,6 @@ const colors = [
   '#ffecd2', '#fcb69f', '#a1c4fd', '#c2e9fb', '#d4a5ff',
   '#fbc2eb', '#a6c1ee', '#fdcbf1', '#e6dee9', '#bae1ff'
 ]
-const defaultAvatar = '/assets/头像1.jpg'
 
 function checkMobile() {
   mobile.value = window.innerWidth <= 600
@@ -388,7 +425,6 @@ function formatDate(d) {
   bottom: 0;
   z-index: 2;
   overflow: hidden;
-  pointer-events: none;
 }
 
 .danmaku-item {
@@ -403,6 +439,24 @@ function formatDate(d) {
   padding: 6px 14px 6px 6px;
   animation: danmaku-drift linear infinite;
   user-select: none;
+  cursor: pointer;
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* 悬停：高亮 + 轻微放大 + 该条减速（通过暂停实现更直观） */
+.danmaku-item.is-hover {
+  background: rgba(67, 160, 71, 0.55);
+  transform: scale(1.1);
+  box-shadow: 0 4px 18px rgba(102, 187, 106, 0.5);
+  z-index: 5;
+}
+
+/* 点击后该条暂停（其他弹幕不受影响） */
+.danmaku-item.is-paused {
+  animation-play-state: paused;
+  background: rgba(67, 160, 71, 0.6);
+  box-shadow: 0 0 0 2px rgba(129, 199, 132, 0.7), 0 6px 22px rgba(102, 187, 106, 0.6);
+  z-index: 6;
 }
 
 .danmaku-avatar {
@@ -417,6 +471,34 @@ function formatDate(d) {
   font-family: 'Noto Sans SC', var(--globalFont), sans-serif;
   letter-spacing: 0.5px;
 }
+
+/* ====== 弹幕发送者卡片 ====== */
+.danmaku-card {
+  position: fixed;
+  z-index: 60;
+  width: 300px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(232,245,233,0.96));
+  backdrop-filter: blur(18px);
+  border-radius: 22px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.28);
+  border: 1.5px solid rgba(255,255,255,0.7);
+  padding: 18px;
+}
+.dc-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.dc-avatar { border: 2px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
+.dc-info { flex: 1; min-width: 0; }
+.dc-name { font-size: 16px; font-weight: 700; color: #2e5a2e; font-family: var(--trendy-font); }
+.dc-sub { font-size: 11px; color: #8aa88a; margin-top: 2px; }
+.dc-close { width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--nature-green-pale); color: var(--nature-green-dark); font-size: 20px; cursor: pointer; line-height: 1; transition: all 0.3s; flex-shrink: 0; }
+.dc-close:hover { background: var(--nature-green-light); color: #fff; transform: rotate(90deg); }
+.dc-content { font-size: 14px; color: #4a5a4a; line-height: 1.7; background: rgba(232,245,233,0.6); border-radius: 14px; padding: 12px 14px; word-break: break-word; white-space: pre-wrap; }
+.dc-foot { margin-top: 12px; text-align: center; }
+.dc-tip { font-size: 12px; color: var(--nature-green-dark); font-family: var(--handwriting-font); letter-spacing: 1px; }
+
+.danmaku-card-pop-enter-active { transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+.danmaku-card-pop-leave-active { transition: all 0.2s ease-in; }
+.danmaku-card-pop-enter-from { opacity: 0; transform: translate(-50%,-50%) scale(0.7); }
+.danmaku-card-pop-leave-to { opacity: 0; transform: translate(-50%,-50%) scale(0.85); }
 
 @keyframes danmaku-drift {
   0% {

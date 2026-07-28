@@ -248,6 +248,8 @@ function timeAgo(d) {
 function close() {
   visible.value = false
   showComments.value = false
+  document.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
   setTimeout(() => emit('close'), 350)
 }
 
@@ -356,6 +358,7 @@ function onKeydown(e) { if (e.key === 'Escape') close() }
 // Watch articleId → auto open
 watch(() => props.articleId, async (id) => {
   if (id) {
+    document.removeEventListener('keydown', onKeydown)
     document.addEventListener('keydown', onKeydown)
     document.body.style.overflow = 'hidden'
     await fetchArticle()
@@ -372,17 +375,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ============================
-   Font Face
-   ============================ */
-@font-face {
-  font-family: 'PingFangZhuiFeng';
-  src: url('/assets/fonts/PingFangZhuiFengTi.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* ============================
    Overlay
    ============================ */
@@ -428,9 +420,15 @@ onUnmounted(() => {
   overflow: visible;
 }
 
-/* When comments open, shrink card slightly */
+/* When comments open, card and comment panel share equal width & height */
 .reader-layout.has-comments .reader-card {
-  max-width: 760px;
+  max-width: none;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.reader-layout.has-comments .comment-panel-col {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* ============================
@@ -489,8 +487,8 @@ onUnmounted(() => {
     0 6px 20px rgba(0,0,0,0.08),
     0 16px 48px rgba(0,0,0,0.12);
 
-  border-left: 2px solid rgba(210, 70, 50, 0.25);
-  font-family: 'PingFangZhuiFeng', 'Noto Sans SC', 'STKaiti', 'KaiTi', serif;
+  border-left: 2px solid rgba(102, 187, 106, 0.35);
+  font-family: var(--globalFont);
 }
 
 .paper-sheet::-webkit-scrollbar { width: 5px }
@@ -675,16 +673,17 @@ onUnmounted(() => {
    Comment Panel
    ============================ */
 .comment-panel {
-  width: 420px;
-  flex-shrink: 0;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: #fff;
-  border-radius: 20px;
+  border-radius: 28px;
   display: flex;
   flex-direction: column;
   height: 100%;
   box-shadow: 0 4px 32px rgba(0,0,0,0.12);
   overflow: hidden;
-  font-family: 'KaiTi', 'STKaiti', '楷体', 'Noto Serif SC', serif;
+  font-family: var(--globalFont);
 }
 .comment-panel-header {
   display: flex; justify-content: space-between; align-items: center;

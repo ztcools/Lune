@@ -104,7 +104,7 @@ const uploadHeaders = { Authorization: 'Bearer ' + localStorage.getItem('token')
 const fm = ref({ title:'', content:'', cover:'', bgCover:'', timing:'', countdownTitle:'', countdownTime:null, status:1 })
 
 onMounted(() => fetch())
-async function fetch() { try { items.value = await familyApi.listAll() } catch(e){} }
+async function fetch() { try { items.value = await familyApi.list() } catch(e){} }
 function showDialog(row) {
   edit.value = row; coverMethod.value='upload'; bgMethod.value='upload'
   fm.value = row ? { ...row, countdownTime: row.countdownTime ? new Date(row.countdownTime) : null }

@@ -7,10 +7,19 @@ Lune is a full-stack personal blog and lifestyle web application. Fully containe
 - **Backend**: Spring Boot 3.3.5 + Java 17 + Maven
 - **Frontend**: Vue 3 + Vite 5 + Pinia + Vue Router 4 + Element Plus
 - **Database**: MySQL 8.0 + Redis 7 (Docker containers)
-- **Persistence**: MyBatis-Plus 3.5.7 (logic delete on User/Article/Essay/Record)
+- **Persistence**: MyBatis-Plus 3.5.7 (logic delete on User/Article/Essay/Record/WorkExperience/Project/Wish)
 - **Security**: Spring Security + JWT (jjwt 0.12.6) + BCrypt
-- **Fonts**: Google Fonts CDN (Noto Sans SC, ZCOOL XiaoWei, Fredoka, Comfortaa, Quicksand)
+- **Fonts**: Google Fonts CDN (Noto Sans SC, Noto Serif SC, Fredoka, Comfortaa, Quicksand, Ma Shan Zheng, Zhi Mang Xing, Long Cang, Caveat)
 - **DevOps**: Docker Compose, Nginx reverse proxy, multi-stage Dockerfiles
+
+**Feature Modules**:
+- 博客首页（文章/分类/音乐播放器）
+- 家页（恋爱记录：情侣头像互动、在一起天数、祝福板、烂皮书日记）
+- 树洞（弹幕互动 + 时间线）
+- 随笔（朋友圈式图文/视频动态）
+- 记录（分类卡片瀑布流）
+- 简历页（个人卡片 + 工作时间线 + 项目卡片，Landing 进入）
+- 许愿池（需求点赞排行 + 评论）
 
 ---
 
@@ -26,7 +35,7 @@ lune-server/                   # Maven parent POM
         ├── common/            # Result, PageResult, BusinessException, GlobalExceptionHandler
         ├── config/            # Security, CORS, MyBatis-Plus, Redis, WebMvc, DataInitializer
         ├── security/          # JwtTokenProvider, JwtAuthFilter, SecurityUtils
-        ├── entity/            # User, Article, Category, Tag, Comment, Essay, Record, TreeHole, Family, Diary, SiteConfig, Resource, VisitLog
+        ├── entity/            # User, Article, Category, Tag, Comment, Essay, Record, TreeHole, Family, Diary, SiteConfig, Resource, VisitLog, WorkExperience, Project, Wish, WishLike
         ├── dto/               # Request/Response DTOs
         ├── mapper/            # MyBatis-Plus BaseMapper interfaces
         ├── service/           # Service interfaces + impl/
@@ -87,12 +96,18 @@ Makefile                       # 便捷命令集合
 
 ### Frontend
 
-- **Axios**: `baseURL: '/api'`, Bearer token interceptor, unwraps `data.data` on success
+- **Axios**: `baseURL: '/api'`, Bearer token interceptor, unwraps `data.data` on success, 401 → clear token + redirect admin login
 - **State**: Pinia stores — `user.js` (auth), `app.js` (config, bgImages, dark mode)
-- **Routing**: `PublicLayout` wraps public pages, `AdminLayout` wraps admin (auth guard)
+- **Routing**: `PublicLayout` wraps public pages, `AdminLayout` wraps admin (auth guard), scroll restoration on back/forward, catch-all 404 → `/`
 - **Backgrounds**: `usePageBackground(key)` composable — ref-based with random pick from JSON array, reactive to config changes
-- **Settings.vue**: Card-based layout, per-page multi-image background management with preview
+- **Content backgrounds**: `PageBg.vue` — QQ空间式极淡固定背景图 + 动态渐变光斑 (green/pink/blue variants)
+- **Effects** (`components/effects/`): `FloatPetals` (花瓣/落叶/雪花，移动端减半), `Spotlight` (聚光灯光斑), `WalkingDog`; `SakuraFall` (canvas 樱花), `PixelSnow` (three.js WebGL 雪, PC only)
+- **MusicPlayer.vue**: HTML5 Audio，读 `home_music_list` 配置，含唱片旋转/进度/歌词/上下首
+- **MediaEditor.vue** (admin): 可复用图片/视频九宫格编辑器（随笔/记录/简历共用）
+- **Settings.vue**: 基础信息 + 首页音乐歌单 + 页面背景管理（上传即生效，无二次确认），`configLoaded` 守卫防止回填误报保存
 - No `Math.random()` in computed properties (all use refs with explicit triggers)
+- **UI scale**: `html { font-size: 15px }` 中等偏小，移动端特效自动降级
+- **Fonts**: 书法体 (`--calligraphy-font` Ma Shan Zheng), 手写体 (`--handwriting-font` Long Cang), 正文 (`--article-font` Noto Serif SC), 个性体 (`--trendy-font` Fredoka)
 
 ---
 
@@ -139,8 +154,15 @@ Each page section has a dedicated `site_config` key storing a JSON array of imag
 | `essay_content_bg` | 随笔内容区 |
 | `record_hero_bg` | 记录顶部 Banner |
 | `record_content_bg` | 记录内容区 |
+| `wish_hero_bg` | 许愿池顶部 Banner |
+| `wish_content_bg` | 许愿池内容区 |
+| `resume_hero_bg` | 简历页顶部 Banner |
 
 Value format: `["/upload/xxx.jpg", "/upload/yyy.png"]`
+
+**Other site_config keys**: `beian_icp` (Landing 备案号), `home_music_list` (音乐歌单 JSON `[{name,artist,url,cover,lrc}]`), `resume_skills` / `resume_hobbies` / `resume_github` / `resume_motto` / `resume_tags` (简历个人卡片).
+
+**Content backgrounds**渲染为 `PageBg` 透明背景（不干扰内容），仅 hero banner 用背景图主视觉。
 
 Each page uses `const bg = usePageBackground('key')` → returns `ref<string>` with random image picked from array on config change.
 
@@ -184,8 +206,10 @@ Default admin: `admin` / `admin123` (可配置 `ADMIN_DEFAULT_PASSWORD`)
 
 - SQL schema: `lune-server/lune-web/src/main/resources/sql/lune.sql`
 - Docker init: `docker/mysql/init/01-init.sql`
-- `DataInitializer.java` auto-creates admin user + categories + site configs on empty DB
+- `DataInitializer.java` auto-creates admin user + categories + site configs + resume/wish seed data (幂等，空表才插)
+- Incremental migration: `sql/migration-20260728.sql`（新增 work_experience/project/wish/wish_like 表 + essay.media），deploy.sh 自动执行 `migration-*.sql`
 - `user.email` has `UNIQUE` constraint
+- New tables: `work_experience` (工作时间线), `project` (项目), `wish` + `wish_like` (许愿点赞), `essay.media` (朋友圈媒体)
 - Backup: `make backup` or `bash backup.sh --cron` (daily at 3am)
 
 ---

@@ -26,6 +26,10 @@
           <el-input v-model="basic.site_footer" placeholder="© 2024 Lune" @change="saveBasic('site_footer')" />
         </div>
         <div class="form-item">
+          <label>ICP 备案号</label>
+          <el-input v-model="basic.beian_icp" placeholder="如：京ICP备12345678号-1" @change="saveBasic('beian_icp')" />
+        </div>
+        <div class="form-item">
           <label>网站公告</label>
           <el-input v-model="noticeStr" type="textarea" :rows="2" placeholder="一行一条公告" @change="saveNotices" />
         </div>
@@ -45,6 +49,42 @@
           <label>开放评论</label>
           <el-switch v-model="basic.enable_comment" active-value="true" inactive-value="false" @change="saveBasic('enable_comment')" />
         </div>
+      </div>
+    </div>
+
+    <!-- ====== 首页音乐设置 ====== -->
+    <div class="section-card">
+      <div class="section-title">🎵 首页音乐</div>
+      <p class="section-hint">配置首页侧栏播放的歌单，支持音频 URL / 本地上传。保存后首页自动生效。</p>
+
+      <div class="music-list">
+        <div v-for="(song, i) in musicList" :key="i" class="music-item">
+          <div class="music-item-head">
+            <span class="music-index">{{ i + 1 }}</span>
+            <el-input v-model="song.name" placeholder="歌曲名" class="mi-name" @change="saveMusic" />
+            <el-input v-model="song.artist" placeholder="歌手/专辑" class="mi-artist" @change="saveMusic" />
+            <el-button circle size="small" :icon="Close" class="mi-del" @click="removeMusic(i)" />
+          </div>
+          <div class="music-item-body">
+            <el-input v-model="song.url" placeholder="音频 URL（mp3/ogg…）或上传" class="mi-url" @change="saveMusic">
+              <template #append>
+                <el-upload :action="uploadUrl" :headers="uploadHeaders" :show-file-list="false"
+                  :on-success="r => onMusicUploaded(i, r)" accept="audio/*" style="display:inline">
+                  <el-button>上传</el-button>
+                </el-upload>
+              </template>
+            </el-input>
+            <el-input v-model="song.cover" placeholder="封面图 URL（可选）" class="mi-cover" @change="saveMusic" />
+            <el-input v-model="song.lrc" placeholder="歌词/一句简介（可选）" class="mi-lrc" @change="saveMusic" />
+          </div>
+          <audio v-if="song.url" :src="song.url" controls class="mi-audio" preload="none"></audio>
+        </div>
+        <el-empty v-if="!musicList.length" description="暂无音乐，点击下方添加" :image-size="48" />
+      </div>
+
+      <div class="music-add-row">
+        <el-button type="primary" plain :icon="Plus" @click="addMusic">添加音乐</el-button>
+        <span class="music-tip">支持 mp3 / ogg / wav，建议单首 &lt; 10MB</span>
       </div>
     </div>
 
@@ -76,49 +116,39 @@
                 <el-button class="bg-img-del" circle size="small" :icon="Close" @click="removeBg(bg.key, i)" />
               </div>
             </div>
-            <el-empty v-else description="暂无图片，点击下方按钮添加" :image-size="48" />
+            <el-empty v-else description="暂无图片，上传或选择即自动生效" :image-size="48" />
 
-            <!-- 添加按钮 -->
-            <div class="add-bg-row">
-              <el-button type="primary" plain :icon="Plus" @click="openBgAdd(bg.key)">添加图片</el-button>
-              <el-button v-if="curBgAddKey === bg.key" size="small" @click="curBgAddKey = null">收起</el-button>
-            </div>
-
-            <!-- 添加面板 -->
-            <div v-if="curBgAddKey === bg.key" class="bg-add-panel">
-              <el-tabs v-model="addMethod" type="border-card" class="add-tabs">
-                <el-tab-pane label="📁 本地上传" name="upload">
-                  <el-upload class="bg-upload" :action="uploadUrl" :headers="uploadHeaders"
-                    :on-success="r => onBgUploaded(bg.key, r)" :show-file-list="false" accept="image/*" drag>
-                    <el-icon :size="32"><UploadFilled /></el-icon>
-                    <div>拖拽或点击上传</div>
-                  </el-upload>
-                </el-tab-pane>
-                <el-tab-pane label="🖼️ 资源库" name="picker">
-                  <div class="picker-grid" v-if="pickerList.length">
-                    <div v-for="r in pickerList" :key="r.id" class="picker-item"
-                      :class="{ selected: curBgImgs.includes(r.path) }"
-                      @click="togglePickerItem(r.path)">
-                      <el-image :src="r.path" fit="cover" />
-                      <span>{{ r.filename }}</span>
-                    </div>
+            <!-- 添加方式（上传/选择即生效，无需二次确认） -->
+            <el-tabs v-model="addMethodMap[bg.key]" type="border-card" class="add-tabs">
+              <el-tab-pane label="📁 本地上传" name="upload">
+                <el-upload class="bg-upload" :action="uploadUrl" :headers="uploadHeaders"
+                  :on-success="r => onBgUploaded(bg.key, r)" :show-file-list="false" accept="image/*" drag>
+                  <el-icon :size="32"><UploadFilled /></el-icon>
+                  <div>拖拽或点击上传，自动添加并生效</div>
+                  <div class="upload-tip">建议尺寸 ≥1920×1080，横幅更清晰</div>
+                </el-upload>
+              </el-tab-pane>
+              <el-tab-pane label="🖼️ 资源库" name="picker">
+                <div class="picker-grid" v-if="pickerList.length">
+                  <div v-for="r in pickerList" :key="r.id" class="picker-item"
+                    :class="{ selected: bgImages[bg.key].includes(r.path) }"
+                    @click="togglePickerItem(bg.key, r.path)">
+                    <el-image :src="r.path" fit="cover" />
+                    <span>{{ r.filename }}</span>
                   </div>
-                  <el-empty v-else description="暂无资源" :image-size="40" />
-                  <el-pagination v-if="pickerTotal > 12" small background layout="prev,pager,next"
-                    :page-size="12" :total="pickerTotal" :current-page="pickerPage"
-                    @current-change="p => { pickerPage = p; loadPicker() }" style="justify-content:center;margin-top:10px" />
-                </el-tab-pane>
-                <el-tab-pane label="🔗 URL 输入" name="url">
-                  <div class="url-row">
-                    <el-input v-model="urlInput" placeholder="图片 URL" @keyup.enter="addBgUrl(bg.key)" />
-                    <el-button type="primary" @click="addBgUrl(bg.key)">添加</el-button>
-                  </div>
-                </el-tab-pane>
-              </el-tabs>
-              <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">
-                <el-button size="small" @click="finishBgAdd(bg.key)">完成</el-button>
-              </div>
-            </div>
+                </div>
+                <el-empty v-else description="暂无资源" :image-size="40" />
+                <el-pagination v-if="pickerTotal > 12" small background layout="prev,pager,next"
+                  :page-size="12" :total="pickerTotal" :current-page="pickerPage"
+                  @current-change="p => { pickerPage = p; loadPicker() }" style="justify-content:center;margin-top:10px" />
+              </el-tab-pane>
+              <el-tab-pane label="🔗 URL 输入" name="url">
+                <div class="url-row">
+                  <el-input v-model="urlInputMap[bg.key]" placeholder="粘贴图片 URL，回车即添加生效" @keyup.enter="addBgUrl(bg.key)" />
+                  <el-button type="primary" @click="addBgUrl(bg.key)">添加</el-button>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </div>
         </el-collapse-item>
       </el-collapse>
@@ -165,16 +195,23 @@ const bgSections = [
   { key: 'essay_content_bg', label: '随笔 · 内容区', icon: '📝' },
   { key: 'record_hero_bg', label: '记录 · 顶部 Banner', icon: '📸' },
   { key: 'record_content_bg', label: '记录 · 内容区', icon: '🎞️' },
+  { key: 'wish_hero_bg', label: '许愿池 · 顶部 Banner', icon: '🌠' },
+  { key: 'wish_content_bg', label: '许愿池 · 内容区', icon: '💫' },
+  { key: 'resume_hero_bg', label: '简历 · 顶部 Banner', icon: '🌿' },
 ]
 
 const bgImages = reactive({})
 bgSections.forEach(s => { bgImages[s.key] = [] })
 
 const activeBgSections = ref([])
-const curBgAddKey = ref(null)
-const curBgImgs = ref([])
-const addMethod = ref('upload')
-const urlInput = ref('')
+// 首页音乐歌单
+const musicList = ref([])
+// 加载完成前禁止触发"已保存"提示（避免进入页面回填数据时误报）
+const configLoaded = ref(false)
+// 每个背景区独立的添加方式 / URL 输入（上传即生效，无中间态）
+const addMethodMap = reactive({})
+const urlInputMap = reactive({})
+bgSections.forEach(s => { addMethodMap[s.key] = 'upload'; urlInputMap[s.key] = '' })
 const uploadUrl = '/api/admin/resources/upload'
 const uploadHeaders = { Authorization: 'Bearer ' + localStorage.getItem('token') }
 
@@ -211,7 +248,40 @@ async function loadAllConfigs() {
         bgImages[s.key] = Array.isArray(arr) ? arr : []
       } catch { bgImages[s.key] = [] }
     })
+
+    // 解析音乐歌单
+    try {
+      const arr = JSON.parse(data.home_music_list || '[]')
+      musicList.value = Array.isArray(arr) ? arr.map(s => ({ name: s.name || '', artist: s.artist || '', url: s.url || '', cover: s.cover || '', lrc: s.lrc || '' })) : []
+    } catch { musicList.value = [] }
   } catch (e) { ElMessage.error('加载设置失败') }
+  finally {
+    // 下一拍再标记加载完成，确保回填不会触发 @change 误报
+    nextTick(() => { configLoaded.value = true })
+  }
+}
+
+// ====== 首页音乐管理 ======
+function addMusic() {
+  musicList.value.push({ name: '', artist: '', url: '', cover: '', lrc: '' })
+}
+function removeMusic(i) {
+  musicList.value.splice(i, 1)
+  saveMusic()
+}
+function onMusicUploaded(i, res) {
+  if (res.code === 200 && res.data) {
+    musicList.value[i].url = res.data.path
+    saveMusic('上传成功')
+  } else ElMessage.error('上传失败')
+}
+async function saveMusic(msg) {
+  if (!configLoaded.value) return
+  try {
+    const list = musicList.value.filter(s => s.url || s.name)
+    await siteConfigApi.save({ configKey: 'home_music_list', configValue: JSON.stringify(list), configType: 'public', description: '首页音乐播放列表' })
+    ElMessage.success(msg || '歌单已保存')
+  } catch (e) { ElMessage.error('保存失败') }
 }
 
 async function loadPicker() {
@@ -224,6 +294,7 @@ async function loadPicker() {
 
 // ====== Basic save ======
 async function saveBasicConfig(key, value) {
+  if (!configLoaded.value) return // 进入页面回填阶段不触发保存
   try {
     await siteConfigApi.save({ configKey: key, configValue: String(value || ''), configType: 'public', description: '' })
     ElMessage.success('已保存')
@@ -240,34 +311,28 @@ function saveNotices() {
   saveBasicConfig('notices', val)
 }
 
-// ====== Background image management ======
-function openBgAdd(key) {
-  curBgAddKey.value = key
-  curBgImgs.value = [...bgImages[key]]
-  addMethod.value = 'upload'
-  urlInput.value = ''
-  pickerPage.value = 1
-  loadPicker()
-}
-
-function finishBgAdd(key) {
-  bgImages[key] = [...curBgImgs.value]
-  saveBgConfig(key)
-  curBgAddKey.value = null
-}
-
+// ====== Background image management（上传/选择即生效） ======
 function addBgUrl(key) {
-  const url = urlInput.value.trim()
+  const url = (urlInputMap[key] || '').trim()
   if (!url) return
-  if (!curBgImgs.value.includes(url)) curBgImgs.value.push(url)
-  urlInput.value = ''
+  if (!bgImages[key].includes(url)) {
+    bgImages[key].push(url)
+    saveBgConfig(key)
+  }
+  urlInputMap[key] = ''
 }
 
 function onBgUploaded(key, res) {
   if (res.code === 200 && res.data) {
     const path = res.data.path
-    if (!curBgImgs.value.includes(path)) curBgImgs.value.push(path)
-    ElMessage.success('上传成功')
+    if (!bgImages[key].includes(path)) {
+      bgImages[key].push(path)
+      saveBgConfig(key, '上传成功，背景已生效')
+    } else {
+      ElMessage.info('该图片已在此背景中')
+    }
+  } else {
+    ElMessage.error('上传失败')
   }
 }
 
@@ -276,16 +341,17 @@ function removeBg(key, i) {
   saveBgConfig(key)
 }
 
-function togglePickerItem(path) {
-  const idx = curBgImgs.value.indexOf(path)
-  if (idx >= 0) curBgImgs.value.splice(idx, 1)
-  else curBgImgs.value.push(path)
+function togglePickerItem(key, path) {
+  const idx = bgImages[key].indexOf(path)
+  if (idx >= 0) bgImages[key].splice(idx, 1)
+  else bgImages[key].push(path)
+  saveBgConfig(key)
 }
 
-async function saveBgConfig(key) {
+async function saveBgConfig(key, msg) {
   try {
     await siteConfigApi.save({ configKey: key, configValue: JSON.stringify(bgImages[key]), configType: 'public', description: '' })
-    ElMessage.success('背景已更新')
+    ElMessage.success(msg || '背景已更新')
   } catch (e) { ElMessage.error('保存失败') }
 }
 
@@ -401,7 +467,21 @@ function getShortName(url) {
 .bg-upload :deep(.el-upload-dragger) {
   width: 100%; border-radius: 12px; padding: 30px;
 }
+.upload-tip { font-size: 12px; color: #9ab89a; margin-top: 6px; }
 .url-row { display: flex; gap: 10px; }
+
+/* ====== 音乐管理 ====== */
+.music-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+.music-item { background: #f8fbf8; border: 1px solid #e0eee0; border-radius: 14px; padding: 14px; }
+.music-item-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.music-index { width: 26px; height: 26px; border-radius: 50%; background: var(--nature-gradient); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mi-name { flex: 1; }
+.mi-artist { flex: 1; }
+.mi-del { flex-shrink: 0; }
+.music-item-body { display: flex; flex-direction: column; gap: 8px; }
+.mi-audio { width: 100%; height: 32px; margin-top: 8px; }
+.music-add-row { display: flex; align-items: center; gap: 14px; }
+.music-tip { font-size: 12px; color: #9ab89a; }
 
 /* ====== Picker Grid ====== */
 .picker-grid {

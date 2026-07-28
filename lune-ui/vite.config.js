@@ -8,13 +8,22 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: API_TARGET,
-        changeOrigin: true
-      },
-      '/upload': {
-        target: API_TARGET,
-        changeOrigin: true
+      '/api': { target: API_TARGET, changeOrigin: true },
+      '/upload': { target: API_TARGET, changeOrigin: true }
+    }
+  },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // three.js 单独分包（仅首页雪花用到，按需加载）
+          three: ['three'],
+          // Element Plus 单独分包
+          element: ['element-plus', '@element-plus/icons-vue'],
+          // Vue 全家桶
+          vendor: ['vue', 'vue-router', 'pinia', 'axios']
+        }
       }
     }
   }

@@ -90,6 +90,7 @@ public class EssayServiceImpl implements EssayService {
         exist.setTitle(essay.getTitle());
         exist.setContent(essay.getContent());
         exist.setCover(essay.getCover());
+        exist.setMedia(essay.getMedia());
         exist.setWeather(essay.getWeather());
         exist.setMood(essay.getMood());
         exist.setLocation(essay.getLocation());

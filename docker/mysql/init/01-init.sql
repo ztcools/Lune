@@ -18,6 +18,10 @@ DROP TABLE IF EXISTS `tag`;
 DROP TABLE IF EXISTS `article`;
 DROP TABLE IF EXISTS `category`;
 DROP TABLE IF EXISTS `user`;
+DROP TABLE IF EXISTS `work_experience`;
+DROP TABLE IF EXISTS `project`;
+DROP TABLE IF EXISTS `wish`;
+DROP TABLE IF EXISTS `wish_like`;
 
 CREATE TABLE `user` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -121,6 +125,7 @@ CREATE TABLE `essay` (
     `title` VARCHAR(200) DEFAULT NULL,
     `content` TEXT NOT NULL,
     `cover` VARCHAR(500) DEFAULT NULL,
+    `media` TEXT DEFAULT NULL COMMENT 'JSON媒体 [{type:image|video, url}]',
     `weather` VARCHAR(20) DEFAULT NULL,
     `mood` VARCHAR(20) DEFAULT NULL,
     `location` VARCHAR(100) DEFAULT NULL,
@@ -217,6 +222,72 @@ CREATE TABLE `visit_log` (
     `path` VARCHAR(200) DEFAULT NULL,
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `work_experience` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT DEFAULT NULL,
+    `company` VARCHAR(100) NOT NULL,
+    `position` VARCHAR(100) DEFAULT NULL,
+    `location` VARCHAR(100) DEFAULT NULL,
+    `start_date` DATE DEFAULT NULL,
+    `end_date` DATE DEFAULT NULL,
+    `is_current` TINYINT(1) NOT NULL DEFAULT 0,
+    `description` TEXT,
+    `responsibilities` TEXT,
+    `media` TEXT DEFAULT NULL COMMENT 'JSON媒体 [{type:image|video, url}]',
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `status` TINYINT NOT NULL DEFAULT 1,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted` TINYINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `idx_sort` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `project` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT DEFAULT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `summary` VARCHAR(300) DEFAULT NULL,
+    `description` TEXT,
+    `tech_stack` TEXT DEFAULT NULL,
+    `role` VARCHAR(100) DEFAULT NULL,
+    `project_url` VARCHAR(500) DEFAULT NULL,
+    `repo_url` VARCHAR(500) DEFAULT NULL,
+    `cover` VARCHAR(500) DEFAULT NULL,
+    `media` TEXT DEFAULT NULL COMMENT 'JSON媒体 [{type:image|video, url}]',
+    `dev_period` VARCHAR(50) DEFAULT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `status` TINYINT NOT NULL DEFAULT 1,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted` TINYINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `idx_sort` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `wish` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `title` VARCHAR(200) NOT NULL,
+    `content` TEXT,
+    `like_count` BIGINT NOT NULL DEFAULT 0,
+    `status` TINYINT NOT NULL DEFAULT 1,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted` TINYINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `idx_like_count` (`like_count`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `wish_like` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `wish_id` BIGINT NOT NULL,
+    `user_id` BIGINT NOT NULL,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_wish_user` (`wish_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========== 种子数据 ==========

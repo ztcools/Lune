@@ -11,7 +11,9 @@ const routes = [
       { path: 'family', name: 'Family', component: () => import('../views/family/Family.vue') },
       { path: 'treehole', name: 'TreeHole', component: () => import('../views/treehole/TreeHole.vue') },
       { path: 'essay', name: 'Essay', component: () => import('../views/essay/Essay.vue') },
-      { path: 'record', name: 'Record', component: () => import('../views/record/Record.vue') }
+      { path: 'record', name: 'Record', component: () => import('../views/record/Record.vue') },
+      { path: 'resume', name: 'Resume', component: () => import('../views/resume/Resume.vue') },
+      { path: 'wish', name: 'Wish', component: () => import('../views/wish/Wish.vue') }
     ]
   },
   {
@@ -35,15 +37,20 @@ const routes = [
       { path: 'resources', name: 'AdminResources', component: () => import('../admin/ResourceManage.vue') },
       { path: 'family', name: 'AdminFamily', component: () => import('../admin/FamilyManage.vue') },
       { path: 'diaries', name: 'AdminDiaries', component: () => import('../admin/DiaryManage.vue') },
+      { path: 'resume', name: 'AdminResume', component: () => import('../admin/ResumeManage.vue') },
+      { path: 'wishes', name: 'AdminWishes', component: () => import('../admin/WishManage.vue') },
       { path: 'settings', name: 'AdminSettings', component: () => import('../admin/Settings.vue') }
     ]
-  }
+  },
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior() {
+  scrollBehavior(to, from, savedPosition) {
+    // 浏览器前进/后退时恢复原滚动位置，提升返回列表体验
+    if (savedPosition) return savedPosition
     return { top: 0 }
   }
 })

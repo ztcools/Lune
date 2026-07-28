@@ -76,6 +76,9 @@
         <el-form-item label="内容" prop="content">
           <el-input v-model="form.content" type="textarea" :rows="6" maxlength="10000" show-word-limit placeholder="随笔内容" />
         </el-form-item>
+        <el-form-item label="图片/视频">
+          <MediaEditor v-model="form.media" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dlgVisible=false">取消</el-button>
@@ -90,6 +93,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { essayApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import MediaEditor from './MediaEditor.vue'
 
 const essays = ref([])
 const tableLoading = ref(false)
@@ -102,7 +106,7 @@ const uploadUrl = '/api/admin/resources/upload'
 const uploadHeaders = { Authorization: 'Bearer ' + localStorage.getItem('token') }
 
 const pagination = reactive({ current:1, size:10, total:0 })
-const form = reactive({ title:'', weather:'', mood:'', location:'', cover:'', content:'' })
+const form = reactive({ title:'', weather:'', mood:'', location:'', cover:'', content:'', media:'' })
 const rules = {
   title: [{ required:true, message:'请输入标题', trigger:'blur' }],
   content: [{ required:true, message:'请输入内容', trigger:'blur' }]
@@ -123,8 +127,8 @@ async function fetchEssays() {
 function showDialog(row) {
   editRow.value = row
   coverMethod.value = 'upload'
-  if (row) Object.assign(form, { title:row.title||'', weather:row.weather||'', mood:row.mood||'', location:row.location||'', cover:row.cover||'', content:row.content||'' })
-  else Object.assign(form, { title:'', weather:'', mood:'', location:'', cover:'', content:'' })
+  if (row) Object.assign(form, { title:row.title||'', weather:row.weather||'', mood:row.mood||'', location:row.location||'', cover:row.cover||'', content:row.content||'', media:row.media||'' })
+  else Object.assign(form, { title:'', weather:'', mood:'', location:'', cover:'', content:'', media:'' })
   dlgVisible.value = true
 }
 

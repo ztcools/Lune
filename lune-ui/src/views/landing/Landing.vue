@@ -1,5 +1,8 @@
 <template>
   <div class="landing-page">
+    <!-- 飘落花瓣装饰 -->
+    <FloatPetals type="petal" :count="16" />
+
     <!-- 首页背景图片 -->
     <el-image
       style="animation: header-effect 2s"
@@ -27,6 +30,12 @@
       <!-- 动作按钮 -->
       <div class="hero-actions">
         <button class="btn" @click="$router.push('/home')">Crush!</button>
+        <button class="btn btn-resume" @click="$router.push('/resume')">
+          <span class="btn-emoji">🌿</span> 我的简历
+        </button>
+        <button class="btn btn-wish" @click="$router.push('/wish')">
+          <span class="btn-emoji">🌠</span> 许愿池
+        </button>
       </div>
 
       <!-- 波浪效果 -->
@@ -41,9 +50,12 @@
       </div>
     </div>
 
-    <!-- 页脚 -->
-    <footer class="landing-footer">
-      <p>{{ appStore.webInfo.footer || '© 2024 Lune. All Rights Reserved.' }}</p>
+    <!-- 页脚备案：默认隐藏，滚动到页面底部时才显示 -->
+    <footer class="landing-footer" :class="{ show: footerVisible }">
+      <p class="footer-icp">{{ appStore.webInfo.footer || '© 2024 Lune. All Rights Reserved.' }}</p>
+      <p class="footer-beian" v-if="appStore.config.beian_icp">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ appStore.config.beian_icp }}</a>
+      </p>
     </footer>
   </div>
 </template>
@@ -53,6 +65,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { useAppStore } from '../../stores/app'
 import { usePageBackground } from '../../composables/usePageBackground'
+import FloatPetals from '../../components/effects/FloatPetals.vue'
 
 const appStore = useAppStore()
 
@@ -64,35 +77,41 @@ const fullText = computed(() => '记录美好生活，分享成长点滴 ✨')
 const coverImage = usePageBackground('landing')
 
 let typingTimer = null
+const footerVisible = ref(false)
+
+function onScrollFooter() {
+  // 滚动到接近页面底部时显示备案页脚
+  const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80
+  footerVisible.value = nearBottom
+}
 
 onMounted(() => {
   appStore.fetchConfig()
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
+  window.addEventListener('scroll', onScrollFooter, { passive: true })
 
-  // 打字机效果（渐进打出，然后回退）
+  // 打字机效果（渐进打出，停顿后回退）
   let i = 0
   let forward = true
+  let holdTicks = 0
   typingTimer = setInterval(() => {
     const text = fullText.value
     if (forward) {
       typedText.value = text.slice(0, i + 1)
       i++
-      if (i >= text.length) {
-        forward = false
-        setTimeout(() => {}, 2000)
-      }
+      if (i >= text.length) { forward = false; holdTicks = 20 }
     } else {
+      if (holdTicks > 0) { holdTicks--; return }
       typedText.value = text.slice(0, i)
       i--
-      if (i <= 0) {
-        forward = true
-      }
+      if (i <= 0) forward = true
     }
   }, 100)
 })
 
 onUnmounted(() => {
   if (typingTimer) clearInterval(typingTimer)
+  window.removeEventListener('scroll', onScrollFooter)
 })
 
 function scrollDown() {
@@ -210,6 +229,12 @@ function scrollDown() {
 .btn:hover { color: var(--color2); }
 .btn:active { filter: brightness(.7); transform: scale(.98); }
 
+/* 简历按钮 —— 自然绿 */
+.btn-resume { --color: #66bb6a; }
+/* 许愿池按钮 —— 暖金 */
+.btn-wish { --color: #ffb74d; }
+.btn-emoji { margin-right: 4px; }
+
 /* ===== 波浪效果 ===== */
 #bannerWave1 {
   height: 84px;
@@ -242,16 +267,28 @@ function scrollDown() {
   animation: my-shake 1.5s ease-out infinite;
 }
 
-/* ===== 页脚 ===== */
+/* ===== 页脚备案（默认隐藏，滚到底才显示） ===== */
 .landing-footer {
-  background: var(--gradientBG);
-  background-size: 400% 400%;
-  animation: gradientBG 10s ease infinite;
-  padding: 20px;
+  padding: 18px 20px;
   text-align: center;
-  color: var(--white);
-  font-size: 14px;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.4s ease;
+  pointer-events: none;
 }
+.landing-footer.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.footer-icp { margin: 0; letter-spacing: 0.5px; }
+.footer-beian { margin: 6px 0 0; }
+.footer-beian a { color: rgba(255, 255, 255, 0.7); transition: color 0.3s; }
+.footer-beian a:hover { color: #fff; }
 
 /* ===== 响应式 ===== */
 @media screen and (max-width: 768px) {

@@ -1,74 +1,104 @@
 :root {
-  --background: #ffffff;
-  --fontColor: #000000;
-  --themeBackground: orange;
-  --lightGreen: #39c5bb;
-  --gradualRed: linear-gradient(to right, #ff4b2b, #ff416c);
-  --gradientBG: linear-gradient(-90deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-  --toolbarFont: #333333;
-  --toolbarBackground: rgba(255,255,255,1);
-  --articleFontColor: #1f1f1f;
-  --articleGreyFontColor: #616161;
-  --greyFont: #797979;
-  --maxGreyFont: #595a5a;
-  --borderColor: rgba(0,0,0,0.5);
-  --borderHoverColor: rgba(110,110,110,0.4);
-  --commentContent: #f7f9fe;
-  --favoriteBg: #f7f9fe;
-  --whiteMask: rgba(255,255,255,0.3);
-  --maxWhiteMask: rgba(255,255,255,0.5);
-  --maxMaxWhiteMask: rgba(255,255,255,0.7);
-  --miniWhiteMask: rgba(255,255,255,0.15);
-  --transparent: rgba(0,0,0,0);
-  --miniMask: rgba(0,0,0,0.15);
-  --mask: rgba(0,0,0,0.3);
-  --translucent: rgba(0,0,0,0.5);
-  --maxMask: rgba(0,0,0,0.7);
+  /* ===== 基础 ===== */
+  --background: #f4f9f4;
+  --fontColor: #2a3a2a;
   --white: #ffffff;
-  --red: #ff0000;
-  --lightRed: #ff4b2b;
-  --maxLightRed: #ff416c;
-  --orangeRed: #ef794f;
-  --azure: #ecf7fe;
-  --blue: rgb(3,169,244);
-  --lightGray: #dddddd;
-  --maxLightGray: #eeeeee;
-  --maxMaxLightGray: rgba(242,242,242,0.5);
-  --green: #67c23a;
   --black: #000000;
-  --lightYellow: #f4e1c0;
-  --globalFont: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  --red: #ff0000;
 
+  /* ===== 主题（自然绿） ===== */
+  --themeBackground: #43a047;
+  --lightGreen: #66bb6a;
+
+  /* ===== 文字 ===== */
+  --articleFontColor: #24402a;
+  --articleGreyFontColor: #6b7d6b;
+  --greyFont: #8aa08a;
+  --maxGreyFont: #5a6a5a;
+
+  /* ===== 边框 / 遮罩 ===== */
+  --borderColor: rgba(67, 160, 71, 0.18);
+  --borderHoverColor: rgba(67, 160, 71, 0.32);
+  --commentContent: #eef6ee;
+  --favoriteBg: #eef6ee;
+  --whiteMask: rgba(255, 255, 255, 0.3);
+  --maxWhiteMask: rgba(255, 255, 255, 0.5);
+  --maxMaxWhiteMask: rgba(255, 255, 255, 0.7);
+  --miniWhiteMask: rgba(255, 255, 255, 0.15);
+  --transparent: rgba(0, 0, 0, 0);
+  --miniMask: rgba(0, 0, 0, 0.15);
+  --mask: rgba(0, 0, 0, 0.3);
+  --translucent: rgba(0, 0, 0, 0.5);
+  --maxMask: rgba(0, 0, 0, 0.7);
+
+  /* ===== 工具栏 ===== */
+  --toolbarFont: #2a3a2a;
+  --toolbarBackground: rgba(255, 255, 255, 0.85);
+
+  /* ===== 渐变 ===== */
+  --gradualRed: linear-gradient(to right, #ff6b9d, #ff9671);
+  --gradientBG: linear-gradient(-90deg, #66bb6a, #ffb74d, #4fc3f7, #81c784);
+
+  /* ===== 旧兼容 ===== */
+  --lightRed: #ff6b9d;
+  --maxLightRed: #ff9671;
+  --orangeRed: #ffa726;
+  --azure: #e3f2fd;
+  --blue: #42a5f5;
+  --lightGray: #e0e0e0;
+  --maxLightGray: #eeeeee;
+  --maxMaxLightGray: rgba(242, 242, 242, 0.5);
+  --green: #66bb6a;
+  --lightYellow: #fff8e1;
+  --globalFont: 'Quicksand', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* ===== 自然原野系列 ===== */
   --nature-green: #4caf50;
   --nature-green-light: #81c784;
   --nature-green-dark: #388e3c;
   --nature-green-pale: #e8f5e9;
   --nature-gold: #ffb74d;
+  --nature-sky: #4fc3f7;
   --nature-brown: #8d6e63;
   --nature-cream: #fff8e1;
   --nature-gradient: linear-gradient(135deg, #43a047, #66bb6a, #81c784);
   --nature-gradient-soft: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 30%, #fff8e1 100%);
-  --card-glass: rgba(255, 255, 255, 0.18);
+  --nature-gradient-warm: linear-gradient(135deg, #ffb74d, #ff8a65);
+  --nature-gradient-sky: linear-gradient(135deg, #4fc3f7, #81d4fa);
+
+  /* ===== 玻璃拟态卡片 ===== */
+  --card-glass: rgba(255, 255, 255, 0.72);
   --card-glass-dark: rgba(255, 255, 255, 0.12);
-  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --card-shadow-hover: 0 16px 48px rgba(0, 0, 0, 0.12);
-  --card-radius: 28px;
-  --card-radius-sm: 18px;
-  --card-border: 1px solid rgba(255, 255, 255, 0.25);
-  --input-bg: rgba(255, 255, 255, 0.6);
-  --input-focus-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
-  --trendy-font: 'Fredoka', 'Comfortaa', 'Quicksand', sans-serif;
+  --card-shadow: 0 8px 32px rgba(67, 160, 71, 0.1);
+  --card-shadow-hover: 0 18px 48px rgba(67, 160, 71, 0.18);
+  --card-radius: 30px;
+  --card-radius-sm: 20px;
+  --card-border: 1px solid rgba(255, 255, 255, 0.6);
+  --input-bg: rgba(255, 255, 255, 0.7);
+  --input-focus-shadow: 0 0 0 4px rgba(102, 187, 106, 0.18);
+
+  /* ===== 字体 ===== */
+  --trendy-font: 'Fredoka', 'Comfortaa', 'Quicksand', 'Noto Sans SC', sans-serif;
+  /* 书法/诗意字体 */
+  --calligraphy-font: 'Ma Shan Zheng', 'Zhi Mang Xing', 'Noto Serif SC', serif;
+  --cursive-font: 'Zhi Mang Xing', 'Long Cang', 'Ma Shan Zheng', cursive;
+  --handwriting-font: 'Long Cang', 'Caveat', 'Ma Shan Zheng', cursive;
+  /* 文章/正文个性字体 */
+  --article-font: 'Noto Serif SC', 'Noto Sans SC', serif;
+
+  /* ===== 断点（统一） =====
+     mobile < 768px | tablet 768-1024px | desktop > 1024px */
 }
 
 [data-theme='dark'] {
-  --background: #272727;
-  --fontColor: #ffffff;
-  --toolbarBackground: rgba(39,39,39,1);
-  --toolbarFont: #ffffff;
-  --articleFontColor: #e4e4e4;
-  --articleGreyFontColor: #d4d4d4;
-  --borderColor: #4f4f4f;
-  --borderHoverColor: #000000;
-  --commentContent: #d4d4d4;
-  --favoriteBg: #1e1e1e;
+  --background: #1a2419;
+  --fontColor: #e4efe4;
+  --toolbarBackground: rgba(26, 36, 25, 0.85);
+  --toolbarFont: #e4efe4;
+  --articleFontColor: #d4e4d4;
+  --articleGreyFontColor: #b0c4b0;
+  --borderColor: #33502f;
+  --borderHoverColor: #4a7046;
+  --commentContent: #2a3a2a;
+  --favoriteBg: #1e2a1e;
 }

@@ -267,6 +267,7 @@ import { useRoute } from 'vue-router'
 import { Loading, Close, ChatLineSquare } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
+import { usePageBackground } from '../../composables/usePageBackground'
 import { articleApi, commentApi } from '../../api/modules'
 import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
@@ -289,11 +290,8 @@ const currentPage = ref(1)
 const pageSize = 10
 const replyTarget = ref(null)
 
-const randomCover = ref('')
-const coverPool = [
-  '/assets/背景1.jpg', '/assets/背景2.jpg', '/assets/背景3.jpg', '/assets/背景4.jpg'
-]
-randomCover.value = coverPool[Math.floor(Math.random() * coverPool.length)]
+// 文章无封面时的兜底背景（使用站点配置的通用内容背景，由 composable 随机选取）
+const randomCover = usePageBackground('homeContent')
 
 const categoryLabel = computed(() => {
   if (!article.value) return ''
@@ -361,12 +359,7 @@ async function fetchComments() {
 async function submitComment() {
   const content = commentContent.value.trim()
   if (!content) return
-  const user = userStore.user
-  if (!user) {
-    const { requireLogin } = await import('../../composables/useAuth')
-    if (!requireLogin()) return
-    return
-  }
+  if (!requireLogin()) return
   submitting.value = true
   try {
     const payload = {
