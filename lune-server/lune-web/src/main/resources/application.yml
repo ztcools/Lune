@@ -71,3 +71,8 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  # 邮件健康检查默认关闭（未配置真实邮箱时会拉低整体健康状态），
+  # 配置 MAIL_HOST 后由 application-prod.yml 或环境变量按需开启
+  health:
+    mail:
+      enabled: ${MAIL_HEALTH_ENABLED:false}
