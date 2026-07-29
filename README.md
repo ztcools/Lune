@@ -4,18 +4,37 @@
 
 ---
 
+## 🌐 在线演示
+
+<div align="center">
+
+### ✨ [http://111.231.14.63](http://111.231.14.63) ✨
+
+| 🏠 前台体验 | 🛠 后台管理 |
+|---|---|
+| [http://111.231.14.63](http://111.231.14.63) | [http://111.231.14.63/admin](http://111.231.14.63/admin) |
+| 直接访问即可 | 账号：`admin` ／ 密码：`admin123` |
+
+**📱 建议同时用 PC 和手机访问体验** — 已做移动端全面适配（底部 TabBar 导航 / 触摸优化 / 响应式布局 / PWA 离线缓存）
+
+</div>
+
+---
+
 ## 📖 目录
 
+- [在线演示](#-在线演示)
 - [前台页面](#前台页面)
 - [后台管理](#后台管理)
-- [技术栈](#技术栈)
+- [核心特性](#-核心特性)
+- [技术栈](#-技术栈)
 - [项目结构](#项目结构)
-- [部署指南](#部署指南)
+- [部署指南](#-部署指南)
   - [方式一：Docker 部署（推荐）](#方式一docker-部署推荐)
   - [方式二：本地开发（Docker Compose）](#方式二本地开发docker-compose)
   - [方式三：裸机运行](#方式三裸机运行)
-- [运维指南](#运维指南)
-- [License](#license)
+- [运维指南](#-运维指南)
+- [License](#-license)
 
 ---
 
@@ -127,6 +146,50 @@
 
 ---
 
+## ✨ 核心特性
+
+### 🎯 产品功能
+- 📝 **博客文章** — 分类/标签/置顶/浏览量/点赞/Markdown 渲染
+- 💭 **随笔** — 朋友圈式图文/视频动态，支持九宫格媒体
+- 📖 **记录** — 分类卡片瀑布流，QQ空间风格
+- 🌳 **树洞** — 弹幕互动 + 时间线双视图
+- 💕 **家页** — 情侣头像互动、在一起天数、祝福板、烂皮书日记
+- 🌠 **许愿池** — 需求点赞排行 + 评论互动
+- 👤 **简历页** — 个人卡片 + 工作时间线 + 项目展示
+
+### 📱 移动端全面适配
+- 🎯 **底部 TabBar 导航** — 毛玻璃 + 5 主 Tab + ActionSheet 我的面板
+- 🖼 **智能图片** — 懒加载 + 模糊占位 + 响应式 srcset + 弱网降级
+- 🌐 **网络感知** — `navigator.connection` API 检测 2G/3G/4G 自动调清晰度
+- 📲 **PWA 离线缓存** — Service Worker 预缓存 + 运行时缓存（图片/API/字体）
+- 🎵 **迷你播放器** — 移动端底部迷你音乐条，点击展开完整播放
+- ✨ **触摸反馈** — 缩放动画 + iOS 安全区适配 + 触摸震动
+
+### 🔒 企业级安全
+- 🛡 **接口限流** — Nginx + 后端双层滑动窗口（auth 5r/m、写 20/min、读 120/min）
+- 🔐 **登录锁定** — 连续失败 5 次锁定 15 分钟（Redis + 内存降级）
+- 🚫 **XSS 防护** — 服务端转义 + 前端净化 + CSP 响应头
+- 🔑 **JWT 黑名单** — Redis 存储，Redis 宕机自动降级
+- 📦 **文件白名单** — 类型校验 + 50MB 限制 + 拒绝 SVG（防 XSS）
+- 🕵️ **生产加固** — 关 sourcemap / terser 去 console / 禁调试快捷键
+
+### ⚡ 性能优化（2C4G 5M 小水管也能跑）
+- 🎨 **Element Plus 按需加载** — unplugin 自动拆包（1MB → 92KB）
+- ❄️ **Three.js 按需加载** — `defineAsyncComponent` 仅 PC 加载
+- 🌍 **国内 CDN 资源** — alcy.cc 二次元图床 / jsdelivr 音乐
+- 🗜 **JVM 512M + MySQL 768M + Redis 256M** — 精准资源限制
+- 📝 **日志轮转** — 容器日志 10MB × 3-5 份自动清理
+- 🎯 **响应式图片** — 400w / 800w / 1600w 按设备自动选
+
+### 🏗 架构设计
+- 🔄 **存储抽象** — `StorageService` 接口，本地 / OSS 一键切换
+- 🗄 **软删除** — User/Article/Essay/Record/WorkExperience/Project/Wish
+- ⚛️ **原子计数** — 浏览/点赞用 SQL 原子更新，避免并发丢失
+- 🔁 **幂等初始化** — `DataInitializer` 空表才插，安全重复执行
+- 📊 **统一响应** — `Result<T>` + `PageResult` + 全局异常处理
+
+---
+
 ## 🛠 技术栈
 
 | 层 | 技术 |
@@ -135,7 +198,8 @@
 | **前端** | Vue 3 (Composition API) · Vite 5 · Pinia · Vue Router 4 · Element Plus |
 | **特效** | Three.js GLSL 着色器（雪花）· Canvas 粒子（樱花）· CSS 3D 翻页 · CSS 弹幕 |
 | **数据库** | MySQL 8 · Redis |
-| **运维** | Docker · Docker Compose · Nginx |
+| **PWA** | vite-plugin-pwa · Workbox · Service Worker |
+| **运维** | Docker · Docker Compose · Nginx · 国内镜像加速 |
 
 ---
 
@@ -189,6 +253,10 @@ Lune/
 ## 🚀 部署指南
 
 > 📘 **完整企业级部署文档（含 ICP 备案后接入域名 / HTTPS / CDN / OSS、资源预算、运维排查）见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
+>
+> 🌐 **当前生产环境部署报告（含服务器架构图 / 资源限制 / Phase 2-5 增量路线图）见 [docs/SERVER-DEPLOYMENT.md](docs/SERVER-DEPLOYMENT.md)**
+>
+> 演示站点已部署在腾讯云 2C4G 5M 服务器（http://111.231.14.63），资源受限环境下的最佳实践参考。
 
 ### 方式一：Docker 部署（推荐）
 

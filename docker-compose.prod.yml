@@ -54,6 +54,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - UPLOAD_PATH=/app/upload
       - TZ=Asia/Shanghai
+      # 2C4G 服务器 JVM 限制：堆 512M，元空间 128M
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     depends_on:
       mysql:
         condition: service_healthy
@@ -62,6 +64,13 @@ services:
     networks:
       - lune-network
     restart: always
+    # 2C4G 服务器容器内存限制
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/api/actuator/health"]
       interval: 30s
@@ -93,6 +102,13 @@ services:
     networks:
       - lune-network
     restart: always
+    # 2C4G 服务器限制：MySQL 内存最大 768M
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 256M
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
       interval: 10s
@@ -119,6 +135,13 @@ services:
     networks:
       - lune-network
     restart: always
+    # 2C4G 服务器限制：Redis 最大 256M
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
