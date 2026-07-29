@@ -25,6 +25,7 @@ export const useAppStore = defineStore('app', {
           this.webInfo.favicon = data.site_logo || ''
 
           // 背景图：每个 key 存储 JSON 数组，随机选取
+          // PC端 + 移动端双套配置，前端按设备自动选择
           this.bgImages = {
             landing: this.parseJsonArray(data.landing_bg),
             homeHero: this.parseJsonArray(data.home_hero_bg),
@@ -39,7 +40,22 @@ export const useAppStore = defineStore('app', {
             recordContent: this.parseJsonArray(data.record_content_bg),
             wishHero: this.parseJsonArray(data.wish_hero_bg),
             wishContent: this.parseJsonArray(data.wish_content_bg),
-            resumeHero: this.parseJsonArray(data.resume_hero_bg)
+            resumeHero: this.parseJsonArray(data.resume_hero_bg),
+            // 移动端专用
+            landingMobile: this.parseJsonArray(data.landing_bg_mobile),
+            homeHeroMobile: this.parseJsonArray(data.home_hero_bg_mobile),
+            homeContentMobile: this.parseJsonArray(data.home_content_bg_mobile),
+            familyHeroMobile: this.parseJsonArray(data.family_hero_bg_mobile),
+            familyContentMobile: this.parseJsonArray(data.family_content_bg_mobile),
+            treeholeDanmakuMobile: this.parseJsonArray(data.treehole_danmaku_bg_mobile),
+            treeholeContentMobile: this.parseJsonArray(data.treehole_content_bg_mobile),
+            essayHeroMobile: this.parseJsonArray(data.essay_hero_bg_mobile),
+            essayContentMobile: this.parseJsonArray(data.essay_content_bg_mobile),
+            recordHeroMobile: this.parseJsonArray(data.record_hero_bg_mobile),
+            recordContentMobile: this.parseJsonArray(data.record_content_bg_mobile),
+            wishHeroMobile: this.parseJsonArray(data.wish_hero_bg_mobile),
+            wishContentMobile: this.parseJsonArray(data.wish_content_bg_mobile),
+            resumeHeroMobile: this.parseJsonArray(data.resume_hero_bg_mobile)
           }
 
           if (data.site_logo) {

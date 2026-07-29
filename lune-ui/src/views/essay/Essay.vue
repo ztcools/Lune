@@ -384,13 +384,14 @@ function formatRelative(d) {
 
 @media screen and (max-width: 600px) {
   .moments-container { padding: 0 10px 50px; }
-  .hero-info h1 { font-size: 28px; letter-spacing: 4px; }
-  .moment-card { padding: 16px 18px; }
-  .moment-username { font-size: 16px; }
-  .moment-text { font-size: 15px; }
+  .hero-info h1 { font-size: 26px; letter-spacing: 4px; }
+  .moment-card { padding: 14px 14px; border-radius: 14px; }
+  .moment-username { font-size: 15px; }
+  .moment-text { font-size: 14px; line-height: 1.6; }
   .mgrid-1 { max-width: 100%; }
   .mgrid-2, .mgrid-4 { max-width: 100%; }
-  .add-fab { bottom: 26px; right: 16px; width: 50px; height: 50px; }
+  /* FAB 避开底部 TabBar */
+  .add-fab { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); right: 16px; width: 48px; height: 48px; }
   .dialog-meta { flex-wrap: wrap; }
 }
 </style>

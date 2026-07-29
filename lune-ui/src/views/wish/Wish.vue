@@ -262,8 +262,9 @@ function formatRelative(d) {
 .create-tip { font-size: 12px; color: #9ab89a; }
 
 @media screen and (max-width: 768px) {
-  .hero-title { font-size: 30px; letter-spacing: 4px; }
-  .wish-card { padding: 18px; gap: 10px; }
-  .wish-rank { font-size: 26px; }
+  .hero-title { font-size: 26px; letter-spacing: 3px; }
+  .wish-card { padding: 14px 14px; gap: 8px; border-radius: 12px; }
+  .wish-rank { font-size: 22px; }
+  .wish-fab { padding: 12px 24px; font-size: 15px; }
 }
 </style>

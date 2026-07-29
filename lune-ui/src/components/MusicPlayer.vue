@@ -1,40 +1,63 @@
 <template>
-  <div class="music-card glass-card shadow-box">
-    <div class="music-title">🎵 来听首小曲</div>
-    <div class="music-player">
-      <!-- 封面 -->
-      <div class="music-disc-wrap" v-if="currentSong?.cover">
-        <div class="music-disc" :class="{ spinning: musicPlaying }">
-          <img :src="currentSong.cover" class="disc-img" alt="" />
-        </div>
+  <div class="music-card glass-card shadow-box" :class="{ mobile: isMobile, expanded: isMobile && mobileExpanded }">
+    <!-- 移动端迷你条（默认状态） -->
+    <div v-if="isMobile && !mobileExpanded" class="music-mini" @click="mobileExpanded = true">
+      <div class="mini-disc" :class="{ spinning: musicPlaying }">
+        <img v-if="currentSong?.cover" :src="currentSong.cover" class="disc-img" alt="" />
+        <span v-else class="mini-icon">🎵</span>
       </div>
-
-      <!-- 歌词 -->
-      <div class="music-lyrics" v-if="displayLyric">
-        <div class="lyric-line active">{{ displayLyric }}</div>
+      <div class="mini-info">
+        <div class="mini-name">{{ currentSong?.name || '暂无音乐' }}</div>
+        <div class="mini-artist">{{ currentSong?.artist || '点我展开' }}</div>
       </div>
-
-      <div class="music-song-name">{{ currentSong?.name || '暂无音乐' }}</div>
-
-      <!-- 控制 -->
-      <div class="music-controls">
-        <button class="music-ctl-btn" @click="prevSong" title="上一首">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" fill="currentColor"/></svg>
-        </button>
-        <button class="music-play-btn" @click="toggleMusic">
-          <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-          <svg v-else viewBox="0 0 24 24" width="20" height="20"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
-        </button>
-        <button class="music-ctl-btn" @click="nextSong" title="下一首">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z" fill="currentColor"/></svg>
-        </button>
-        <div class="music-progress" @click="seekMusic">
-          <div class="music-progress-fill" :style="{ width: musicProgress + '%' }" />
-        </div>
-      </div>
-      <div class="music-song-artist">{{ currentSong?.artist || '在后台添加音乐吧' }}</div>
-      <div class="music-time" v-if="duration > 0">{{ fmtTime(currentTime) }} / {{ fmtTime(duration) }}</div>
+      <button class="mini-play-btn" @click.stop="toggleMusic">
+        <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="18" height="18"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+        <svg v-else viewBox="0 0 24 24" width="18" height="18"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
+      </button>
     </div>
+
+    <!-- 完整播放器（PC 或移动端展开时） -->
+    <template v-else>
+      <div v-if="isMobile" class="music-mobile-header" @click="mobileExpanded = false">
+        <span class="music-title">🎵 来听首小曲</span>
+        <span class="collapse-icon">⌄</span>
+      </div>
+      <div v-else class="music-title">🎵 来听首小曲</div>
+      <div class="music-player">
+        <!-- 封面 -->
+        <div class="music-disc-wrap" v-if="currentSong?.cover">
+          <div class="music-disc" :class="{ spinning: musicPlaying }">
+            <img :src="currentSong.cover" class="disc-img" alt="" />
+          </div>
+        </div>
+
+        <!-- 歌词 -->
+        <div class="music-lyrics" v-if="displayLyric">
+          <div class="lyric-line active">{{ displayLyric }}</div>
+        </div>
+
+        <div class="music-song-name">{{ currentSong?.name || '暂无音乐' }}</div>
+
+        <!-- 控制 -->
+        <div class="music-controls">
+          <button class="music-ctl-btn" @click="prevSong" title="上一首">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" fill="currentColor"/></svg>
+          </button>
+          <button class="music-play-btn" @click="toggleMusic">
+            <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+            <svg v-else viewBox="0 0 24 24" width="20" height="20"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
+          </button>
+          <button class="music-ctl-btn" @click="nextSong" title="下一首">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z" fill="currentColor"/></svg>
+          </button>
+          <div class="music-progress" @click="seekMusic">
+            <div class="music-progress-fill" :style="{ width: musicProgress + '%' }" />
+          </div>
+        </div>
+        <div class="music-song-artist">{{ currentSong?.artist || '在后台添加音乐吧' }}</div>
+        <div class="music-time" v-if="duration > 0">{{ fmtTime(currentTime) }} / {{ fmtTime(duration) }}</div>
+      </div>
+    </template>
 
     <!-- 隐藏的音频元素 -->
     <audio ref="audioRef" :src="currentSong?.url" @timeupdate="onTimeUpdate" @ended="nextSong" @loadedmetadata="onLoaded" preload="metadata"></audio>
@@ -50,11 +73,16 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { siteConfigApi } from '../api/modules'
+import { useAppStore } from '../stores/app'
 
 const props = defineProps({
   // 兜底纯音乐列表（Web Audio 合成，无配置时用）
   fallback: { type: Array, default: () => [] }
 })
+
+const appStore = useAppStore()
+const isMobile = computed(() => appStore.mobile)
+const mobileExpanded = ref(false)
 
 const audioRef = ref(null)
 const musicPlaying = ref(false)
@@ -157,4 +185,82 @@ onUnmounted(() => pause())
 .music-progress-fill { height: 100%; background: var(--nature-gradient); border-radius: 3px; transition: width 0.2s linear; }
 .music-song-artist { font-size: 12px; color: #8aa88a; }
 .music-time { font-size: 11px; color: #a0b0a0; font-family: var(--trendy-font); }
+
+/* ============ 移动端迷你播放器 ============ */
+.music-card.mobile {
+  position: fixed;
+  left: 12px; right: 12px;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  z-index: 99;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+/* 移动端展开状态 */
+.music-card.mobile.expanded {
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding: 16px;
+}
+
+.music-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.mini-disc {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--nature-green-pale, #eef6ee);
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.mini-disc.spinning { animation: discSpin 6s linear infinite; }
+.mini-icon { font-size: 18px; }
+.mini-info { flex: 1; min-width: 0; }
+.mini-name {
+  font-size: 13px; font-weight: 700; color: #2e5a2e;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--trendy-font);
+}
+.mini-artist {
+  font-size: 11px; color: #8aa88a;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mini-play-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%; border: none;
+  background: var(--nature-gradient, linear-gradient(135deg, #66bb6a, #43a047));
+  color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(76,175,80,0.4);
+  transition: all 0.2s;
+}
+.mini-play-btn:active { transform: scale(0.92); }
+
+.music-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.collapse-icon {
+  font-size: 24px;
+  color: #8aa88a;
+  font-weight: bold;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+.music-mobile-header:active .collapse-icon { transform: scale(1.2); }
 </style>

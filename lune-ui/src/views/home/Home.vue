@@ -657,9 +657,25 @@ onUnmounted(() => {
   .aside-content { width: 100%; max-width: unset; margin: 40px auto 0; }
 }
 @media screen and (max-width: 768px) {
-  h1 { font-size: 35px; }
-  .playful { font-size: 35px; }
-  .article-grid { grid-template-columns: 1fr; }
-  .article-cover-wrap { height: 200px; }
+  h1 { font-size: 28px; }
+  .playful { font-size: 28px; }
+  .article-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .article-card {
+    border-radius: 12px;
+  }
+  .article-cover-wrap { height: 160px; }
+  .article-body { padding: 12px 14px 14px; }
+  .article-title { font-size: 16px; margin-bottom: 6px; }
+  .article-summary { font-size: 13px; line-height: 1.55; -webkit-line-clamp: 2; }
+  .article-meta { font-size: 11px; gap: 10px; margin-top: 8px; }
+  .pagination-wrap { margin-top: 24px; }
+}
+@media screen and (max-width: 400px) {
+  h1 { font-size: 24px; }
+  .playful { font-size: 24px; }
+  .article-cover-wrap { height: 150px; }
 }
 </style>

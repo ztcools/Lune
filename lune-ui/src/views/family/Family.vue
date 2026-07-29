@@ -494,17 +494,19 @@ function formatFullDate(d) {
 
 /* ===== 响应式 ===== */
 @media screen and (max-width: 768px) {
-  .love-hero { min-height: 56vh; }
-  .couple-avatar { width: 84px !important; height: 84px !important; }
-  .love-connector { width: 80px; }
-  .love-line { width: 80px; }
-  .big-heart { font-size: 36px; }
-  .days-num { font-size: 46px; }
-  .together-card { padding: 20px 30px; }
-  .vine { font-size: 40px; }
+  .love-hero { min-height: 52vh; }
+  .couple-avatar { width: 76px !important; height: 76px !important; }
+  .love-connector { width: 60px; }
+  .love-line { width: 60px; }
+  .big-heart { font-size: 32px; }
+  .days-num { font-size: 40px; }
+  .together-card { padding: 18px 22px; border-radius: 16px; }
+  .vine { font-size: 36px; }
   .book-container { flex-direction: column; }
   .book-spine { left: 0; right: 0; top: 50%; bottom: auto; width: auto; height: 8px; transform: translateY(-50%); }
-  .tab-nav { top: 52px; gap: 8px; }
-  .tab-nav button { padding: 9px 18px; font-size: 14px; }
+  .tab-nav { top: 52px; gap: 6px; }
+  .tab-nav button { padding: 8px 14px; font-size: 13px; }
+  .book-nav button { padding: 8px 18px; font-size: 14px; }
+  .book-page-indicator { font-size: 14px; }
 }
 </style>

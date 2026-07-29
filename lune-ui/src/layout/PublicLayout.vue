@@ -17,13 +17,8 @@
           <h2 @click="goHome" class="site-title-link">{{ appStore.webInfo.webName || 'Lune' }}</h2>
         </div>
 
-        <div v-if="appStore.mobile" class="toolbar-mobile-menu"
-          :class="{ enter: appStore.toolbar.enter }"
-          @click="toolbarDrawer = !toolbarDrawer">
-          <i class="el-icon-s-operation"></i>
-        </div>
-
-        <div v-else>
+        <!-- PC端导航菜单 -->
+        <div v-if="!appStore.mobile">
           <ul class="scroll-menu">
             <li @click="$router.push({ path: '/home' })" :class="{ active: route.path === '/home' }">
               <div class="my-menu">🏠 <span>首页</span></div>
@@ -94,27 +89,8 @@
       </div>
     </div>
 
-    <el-drawer v-model="toolbarDrawer" :show-close="false" size="65%" custom-class="toolbarDrawer" title="欢迎光临" direction="ltr">
-      <div>
-        <ul class="small-menu">
-          <li @click="smallMenu('/home')"><div>🏠 <span>首页</span></div></li>
-          <li @click="smallMenu('/family')"><div>❤️ <span>家</span></div></li>
-          <li @click="smallMenu('/treehole')"><div>🌳 <span>树洞</span></div></li>
-          <li @click="smallMenu('/essay')"><div>🏖️ <span>随笔</span></div></li>
-          <li @click="smallMenu('/record')"><div>📒 <span>记录</span></div></li>
-          <li @click="smallMenu('/wish')"><div>🌠 <span>许愿池</span></div></li>
-          <li @click="smallMenu('/resume')"><div>🌿 <span>简历</span></div></li>
-          <li v-if="userStore.isAdmin" @click="goAdmin()"><div>💻️ <span>后台</span></div></li>
-          <template v-if="!userStore.isLoggedIn">
-            <li @click="smallMenuLogin()"><div><i class="fa fa-sign-in" aria-hidden="true"></i><span>&nbsp;登录</span></div></li>
-          </template>
-          <template v-else>
-            <li @click="showProfile = true; toolbarDrawer = false"><div><i class="fa fa-user-circle" aria-hidden="true"></i><span>&nbsp;个人信息</span></div></li>
-            <li @click="smallMenuLogout()"><div><i class="fa fa-sign-out" aria-hidden="true"></i><span>&nbsp;退出</span></div></li>
-          </template>
-        </ul>
-      </div>
-    </el-drawer>
+    <!-- 移动端底部 TabBar -->
+    <MobileTabBar v-if="appStore.mobile" />
 
     <LoginCard :visible="showLogin" @close="showLogin = false" @logged-in="onLoggedIn" />
     <ProfileCard :visible="showProfile" @close="showProfile = false" />
@@ -128,6 +104,7 @@ import { useAppStore } from '../stores/app'
 import { useUserStore } from '../stores/user'
 import LoginCard from '../components/LoginCard.vue'
 import ProfileCard from '../components/ProfileCard.vue'
+import MobileTabBar from '../components/MobileTabBar.vue'
 import Spotlight from '../components/effects/Spotlight.vue'
 import FloatPetals from '../components/effects/FloatPetals.vue'
 import WalkingDog from '../components/effects/WalkingDog.vue'
@@ -156,7 +133,6 @@ const userStore = useUserStore()
 const showLogin = ref(false)
 const showProfile = ref(false)
 const showBackTop = ref(false)
-const toolbarDrawer = ref(false)
 const dropdownPinned = ref(false)
 const dropdownHover = ref(false)
 
@@ -190,21 +166,6 @@ function goAdmin() {
   window.open(router.resolve('/admin').href)
 }
 
-function smallMenu(path) {
-  router.push(path)
-  toolbarDrawer.value = false
-}
-
-function smallMenuLogin() {
-  showLogin.value = true
-  toolbarDrawer.value = false
-}
-
-function smallMenuLogout() {
-  handleLogout()
-  toolbarDrawer.value = false
-}
-
 function onLoggedIn() {}
 
 async function handleLogout() {
@@ -212,7 +173,8 @@ async function handleLogout() {
   router.push({ path: '/' })
 }
 
-const checkMobile = () => { appStore.mobile = document.body.clientWidth < 1100 }
+// 移动端断点：768px（手机端）
+const checkMobile = () => { appStore.mobile = document.body.clientWidth <= 768 }
 
 onMounted(() => {
   appStore.initDarkMode()
@@ -242,8 +204,7 @@ onUnmounted(() => {
   transition: all 0.35s ease-in-out;
 }
 /* 顶部（透明）：文字深色描边阴影，确保白/亮背景下可读 */
-.toolbar-content:not(.enter) .scroll-menu li .my-menu span,
-.toolbar-content:not(.enter) .toolbar-mobile-menu {
+.toolbar-content:not(.enter) .scroll-menu li .my-menu span {
   text-shadow: 0 1px 6px rgba(0,0,0,0.55), 0 0 2px rgba(0,0,0,0.4);
 }
 /* 滚动后：毛玻璃白底，文字深色 */
@@ -274,7 +235,6 @@ onUnmounted(() => {
   30% { transform: scale(1.25); color: #ff4757; }
   100% { transform: scale(1); }
 }
-.toolbar-mobile-menu { font-size: 30px; margin-right: 15px; cursor: pointer; }
 
 .scroll-menu {
   margin: 0 25px 0 0; display: flex; justify-content: flex-end; padding: 0; gap: 6px;
@@ -351,6 +311,28 @@ onUnmounted(() => {
 
 .main-container { flex: 1; }
 
+/* 移动端：主内容区底部预留 TabBar 空间 */
+@media screen and (max-width: 768px) {
+  .main-container {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+  .toolbar-content {
+    height: 50px;
+  }
+  .toolbar-title { margin-left: 16px; }
+  .toolbar-title h2 { font-size: 19px; letter-spacing: 2px; }
+  /* 移动端 toolbar 始终毛玻璃化（因为顶部没有菜单需要展示了） */
+  .toolbar-content:not(.enter) {
+    background: var(--toolbarBackground);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    color: var(--toolbarFont);
+  }
+  /* 隐藏回到顶部按钮（TabBar已占用右下角） */
+  .toolButton { display: none; }
+  .cute-footer { padding: 24px 16px 18px; }
+}
+
 /* 可爱的"到底啦"提示 */
 .cute-footer {
   display: flex; align-items: center; justify-content: center; gap: 18px;
@@ -377,9 +359,6 @@ onUnmounted(() => {
 }
 .backTop { transition: all 0.3s ease-in; position: relative; top: 0; left: -13px; margin-bottom: 2px; }
 .backTop:hover { top: -10px; }
-
-.small-menu li { padding: 10px 0; cursor: pointer; font-size: 17px; }
-.small-menu li:hover { color: var(--themeBackground); }
 
 @media screen and (max-width: 400px) { .toolButton { right: 0.5vh; } }
 </style>
