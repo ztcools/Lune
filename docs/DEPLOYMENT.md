@@ -215,4 +215,60 @@ docker exec -it lune-mysql mysql -uroot -p
 
 ---
 
+## 九、换设备 / 重新 clone 后跑起来
+
+项目不依赖任何本机状态，新设备从零启动仅需：
+
+```bash
+git clone <仓库地址> lune && cd lune
+
+# 本地开发（自动建 .env.local、拉起 nginx+backend+frontend+mysql+redis）
+make dev
+# 打开 http://localhost:8080
+
+# 需要演示数据再执行一次（幂等，可重复跑）
+docker exec -i lune-mysql-dev mysql -uroot -p$(grep DB_ROOT_PASSWORD .env.local | cut -d= -f2) lune \
+  < lune-server/lune-web/src/main/resources/sql/seed-data.sql
+```
+
+> 说明：数据库内容、上传文件都在 Docker volume 里，**不会**随 git 迁移，新环境是空库 + 自动初始化（管理员/分类/配置/简历）+ 可选种子数据，这通常正是想要的"干净起步"。
+
+---
+
+## 十、局域网 / 手机同网段访问
+
+架构**天然支持**局域网访问：nginx/后端端口绑定 `0.0.0.0`，前端走相对路径 `/api`（自动适配任意 IP/域名），CORS 已放开。
+
+### 普通 Linux / 物理机 / 云主机
+
+启动后，手机与电脑连同一 WiFi，浏览器直接访问：
+
+```
+http://<电脑局域网IP>:8080        # 开发
+http://<电脑局域网IP>            # 生产(80端口)
+```
+
+查局域网 IP：`ip addr`（Linux）或 `ipconfig`（Windows）。若打不开，基本是**防火墙拦了 8080 端口**，放行即可：
+
+```bash
+sudo ufw allow 8080/tcp        # Ubuntu
+# 或 sudo firewall-cmd --add-port=8080/tcp --permanent && sudo firewall-cmd --reload
+```
+
+### ⚠️ WSL2 特殊情况（Windows 上的 WSL）
+
+WSL2 是 NAT 网络，**Windows 宿主机和手机默认都访问不到 WSL 内部 IP**。手机要访问，需在 **Windows PowerShell(管理员)** 做端口代理：
+
+```powershell
+# 查 WSL IP：wsl hostname -I
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=8080 connectaddress=<WSL的IP>
+# Windows 防火墙放行 8080
+New-NetFirewallRule -DisplayName "WSL-Lune" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow
+```
+
+之后手机访问 `http://<Windows的局域网IP>:8080`。WSL 重启后 IP 会变，需更新 connectaddress。
+**建议**：开发机若非 WSL，直接用物理机/云主机可免去这层代理。
+
+---
+
 > 遇到问题先看 `docker logs`，90% 的部署问题日志里都有答案。
