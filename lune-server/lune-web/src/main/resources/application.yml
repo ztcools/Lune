@@ -47,6 +47,19 @@ app:
     max-size: 104857600
   admin:
     default-password: ${ADMIN_DEFAULT_PASSWORD:admin123}
+  # 文件存储：local(本地磁盘,默认) | oss(对象存储,需接入SDK)
+  storage:
+    type: ${STORAGE_TYPE:local}
+  # OSS 预留配置（STORAGE_TYPE=oss 时生效，CDN/OSS 上线后填写）
+  oss:
+    endpoint: ${OSS_ENDPOINT:}
+    bucket: ${OSS_BUCKET:}
+    access-key: ${OSS_ACCESS_KEY:}
+    secret-key: ${OSS_SECRET_KEY:}
+    cdn-domain: ${OSS_CDN_DOMAIN:}
+  security:
+    # HSTS 仅在 HTTPS 生产环境开启（本地 HTTP 必须保持 false）
+    hsts-enabled: ${HSTS_ENABLED:false}
 
 # Actuator health check for Docker
 management:

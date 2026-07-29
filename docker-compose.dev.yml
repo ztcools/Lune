@@ -77,6 +77,8 @@ services:
       - ./lune-ui/public:/app/public:ro
       - ./lune-ui/index.html:/app/index.html:ro
       - ./lune-ui/vite.config.js:/app/vite.config.js:ro
+      # 挂载宿主机 node_modules：避免容器内重复 npm ci，且新增依赖即刻生效
+      - ./lune-ui/node_modules:/app/node_modules
     environment:
       - TZ=Asia/Shanghai
     networks:

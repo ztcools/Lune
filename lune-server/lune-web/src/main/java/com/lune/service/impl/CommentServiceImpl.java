@@ -81,7 +81,9 @@ public class CommentServiceImpl implements CommentService {
         comment.setArticleId(request.getArticleId() != null ? request.getArticleId() : 0L);
         comment.setType(request.getType());
         comment.setSourceId(request.getSourceId());
-        comment.setContent(request.getContent());
+        // XSS 清洗：评论为纯文本，转义 HTML 特殊字符防存储型 XSS
+        comment.setContent(com.lune.security.XssSanitizer.clean(request.getContent(), 1000));
+        comment.setReplyTo(request.getReplyTo());
         comment.setUserId(currentUserId != null ? currentUserId : 0L);
         comment.setParentId(request.getParentId());
         comment.setReplyTo(request.getReplyTo());

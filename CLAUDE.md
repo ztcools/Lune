@@ -87,16 +87,24 @@ Makefile                       # 便捷命令集合
 - **LambdaQueryWrapper** for all queries, no XML mappers
 - **Soft delete**: `@TableLogic` on User, Article, Essay, Record; hard delete on others
 - **Security**: Stateless JWT, CSRF disabled, BCrypt passwords
+- **RateLimitFilter**: Nginx + 后端双层限流（auth 5r/m，写 20/min，读 120/min），Redis 滑动窗口 + 内存降级
+- **LoginAttemptService**: 登录连续失败 5 次锁定 15 分钟（Redis + 内存降级）
+- **SecurityHeadersFilter**: CSP / X-Frame-Options / Permissions-Policy 等，HSTS 由 `HSTS_ENABLED` 控制
+- **XssSanitizer**: 评论/树洞等纯文本字段服务端转义防存储型 XSS
 - **Health**: Spring Actuator at `/api/actuator/health`
 - **GlobalExceptionHandler**: Returns HTTP 500 for unhandled exceptions (not 200)
 - **JwtAuthFilter**: Redis token blacklist with graceful fallback if Redis is down
-- **ResourceServiceImpl**: File type whitelist validation, 50MB size limit
+- **StorageService 抽象**: `LocalStorageService`(默认) / `OssStorageService`(预留, `STORAGE_TYPE=oss` 切换)，CDN 由 `OSS_CDN_DOMAIN` 配置
+- **ResourceServiceImpl**: File type whitelist validation, 50MB size limit, SVG 拒绝(XSS)
 - **ArticleServiceImpl**: Atomic SQL for view/like counts (avoids race conditions)
 - **AuthServiceImpl**: `@Transactional` on register, `SecureRandom` for codes
 
 ### Frontend
 
 - **Axios**: `baseURL: '/api'`, Bearer token interceptor, unwraps `data.data` on success, 401 → clear token + redirect admin login
+- **Element Plus**: 按需加载（unplugin-vue-components），图标仍全量注册
+- **性能**: 路由懒加载；PixelSnow(three.js ~500KB) 经 `defineAsyncComponent` 仅 PC 按需加载；生产去 console/sourcemap
+- **安全加固** (`utils/security.js`, 仅生产): 禁右键/调试快捷键、DevTools 检测、生产关 sourcemap
 - **State**: Pinia stores — `user.js` (auth), `app.js` (config, bgImages, dark mode)
 - **Routing**: `PublicLayout` wraps public pages, `AdminLayout` wraps admin (auth guard), scroll restoration on back/forward, catch-all 404 → `/`
 - **Backgrounds**: `usePageBackground(key)` composable — ref-based with random pick from JSON array, reactive to config changes

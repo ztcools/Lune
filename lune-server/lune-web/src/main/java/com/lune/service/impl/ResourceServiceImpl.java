@@ -26,20 +26,12 @@ public class ResourceServiceImpl implements ResourceService {
     private static final Logger log = LoggerFactory.getLogger(ResourceServiceImpl.class);
 
     private final ResourceMapper resourceMapper;
-    private final Path uploadDir;
+    private final com.lune.service.storage.StorageService storageService;
 
-    public ResourceServiceImpl(ResourceMapper resourceMapper, @Value("${app.upload.path}") String uploadPath) {
+    public ResourceServiceImpl(ResourceMapper resourceMapper,
+                               com.lune.service.storage.StorageService storageService) {
         this.resourceMapper = resourceMapper;
-        Path p = Paths.get(uploadPath);
-        if (!p.isAbsolute()) {
-            p = Paths.get(System.getProperty("user.dir")).resolve(uploadPath);
-        }
-        this.uploadDir = p.toAbsolutePath().normalize();
-        try {
-            Files.createDirectories(this.uploadDir);
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot create upload directory: " + this.uploadDir, e);
-        }
+        this.storageService = storageService;
     }
 
     private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of("jpg","jpeg","png","gif","svg","webp","bmp","ico","mp4","webm","mp3","wav","pdf","zip");
@@ -53,17 +45,20 @@ public class ResourceServiceImpl implements ResourceService {
         if (!ALLOWED_EXTENSIONS.contains(ext.toLowerCase())) {
             throw new BusinessException("不支持的文件类型: ." + ext);
         }
+        // SVG 可携带脚本，存在 XSS 风险，直接拒绝
+        if ("svg".equalsIgnoreCase(ext)) {
+            throw new BusinessException("出于安全考虑，暂不支持 SVG 上传");
+        }
         try {
             String filename = UUID.randomUUID().toString() + "." + ext;
-            File target = uploadDir.resolve(filename).toFile();
-            file.transferTo(target);
+            String path = storageService.store(file, filename);
             Resource resource = new Resource();
             resource.setFilename(file.getOriginalFilename());
-            resource.setPath("/upload/" + filename);
+            resource.setPath(path);
             resource.setSize(file.getSize());
             resource.setMimeType(file.getContentType());
             resource.setType(file.getContentType() != null && file.getContentType().startsWith("image/") ? "image" : "file");
-            resource.setStoreType("local");
+            resource.setStoreType(storageService.storeType());
             resourceMapper.insert(resource);
             return resource;
         } catch (IOException e) {
@@ -119,11 +114,13 @@ public class ResourceServiceImpl implements ResourceService {
     public void deleteResource(Long id) {
         Resource resource = resourceMapper.selectById(id);
         if (resource != null) {
-            try {
-                Path filePath = uploadDir.resolve(Paths.get(resource.getPath()).getFileName());
-                Files.deleteIfExists(filePath);
-            } catch (IOException e) {
-                log.warn("删除文件失败: {}", resource.getPath(), e);
+            // 仅删除本地存储的文件（远程 URL / OSS 由对应实现处理）
+            if ("local".equals(resource.getStoreType())) {
+                try {
+                    storageService.delete(resource.getPath());
+                } catch (IOException e) {
+                    log.warn("删除文件失败: {}", resource.getPath(), e);
+                }
             }
             resourceMapper.deleteById(id);
         }

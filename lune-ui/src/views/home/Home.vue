@@ -221,13 +221,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
 import { articleApi, categoryApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
-import PixelSnow from '../../components/PixelSnow/PixelSnow.vue'
+// PixelSnow 依赖 three.js（约 500KB），按需异步加载：仅 PC 端渲染时才会下载
+const PixelSnow = defineAsyncComponent(() => import('../../components/PixelSnow/PixelSnow.vue'))
 import ArticleReader from '../../components/ArticleReader.vue'
 import PageBg from '../../components/PageBg.vue'
 import MusicPlayer from '../../components/MusicPlayer.vue'

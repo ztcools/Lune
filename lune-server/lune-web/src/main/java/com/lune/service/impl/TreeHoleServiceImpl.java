@@ -57,6 +57,8 @@ public class TreeHoleServiceImpl implements TreeHoleService {
     @Override
     public TreeHole createTreeHole(TreeHole treeHole) {
         treeHole.setStatus(1);
+        // XSS 清洗：树洞内容为纯文本弹幕
+        treeHole.setContent(com.lune.security.XssSanitizer.clean(treeHole.getContent(), 200));
         treeHoleMapper.insert(treeHole);
         if (treeHole.getUserId() != null) {
             var user = userMapper.selectById(treeHole.getUserId());

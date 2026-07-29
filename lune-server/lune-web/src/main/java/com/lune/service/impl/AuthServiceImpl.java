@@ -33,20 +33,27 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
     private final EmailService emailService;
+    private final com.lune.security.LoginAttemptService loginAttemptService;
 
     public AuthServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder,
                            JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate,
-                           EmailService emailService) {
+                           EmailService emailService,
+                           com.lune.security.LoginAttemptService loginAttemptService) {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.redisTemplate = redisTemplate;
         this.emailService = emailService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @Override
     public Result<LoginResponse> login(LoginRequest request) {
         String account = request.getAccount();
+        // 防爆破：连续失败锁定
+        if (loginAttemptService.isLocked(account)) {
+            throw new BusinessException("失败次数过多，账号已临时锁定，请 15 分钟后再试");
+        }
         var user = userMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getUsername, account));
         if (user == null) {
@@ -54,11 +61,16 @@ public class AuthServiceImpl implements AuthService {
                     .eq(User::getEmail, account));
         }
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException("账号或密码错误");
+            int remaining = loginAttemptService.onLoginFailed(account);
+            if (remaining <= 0) {
+                throw new BusinessException("失败次数过多，账号已锁定 15 分钟");
+            }
+            throw new BusinessException("账号或密码错误（剩余尝试次数：" + remaining + "）");
         }
         if (user.getStatus() != 1) {
             throw new BusinessException("账号已被禁用");
         }
+        loginAttemptService.onLoginSuccess(account);
         String token = jwtTokenProvider.createToken(user.getId(), user.getUsername(), user.getRole());
         return Result.success(buildResponse(user, token));
     }

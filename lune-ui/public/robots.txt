@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+# 站点地图（上线后启用，替换为你的域名）
+# Sitemap: https://your-domain.com/sitemap.xml
