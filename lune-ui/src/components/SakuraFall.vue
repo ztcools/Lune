@@ -3,7 +3,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useReducedMotion } from '../composables/useReducedMotion'
 
 const props = defineProps({
   count: { type: Number, default: 40 },
@@ -86,17 +87,36 @@ function resize() {
   petals = Array.from({ length: n }, createPetal)
 }
 
+// 减少动态效果：不能只把画布藏起来 —— rAF 循环照样每帧算 50 片花瓣。
+// 这里直接不启动循环，并清空画布；用户中途改系统设置也能即时生效。
+const reduced = useReducedMotion()
+
+function start() {
+  if (animId || reduced.value) return
+  animate()
+}
+
+function stop() {
+  if (animId) {
+    cancelAnimationFrame(animId)
+    animId = null
+  }
+  if (ctx) ctx.clearRect(0, 0, w, h)
+}
+
 onMounted(() => {
   const c = canvasRef.value
   if (!c) return
   ctx = c.getContext('2d')
   resize()
-  animate()
+  start()
   window.addEventListener('resize', resize)
 })
 
+watch(reduced, (on) => (on ? stop() : start()))
+
 onUnmounted(() => {
-  cancelAnimationFrame(animId)
+  stop()
   window.removeEventListener('resize', resize)
 })
 </script>

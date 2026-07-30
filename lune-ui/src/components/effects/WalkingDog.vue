@@ -7,24 +7,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
-// 一只偶尔从屏幕边缘走过的可爱小狗，为页面增添生气
+// 一只偶尔从屏幕边缘走过的可爱小狗，为页面增添生气。
+// 走动节奏由 CSS 的 dog-walk 动画控制（18s 一趟），没有定时器：
+// 原来这里留着一个 interval prop 和 timer 变量，谁都没赋值过，onUnmounted 里
+// 还在 clear 一个永远是 null 的 timer —— 一并清掉。
 const props = defineProps({
-  bottom: { type: Number, default: 8 },
-  // 每隔多少秒走一次
-  interval: { type: Number, default: 24 }
+  bottom: { type: Number, default: 8 }
 })
 
 const dogEmoji = ref('🐕')
-let timer = null
 
 onMounted(() => {
   // 随机小狗表情
   const dogs = ['🐕', '🐩', '🦮', '🐕‍🦺']
   dogEmoji.value = dogs[Math.floor(Math.random() * dogs.length)]
 })
-onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
 
 <style scoped>
@@ -51,5 +50,10 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 @keyframes dog-bob {
   0%, 100% { transform: scaleX(-1) translateY(0); }
   50% { transform: scaleX(-1) translateY(-5px); }
+}
+
+/* 这只狗的全部内容就是「走过去」，减少动态效果时没有静态形态可留 */
+@media (prefers-reduced-motion: reduce) {
+  .walking-dog { display: none; }
 }
 </style>

@@ -55,4 +55,9 @@
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(-5vw, 7vh) scale(0.9); }
 }
+
+/* 只停下漂移，光斑本身留着：它承担的是背景配色，去掉页面会显得发白 */
+@media (prefers-reduced-motion: reduce) {
+  .spot { animation: none; }
+}
 </style>

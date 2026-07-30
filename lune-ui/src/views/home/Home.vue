@@ -12,8 +12,10 @@
     </el-image>
 
     <!-- PixelSnow full-page overlay（移动端降级为轻量 CSS 雪花） -->
+    <!-- 开了「减少动态效果」就整块不渲染：条件写在这里而不是组件内部，
+         three.js 那 500KB 依赖才不会被下载（异步组件是按 v-if 触发加载的） -->
     <PixelSnow
-      v-if="!appStore.mobile"
+      v-if="!appStore.mobile && !reducedMotion"
       color="#ffffff"
       :flakeSize="0.023"
       :minFlakeSize="1.25"
@@ -27,7 +29,7 @@
       variant="snowflake"
       class-name="full-page-snow"
     />
-    <FloatPetals v-else type="snow" :count="12" />
+    <FloatPetals v-else-if="appStore.mobile" type="snow" :count="12" />
 
     <!-- Hero text overlay -->
     <div class="signature-wall myCenter my-animation-hideToShow">
@@ -232,6 +234,7 @@ import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
 import { articleApi, categoryApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
+import { useReducedMotion } from '../../composables/useReducedMotion'
 // PixelSnow 依赖 three.js（约 500KB），按需异步加载：仅 PC 端渲染时才会下载
 const PixelSnow = defineAsyncComponent(() => import('../../components/PixelSnow/PixelSnow.vue'))
 import ArticleReader from '../../components/ArticleReader.vue'
@@ -242,6 +245,7 @@ import FloatPetals from '../../components/effects/FloatPetals.vue'
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
+const reducedMotion = useReducedMotion()
 
 const titleChars = ref([])
 const printerText = ref('')

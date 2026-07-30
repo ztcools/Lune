@@ -11,10 +11,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
 /**
  * 轻盈飘落装饰 —— 花瓣/叶子/雪花
- * 纯 CSS 动画，性能开销极小；移动端自动减半数量
+ * 纯 CSS 动画，性能开销极小；移动端自动减半数量。
+ * 系统开了「减少动态效果」时整层不渲染（下方 CSS 也兜一层，覆盖中途改设置的情况）。
  */
 const props = defineProps({
   count: { type: Number, default: 14 },
@@ -53,6 +55,7 @@ function makePetal() {
 }
 
 onMounted(() => {
+  if (prefersReducedMotion()) return
   const isMobile = window.innerWidth < 768
   const n = isMobile ? Math.ceil(props.count / 2) : props.count
   petals.value = Array.from({ length: n }, makePetal)
@@ -78,5 +81,10 @@ onUnmounted(() => { petals.value = [] })
 @keyframes petal-fall {
   0% { transform: translateY(-8vh) translateX(0) rotate(0deg); }
   100% { transform: translateY(112vh) translateX(var(--drift)) rotate(360deg); }
+}
+
+/* 纯装饰层，减少动态效果时直接不显示（比冻在半空更合理） */
+@media (prefers-reduced-motion: reduce) {
+  .petals-layer { display: none; }
 }
 </style>
