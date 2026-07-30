@@ -14,6 +14,20 @@
       </div>
     </div>
 
+    <!-- 加载失败集中提示：不静默失败，也不逐个弹窗 -->
+    <el-alert
+      v-if="loadErrors.length"
+      class="load-error"
+      type="warning"
+      show-icon
+      :closable="false"
+      title="部分数据加载失败">
+      <template #default>
+        <span>{{ loadErrors.join('、') }} 未能加载，显示的数字可能不完整。</span>
+        <el-button link type="primary" size="small" @click="loadData">重试</el-button>
+      </template>
+    </el-alert>
+
     <!-- 访问分析 -->
     <div class="section-title">📈 访问分析</div>
 
@@ -22,10 +36,20 @@
       <el-col :xs="24" :md="14">
         <div class="chart-card">
           <div class="chart-header">
-            <span class="chart-title">近 30 天访问趋势</span>
-            <span class="chart-tip">📊 按日聚合</span>
+            <span class="chart-title">访问趋势</span>
+            <div class="chart-switch">
+              <button
+                v-for="d in [7, 30, 90]"
+                :key="d"
+                class="switch-btn"
+                :class="{ active: trendDays === d }"
+                :disabled="trendLoading"
+                @click="switchTrend(d)">
+                {{ d }} 天
+              </button>
+            </div>
           </div>
-          <div ref="trendChartRef" class="chart trend-chart"></div>
+          <div ref="trendChartRef" class="chart trend-chart" v-loading="trendLoading"></div>
         </div>
       </el-col>
 
@@ -37,6 +61,19 @@
             <span class="chart-tip">🗺 按省份</span>
           </div>
           <div ref="mapChartRef" class="chart map-chart"></div>
+
+          <!-- 对账行：GeoLite2 免费库对部分中国 IP 没有省级数据，
+               地图之和必然小于总访问量，这里把差额显式列出，四项相加 = total -->
+          <div v-if="geoMeta" class="geo-meta">
+            <span class="geo-pill matched">已定位 {{ geoMeta.matched }}</span>
+            <span class="geo-pill unresolved">未识别 {{ geoMeta.unresolved }}</span>
+            <span class="geo-pill overseas">海外 {{ geoMeta.overseas }}</span>
+            <span class="geo-pill intranet">内网 {{ geoMeta.intranet }}</span>
+            <span class="geo-total">合计 {{ geoMeta.total }}</span>
+          </div>
+          <div v-if="geoMeta && !geoMeta.geoAvailable" class="geo-warn">
+            未加载 GeoLite2 离线库，仅记录 IP 不解析地区（见 docs/GEOIP-SETUP.md）
+          </div>
         </div>
       </el-col>
     </el-row>
@@ -105,7 +142,21 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { articleApi, categoryApi, userApi, visitStatsApi } from '../api/modules'
-import * as echarts from 'echarts'
+
+// 按需引入：原先 import * as echarts from 'echarts' 会把全部图表与组件
+// 打进 admin chunk（整包 ~1MB）。这里只用到折线图与地图两种。
+import * as echarts from 'echarts/core'
+import { LineChart, MapChart } from 'echarts/charts'
+import {
+  TooltipComponent, LegendComponent, GridComponent, VisualMapComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+
+echarts.use([
+  LineChart, MapChart,
+  TooltipComponent, LegendComponent, GridComponent, VisualMapComponent,
+  CanvasRenderer
+])
 
 const stats = reactive([
   { label: '文章总数', value: 0, icon: '📝', gradient: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)' },
@@ -119,24 +170,46 @@ const topIps = ref([])
 const recentVisits = ref([])
 const trendChartRef = ref(null)
 const mapChartRef = ref(null)
+const trendDays = ref(30)
+const trendLoading = ref(false)
+/** 加载失败的面板名称，集中提示而不是逐个弹窗 */
+const loadErrors = ref([])
+/** 地图对账数据（各桶之和恒等于 total，见后端 /map 注释） */
+const geoMeta = ref(null)
+
 let trendChart = null
 let mapChart = null
 let chinaMapLoaded = false
+let resizeObserver = null
+/**
+ * 组件是否仍挂载。所有 await 之后都要检查：
+ * 请求在途时切走路由会走到 onUnmounted，此时容器已从文档移除，
+ * 再 echarts.init 会在一个游离节点上建实例（宽高 0、永远不显示，
+ * 且不会再被 dispose），既是内存泄漏也会吞掉后续渲染。
+ */
+let alive = true
 
 async function loadChinaMap() {
   if (chinaMapLoaded) return
   try {
     const resp = await fetch('/maps/china.json')
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const chinaJson = await resp.json()
     echarts.registerMap('china', chinaJson)
     chinaMapLoaded = true
   } catch (e) {
     console.error('加载中国地图失败', e)
+    loadErrors.value.push('中国地图底图')
   }
 }
 
+/** 容器可用（仍挂载、已插入文档）才允许创建/更新图表实例 */
+function usable(el) {
+  return alive && el && el.isConnected
+}
+
 function renderTrendChart(data) {
-  if (!trendChartRef.value) return
+  if (!usable(trendChartRef.value)) return
   if (!trendChart) trendChart = echarts.init(trendChartRef.value)
   const dates = data.map(d => d.date.slice(5)) // MM-DD
   const counts = data.map(d => d.count)
@@ -172,9 +245,10 @@ function renderTrendChart(data) {
 }
 
 function renderMapChart(data) {
-  if (!mapChartRef.value || !chinaMapLoaded) return
+  if (!usable(mapChartRef.value) || !chinaMapLoaded) return
   if (!mapChart) mapChart = echarts.init(mapChartRef.value)
-  const maxVal = Math.max(...data.map(d => d.value), 1)
+  // 展开传参在数组较大时会爆栈，且这里 data 可能为空，reduce 更稳妥
+  const maxVal = data.reduce((m, d) => Math.max(m, d.value || 0), 0) || 1
   mapChart.setOption({
     tooltip: {
       trigger: 'item',
@@ -215,27 +289,94 @@ function formatTime(t) {
   return d.toLocaleDateString() + ' ' + d.toTimeString().slice(0, 5)
 }
 
-async function loadData() {
-  // 总览
-  try { const d = await articleApi.list({ page: 1, size: 1 }); stats[0].value = d.total } catch (e) {}
-  try { const d = await categoryApi.listAll(); stats[1].value = d.length } catch (e) {}
-  try { const d = await userApi.list({ page: 1, size: 1 }); stats[2].value = d.total } catch (e) {}
+/**
+ * 统一的分片加载：任一面板失败只影响自己，并把失败面板名记下来集中提示。
+ * 原实现是 8 个 `catch (e) {}` 空块 —— 接口 500、token 过期、地理库缺失
+ * 全都表现为「数字是 0、图表空白」，与「确实没有访问」无法区分，
+ * 排查时也没有任何线索。
+ */
+async function section(label, fn) {
   try {
-    const d = await visitStatsApi.summary()
-    stats[3].value = d.total || 0
-    stats[3].sub = `今日 ${d.today || 0} · 独立IP ${d.uniqueIps || 0}`
-  } catch (e) {}
+    await fn()
+  } catch (e) {
+    console.error(`[Dashboard] ${label} 加载失败`, e)
+    if (!loadErrors.value.includes(label)) loadErrors.value.push(label)
+  }
+}
 
-  // 文章
-  try { const d = await articleApi.list({ page: 1, size: 5 }); articles.value = d.records } catch (e) {}
+async function loadTrend() {
+  trendLoading.value = true
+  try {
+    const d = await visitStatsApi.trend(trendDays.value)
+    if (!alive) return
+    renderTrendChart(d || [])
+  } finally {
+    trendLoading.value = false
+  }
+}
 
-  // 图表数据
+/** 切换趋势区间（后端 days 已 clamp 到 7..90） */
+async function switchTrend(days) {
+  if (trendDays.value === days) return
+  trendDays.value = days
+  loadErrors.value = loadErrors.value.filter(x => x !== '访问趋势')
+  await section('访问趋势', loadTrend)
+}
+
+async function loadData() {
+  loadErrors.value = []
+
+  await Promise.all([
+    section('文章总数', async () => {
+      const d = await articleApi.list({ page: 1, size: 1 })
+      if (alive) stats[0].value = d?.total ?? 0
+    }),
+    section('分类总数', async () => {
+      const d = await categoryApi.listAll()
+      if (alive) stats[1].value = d?.length ?? 0
+    }),
+    section('用户总数', async () => {
+      const d = await userApi.list({ page: 1, size: 1 })
+      if (alive) stats[2].value = d?.total ?? 0
+    }),
+    section('访问总览', async () => {
+      const d = await visitStatsApi.summary()
+      if (!alive) return
+      stats[3].value = d?.total ?? 0
+      stats[3].sub = `今日 ${d?.today ?? 0} · 独立IP ${d?.uniqueIps ?? 0}`
+    }),
+    section('最近文章', async () => {
+      const d = await articleApi.list({ page: 1, size: 5 })
+      if (alive) articles.value = d?.records ?? []
+    }),
+    section('活跃 IP 排行', async () => {
+      const d = await visitStatsApi.topIps(15)
+      if (alive) topIps.value = d ?? []
+    }),
+    section('最近访问', async () => {
+      const d = await visitStatsApi.recent(50)
+      if (alive) recentVisits.value = d ?? []
+    })
+  ])
+
+  if (!alive) return
+
+  // 图表需要底图与 DOM 就绪后再渲染
   await loadChinaMap()
   await nextTick()
-  try { const d = await visitStatsApi.trend(30); renderTrendChart(d) } catch (e) {}
-  try { const d = await visitStatsApi.map(); renderMapChart(d) } catch (e) {}
-  try { const d = await visitStatsApi.topIps(15); topIps.value = d } catch (e) {}
-  try { const d = await visitStatsApi.recent(50); recentVisits.value = d } catch (e) {}
+  if (!alive) return
+
+  await Promise.all([
+    section('访问趋势', loadTrend),
+    section('访客地理分布', async () => {
+      const d = await visitStatsApi.map()
+      if (!alive) return
+      geoMeta.value = d ?? null
+      renderMapChart(d?.regions ?? [])
+    })
+  ])
+
+  if (alive) observeResize()
 }
 
 function onResize() {
@@ -243,14 +384,34 @@ function onResize() {
   mapChart?.resize()
 }
 
+/**
+ * 侧边栏折叠只改变内容区的 left，不会触发 window resize，
+ * 单靠 window 监听会让图表停留在旧宽度（右侧留白或被裁切）。
+ * 用 ResizeObserver 直接盯容器尺寸，顺带覆盖所有布局变化。
+ */
+function observeResize() {
+  if (resizeObserver || typeof ResizeObserver === 'undefined') return
+  resizeObserver = new ResizeObserver(() => {
+    if (alive) onResize()
+  })
+  if (trendChartRef.value) resizeObserver.observe(trendChartRef.value)
+  if (mapChartRef.value) resizeObserver.observe(mapChartRef.value)
+}
+
 onMounted(() => {
+  alive = true
   loadData()
   window.addEventListener('resize', onResize)
 })
 onUnmounted(() => {
+  alive = false
   window.removeEventListener('resize', onResize)
+  resizeObserver?.disconnect()
+  resizeObserver = null
   trendChart?.dispose()
   mapChart?.dispose()
+  trendChart = null
+  mapChart = null
 })
 </script>
 
@@ -343,6 +504,62 @@ onUnmounted(() => {
 .chart { width: 100%; }
 .trend-chart { height: 320px; }
 .map-chart { height: 320px; }
+
+/* 加载失败提示（柔和，不打断操作） */
+.load-error { margin-bottom: 16px; border-radius: 10px; }
+
+/* 趋势区间切换 */
+.chart-switch { display: flex; gap: 4px; }
+.switch-btn {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  color: #7f8c8d;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.switch-btn:hover:not(:disabled) { background: #f6f8fb; color: #5a6c7d; }
+.switch-btn.active {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+  border-color: rgba(102, 126, 234, 0.35);
+  color: #667eea;
+  font-weight: 600;
+}
+.switch-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* 地理分布对账行 */
+.geo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.06);
+}
+.geo-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  color: #5a6c7d;
+  background: #f4f6f9;
+}
+.geo-pill.matched { background: rgba(69, 117, 180, 0.12); color: #4575b4; }
+.geo-pill.unresolved { background: rgba(255, 183, 77, 0.16); color: #b07d24; }
+.geo-pill.overseas { background: rgba(67, 233, 123, 0.14); color: #2e8b57; }
+.geo-pill.intranet { background: rgba(0, 0, 0, 0.05); color: #8c98a4; }
+.geo-total { font-size: 11px; color: #95a5a6; margin-left: auto; }
+.geo-warn {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #b07d24;
+  background: rgba(255, 183, 77, 0.1);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
 
 /* 表格 */
 .count-badge {

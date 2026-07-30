@@ -110,9 +110,35 @@ public class AdminVisitStatsController {
         return Result.success(result);
     }
 
-    /** 中国地图数据（按省份聚合）GET /api/admin/visit-stats/map */
+    /**
+     * SQL 分桶表达式：保证每行恰好落入一个桶，各桶之和严格等于 COUNT(*)。
+     *
+     * <p>顺序有意义 —— {@code matched} 必须先于 {@code overseas} 判定，
+     * 否则港澳台（country 为「中国香港」等，province 已归一化为可上图的全称）
+     * 会同时被算进「已定位」与「海外」，两处都对不上账。
+     */
+    private static final String BUCKET_CASE = """
+        CASE
+          WHEN country = '内网' THEN 'intranet'
+          WHEN province IS NOT NULL AND province NOT IN ('', '未知', '内网') THEN 'matched'
+          WHEN country IS NULL OR country IN ('', '未知') THEN 'unresolved'
+          WHEN country <> '中国' THEN 'overseas'
+          ELSE 'unresolved'
+        END""";
+
+    /**
+     * 中国地图数据 GET /api/admin/visit-stats/map
+     *
+     * <p>返回的不只是可上图的省份，还带一组对账数字。原因：GeoLite2 免费库
+     * 对相当一部分中国 IP（尤其骨干网/公共 DNS 段）根本没有 subdivision 字段，
+     * 实测约有一半样本只能定位到国家。这些访问无法落在地图上，
+     * 于是「地图各省之和」必然小于「总访问量」。
+     * 若只返回省份数组，后台就会出现两个互相矛盾的数字而无法解释；
+     * 因此把 已定位/未识别/海外/内网 一并返回，前端可显式列出，
+     * 四项相加恒等于 total。
+     */
     @GetMapping("/map")
-    public Result<List<Map<String, Object>>> map() {
+    public Result<Map<String, Object>> map() {
         QueryWrapper<VisitLog> qw = new QueryWrapper<>();
         qw.select("province AS name", "COUNT(*) AS value")
           .isNotNull("province")
@@ -123,13 +149,36 @@ public class AdminVisitStatsController {
           .orderByDesc("value");
         List<Map<String, Object>> rows = visitLogMapper.selectMaps(qw);
 
-        List<Map<String, Object>> result = new ArrayList<>(rows.size());
+        List<Map<String, Object>> regions = new ArrayList<>(rows.size());
         for (Map<String, Object> row : rows) {
             Map<String, Object> item = new HashMap<>();
             item.put("name", row.get("name"));
             item.put("value", toLong(row.get("value")));
-            result.add(item);
+            regions.add(item);
         }
+
+        // 分桶统计：一条 GROUP BY，桶数固定 4 个以内
+        QueryWrapper<VisitLog> bucketQw = new QueryWrapper<>();
+        bucketQw.select(BUCKET_CASE + " AS bucket", "COUNT(*) AS c").groupBy("bucket");
+        Map<String, Long> buckets = new HashMap<>();
+        for (Map<String, Object> row : visitLogMapper.selectMaps(bucketQw)) {
+            Object b = row.get("bucket");
+            if (b != null) buckets.put(b.toString(), toLong(row.get("c")));
+        }
+
+        long matched = buckets.getOrDefault("matched", 0L);
+        long unresolved = buckets.getOrDefault("unresolved", 0L);
+        long overseas = buckets.getOrDefault("overseas", 0L);
+        long intranet = buckets.getOrDefault("intranet", 0L);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("regions", regions);
+        result.put("matched", matched);
+        result.put("unresolved", unresolved);
+        result.put("overseas", overseas);
+        result.put("intranet", intranet);
+        result.put("total", matched + unresolved + overseas + intranet);
+        result.put("geoAvailable", geoIpService.isAvailable());
         return Result.success(result);
     }
 
