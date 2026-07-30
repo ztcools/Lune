@@ -12,14 +12,14 @@ Lune is a full-stack personal blog and lifestyle web application. Fully containe
 - **Fonts**: 拉丁字体自托管 (`public/assets/fonts/*.woff2` — Fredoka, Comfortaa, Quicksand, Caveat)；中文书法体 (Ma Shan Zheng, Zhi Mang Xing, Long Cang) 首屏渲染后经国内镜像 `fonts.loli.net` 延迟注入 (`utils/loadFonts.js`)。**不直连 Google Fonts**（大陆不可达 + 渲染阻塞）
 - **DevOps**: Docker Compose, Nginx reverse proxy, multi-stage Dockerfiles
 
-**Feature Modules**:
-- 博客首页（文章/分类/音乐播放器）
-- 家页（恋爱记录：情侣头像互动、在一起天数、祝福板、烂皮书日记）
-- 树洞（弹幕互动 + 时间线）
-- 随笔（朋友圈式图文/视频动态）
-- 记录（分类卡片瀑布流）
-- 简历页（个人卡片 + 工作时间线 + 项目卡片，Landing 进入）
-- 许愿池（需求点赞排行 + 评论）
+**Feature Modules**（括号内为前台展示名，路由 path / 后台菜单仍用功能名）：
+- 博客首页「云栖阁」（文章/分类/音乐播放器）
+- 家页「长相守」（恋爱记录：情侣头像互动、在一起天数、祝福板、烂皮书日记）
+- 树洞「风语林」（纯弹幕一屏 + 中央输入框；点自己的弹幕可删。原时间线已下线）
+- 随笔「浮生记」（朋友圈式图文/视频动态）
+- 记录「光阴集」（分类卡片瀑布流）
+- 简历页「山海志」（个人卡片 + 履痕时间线 + 造物集项目卡，PC 顶栏 / 移动「我的」面板进入）
+- 许愿池「星愿池」（需求点赞排行 + 评论）
 
 ---
 
@@ -53,7 +53,7 @@ lune-ui/                       # Vue 3 frontend
     ├── layout/                # PublicLayout, AdminLayout
     ├── views/                 # landing, home, article, family, treehole, essay, record
     ├── admin/                 # Login, Dashboard, Settings, CRUD management pages
-    ├── components/            # ProfileCard, MiniProfileCard, LoginCard, ArticleReader, SakuraFall, PixelSnow
+    ├── components/            # ProfileCard, MiniProfileCard, LoginCard, ArticleReader, AltTimeline, LineIcon, MobileTabBar, SakuraFall, PixelSnow
     └── assets/styles/         # variables.css, global.css, animations.css
 
 docker/                        # Docker configuration
@@ -112,8 +112,10 @@ Makefile                       # 便捷命令集合
 - **Backgrounds**: `usePageBackground(key)` composable — ref-based with random pick from JSON array, reactive to config changes
 - **Content backgrounds**: `PageBg.vue` — QQ空间式极淡固定背景图 + 动态渐变光斑 (green/pink/blue variants)
 - **Effects** (`components/effects/`): `FloatPetals` (花瓣/落叶/雪花，移动端减半), `Spotlight` (聚光灯光斑), `WalkingDog`; `SakuraFall` (canvas 樱花), `PixelSnow` (three.js WebGL 雪, PC only)
-- **MusicPlayer.vue**: HTML5 Audio，读 `home_music_list` 配置，含唱片旋转/进度/歌词/上下首
+- **MusicPlayer.vue**: HTML5 Audio，读 `home_music_list` 配置，含唱片旋转/进度/歌词/上下首。PC 挂在首页侧栏 (`variant="card"`)，移动端由 `PublicLayout` 顶栏承载 (`variant="bar"`)，切页不断音；单实例，两端不同时渲染
 - **MediaEditor.vue** (admin): 可复用图片/视频九宫格编辑器（随笔/记录/简历共用）
+- **AltTimeline.vue**: 左右交错时间线（原树洞 UI 抽出），具名插槽 `#header/#body/#footer`，简历「履痕」在用
+- **LineIcon.vue**: 内联线条 SVG 图标表（`stroke` 走 `currentColor`）——移动导航 / 简历 / 登录页统一用它替代 emoji，不引任何图标库
 - **Settings.vue**: 基础信息 + 首页音乐歌单 + 页面背景管理（上传即生效，无二次确认），`configLoaded` 守卫防止回填误报保存
 - No `Math.random()` in computed properties (all use refs with explicit triggers)
 - **UI scale**: `html { font-size: 15px }` 中等偏小，移动端特效自动降级
@@ -159,7 +161,7 @@ Each page section has a dedicated `site_config` key storing a JSON array of imag
 | `family_hero_bg` | 家页顶部 Banner |
 | `family_content_bg` | 家页内容区 |
 | `treehole_danmaku_bg` | 树洞弹幕区 |
-| `treehole_content_bg` | 树洞时间线 |
+| `treehole_content_bg` | ~~树洞时间线~~（时间线已下线，无渲染位置；key 保留在库里，后台不再提供入口） |
 | `essay_hero_bg` | 随笔顶部 Banner |
 | `essay_content_bg` | 随笔内容区 |
 | `record_hero_bg` | 记录顶部 Banner |
@@ -237,3 +239,5 @@ Default admin: `admin` / `admin123` (可配置 `ADMIN_DEFAULT_PASSWORD`)
 - All `setInterval`/event listeners cleaned up in `onUnmounted`
 - Atomic SQL updates for counters (avoid race conditions)
 - File uploads validated (extension whitelist + size limit)
+- **无运行时 CDN**：生产机没有外网、CSP 是 `script-src 'self'`，任何外部 UI/CSS/图标必须是 npm 依赖在构建期打包进镜像。图标一律内联 SVG (`LineIcon.vue`)，动效纯 CSS
+- 所有装饰性动效都要在 `@media (prefers-reduced-motion: reduce)` 下降级或静止
