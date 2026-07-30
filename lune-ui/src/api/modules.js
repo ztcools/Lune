@@ -19,6 +19,7 @@ export const userProfileApi = {
 export const articleApi = {
   list: (params) => request.get('/articles', { params }),
   getById: (id) => request.get(`/articles/${id}`),
+  totalLikes: () => request.get('/articles/total-likes'),
   create: (data) => request.post('/admin/articles', data),
   update: (id, data) => request.put(`/admin/articles/${id}`, data),
   delete: (id) => request.delete(`/admin/articles/${id}`)
@@ -130,4 +131,13 @@ export const wishApi = {
   listAll: (params) => request.get('/admin/wishes', { params }),
   update: (id, data) => request.put(`/admin/wishes/${id}`, data),
   delete: (id) => request.delete(`/admin/wishes/${id}`)
+}
+
+// 访问统计
+export const visitStatsApi = {
+  summary: () => request.get('/admin/visit-stats/summary'),
+  trend: (days = 30) => request.get('/admin/visit-stats/trend', { params: { days } }),
+  map: () => request.get('/admin/visit-stats/map'),
+  topIps: (limit = 20) => request.get('/admin/visit-stats/top-ips', { params: { limit } }),
+  recent: (limit = 50) => request.get('/admin/visit-stats/recent', { params: { limit } })
 }

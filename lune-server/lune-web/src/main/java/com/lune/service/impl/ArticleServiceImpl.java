@@ -94,4 +94,15 @@ public class ArticleServiceImpl implements ArticleService {
                 .setSql("like_count = GREATEST(0, COALESCE(like_count, 0) + " + delta + ")");
         articleMapper.update(null, updateWrapper);
     }
+
+    @Override
+    public Long getTotalLikes() {
+        // 求和下推到 SQL，避免把每篇文章都取回内存再累加
+        var qw = new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Article>();
+        qw.select("IFNULL(SUM(like_count), 0) AS total");
+        var rows = articleMapper.selectMaps(qw);
+        if (rows.isEmpty() || rows.get(0).get("total") == null) return 0L;
+        Object total = rows.get(0).get("total");
+        return total instanceof Number n ? n.longValue() : 0L;
+    }
 }

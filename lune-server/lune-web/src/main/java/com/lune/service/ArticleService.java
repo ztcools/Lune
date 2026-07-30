@@ -12,4 +12,6 @@ public interface ArticleService {
     Article updateArticle(Long id, ArticleRequest request);
     void deleteArticle(Long id);
     void updateLikeCount(Long id, int delta);
+    /** 获取所有文章的总点赞数 */
+    Long getTotalLikes();
 }

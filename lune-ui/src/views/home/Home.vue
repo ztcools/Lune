@@ -72,8 +72,8 @@
                   <span class="blog-info-num">{{ categories.length }}</span>
                 </div>
                 <div class="blog-info-box">
-                  <span>访问量</span>
-                  <span class="blog-info-num">{{ appStore.webInfo.historyAllCount || 0 }}</span>
+                  <span>获赞</span>
+                  <span class="blog-info-num">{{ totalLikes }}</span>
                 </div>
               </div>
               <a class="collection-btn" @click="$router.push('/treehole')">
@@ -262,6 +262,8 @@ const pagination = reactive({
   current: 1, size: 10, total: 0, sortId: null
 })
 const total = ref(0)
+// 侧边栏「获赞」总数，来自 GET /api/articles/total-likes
+const totalLikes = ref(0)
 
 const groupedArticles = computed(() => {
   const groups = {}
@@ -375,6 +377,10 @@ async function fetchCategories() {
   try { categories.value = await categoryApi.list('article') }
   catch (e) { console.error('Failed to fetch categories:', e) }
 }
+async function fetchTotalLikes() {
+  try { totalLikes.value = await articleApi.totalLikes() ?? 0 }
+  catch (e) { console.error('Failed to fetch total likes:', e) }
+}
 function scrollToContent() {
   const target = document.querySelector('.page-container-wrap')
   if (target) window.scrollTo({ top: target.offsetTop, behavior: 'smooth' })
@@ -383,7 +389,7 @@ function scrollToContent() {
 onMounted(async () => {
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
   startTypewriter()
-  await Promise.all([fetchAllArticles(), fetchCategories(), fetchRecommendArticles(), fetchArticleComments()])
+  await Promise.all([fetchAllArticles(), fetchCategories(), fetchRecommendArticles(), fetchArticleComments(), fetchTotalLikes()])
 })
 onUnmounted(() => {
   if (typewriterTimer) clearInterval(typewriterTimer)
