@@ -1,0 +1,181 @@
+# ============================================================
+# Lune - 腾讯云生产环境部署（服务器上就是 /opt/lune/docker-compose.yml）
+# 部署位置: /opt/lune/
+# 镜像来源: 本地构建后 docker save 上传（服务器 Docker Hub 直连不通）
+#
+# 与 docker-compose.prod.yml 的区别：这份不含 build:，只引用已 load 的镜像。
+# 之所以进仓库：服务器上那份是手写的，此前已经和仓库漂移到「少挂 geoip 目录、
+# 少透传一半环境变量」的程度 —— 排查访问地区为什么全空花了不少时间。
+# 以后改服务器配置一律改这个文件再 scp 覆盖，不在服务器上直接编辑。
+# ============================================================
+
+services:
+  # ========== Nginx（含前端静态文件）==========
+  nginx:
+    image: lune-nginx:latest
+    container_name: lune-nginx
+    ports:
+      - "80:80"
+      # ICP 备案下来后放开（步骤见 docs/DEPLOYMENT.md 第四章）
+      # - "443:443"
+    volumes:
+      - upload_data:/var/www/upload:ro
+      # - /etc/letsencrypt:/etc/nginx/ssl:ro
+      # - ./certbot-webroot:/var/www/certbot
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - lune-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ========== Spring Boot 后端 ==========
+  backend:
+    image: lune-backend:latest
+    container_name: lune-backend
+    # 仅本地回环暴露（通过 nginx 代理访问）
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - upload_data:/app/upload
+      # GeoLite2 离线库（66MB，只读挂载，不打进镜像 —— 每月更新时只需重传这个文件）。
+      # 缺了它后端会降级成「只记 IP、不记地区」：后台的地区分布与中国地图会是空的。
+      - ./data/geoip:/app/geoip:ro
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MAIL_HOST=${MAIL_HOST:-}
+      - MAIL_PORT=${MAIL_PORT:-465}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET}
+      - UPLOAD_PATH=/app/upload
+      - TZ=Asia/Shanghai
+      - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-admin123}
+      # ICP / CDN 上线后要用的开关（application.yml 读的就是这些 key，
+      # 之前没透传，等于在 .env 里改了也不生效）
+      - STORAGE_TYPE=${STORAGE_TYPE:-local}
+      - OSS_ENDPOINT=${OSS_ENDPOINT:-}
+      - OSS_BUCKET=${OSS_BUCKET:-}
+      - OSS_ACCESS_KEY=${OSS_ACCESS_KEY:-}
+      - OSS_SECRET_KEY=${OSS_SECRET_KEY:-}
+      - OSS_CDN_DOMAIN=${OSS_CDN_DOMAIN:-}
+      # 证书就绪后再改 true：HTTP 站点下发 HSTS 会被浏览器记住一年
+      - HSTS_ENABLED=${HSTS_ENABLED:-false}
+      # 2C4G JVM 限制
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - lune-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # ========== MySQL 8.0 ==========
+  mysql:
+    image: mysql:8.0
+    container_name: lune-mysql
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: lune
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    networks:
+      - lune-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ========== Redis 7 ==========
+  redis:
+    image: redis:7-alpine
+    container_name: lune-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - lune-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mysql_data:
+  redis_data:
+  upload_data:
+
+networks:
+  lune-network:
+    driver: bridge
