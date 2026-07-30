@@ -132,6 +132,7 @@ function scrollDown() {
 .background-image-index {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   position: fixed;
   z-index: -1;
 }
@@ -148,6 +149,7 @@ function scrollDown() {
   background-color: var(--lightGreen);
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   position: fixed;
   z-index: -1;
 }
@@ -158,7 +160,9 @@ function scrollDown() {
   flex-direction: column;
   position: relative;
   user-select: none;
+  /* 手机地址栏会吃掉 100vh 与可视高度的差值，进入按钮被顶到折叠线以下 */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 

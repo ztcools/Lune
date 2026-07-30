@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { siteConfigApi } from '../api/modules'
 
+// 放在模块作用域而不是 state 里：MediaQueryList 是宿主对象，
+// 塞进 state 只会白白被 Pinia 代理一层。
+let viewportMql = null
+
 export const useAppStore = defineStore('app', {
   state: () => ({
     config: {},
@@ -96,6 +100,19 @@ export const useAppStore = defineStore('app', {
     },
     changeToolbarStatus(status) {
       this.toolbar = { ...this.toolbar, ...status }
+    },
+
+    /**
+     * 视口侦测。原先只写在 PublicLayout 的 onMounted 里，而 Landing / 简历
+     * 是独立路由、不经过那层布局 —— 于是那些页面上 mobile 恒为 false，
+     * usePageBackground 的移动端分支（*_bg_mobile）永远走不到。
+     * 挪到 store 里由 App.vue 启动一次，全站都算得准。
+     */
+    initViewport() {
+      if (viewportMql) { this.mobile = viewportMql.matches; return } // 幂等
+      viewportMql = window.matchMedia('(max-width: 768px)')
+      this.mobile = viewportMql.matches
+      viewportMql.addEventListener('change', (e) => { this.mobile = e.matches })
     }
   }
 })

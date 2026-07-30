@@ -173,23 +173,19 @@ async function handleLogout() {
   router.push({ path: '/' })
 }
 
-// 移动端断点：768px（手机端）
-const checkMobile = () => { appStore.mobile = document.body.clientWidth <= 768 }
-
 onMounted(() => {
   appStore.initDarkMode()
   appStore.fetchConfig()
   window.addEventListener('scroll', onScrollPage)
   document.addEventListener('click', handleClickOutside)
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
+  // 移动端断点（768px）改由 store 的 matchMedia 统一维护，见 App.vue
+  appStore.initViewport()
   appStore.changeToolbarStatus({ enter: false, visible: true })
   setLoginCardTrigger(() => { showLogin.value = true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScrollPage)
-  window.removeEventListener('resize', checkMobile)
   document.removeEventListener('click', handleClickOutside)
 })
 </script>

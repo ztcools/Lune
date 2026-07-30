@@ -104,19 +104,41 @@ public class DataInitializer implements CommandLineRunner {
             {"home_music_list", "[]", "public", "首页音乐播放列表 JSON [{name,artist,url,cover,lrc}]"}
         };
         for (String[] c : configs) {
-            var exist = siteConfigMapper.selectOne(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SiteConfig>()
-                            .eq(SiteConfig::getConfigKey, c[0]).last("LIMIT 1"));
-            if (exist == null) {
-                var sc = new SiteConfig();
-                sc.setConfigKey(c[0]);
-                sc.setConfigValue(c[1]);
-                sc.setConfigType(c[2]);
-                sc.setDescription(c[3]);
-                siteConfigMapper.insert(sc);
-            }
+            seedConfig(c[0], c[1], c[2], c[3]);
         }
+        seedMobileBgConfigs(configs);
         seedResume();
+    }
+
+    /**
+     * 为每个 {@code *_bg} 补一个 {@code *_bg_mobile} 兄弟 key。
+     *
+     * <p>前端（stores/app.js）一直在读这 14 个移动端 key，
+     * {@code usePageBackground} 也早有「移动端优先取 _mobile」的分支，但这些 key
+     * 从未被种下、后台也没有入口，于是那个分支永远走不到 —— 手机上只能看到
+     * 按横幅构图裁出来的 PC 图。这里按 PC 列表派生，避免两份清单各自漂移。
+     *
+     * <p>默认值是空数组：留空时前端自动回落到 PC 图，行为与加这个 key 之前一致。
+     */
+    private void seedMobileBgConfigs(String[][] configs) {
+        for (String[] c : configs) {
+            if (!c[0].endsWith("_bg")) continue;
+            seedConfig(c[0] + "_mobile", "[]", c[2], c[3].replace("背景图", "背景图（移动端竖屏）"));
+        }
+    }
+
+    /** 幂等插入：仅当该 key 不存在时写入，不覆盖站长改过的值 */
+    private void seedConfig(String key, String value, String type, String description) {
+        var exist = siteConfigMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SiteConfig>()
+                        .eq(SiteConfig::getConfigKey, key).last("LIMIT 1"));
+        if (exist != null) return;
+        var sc = new SiteConfig();
+        sc.setConfigKey(key);
+        sc.setConfigValue(value);
+        sc.setConfigType(type);
+        sc.setDescription(description);
+        siteConfigMapper.insert(sc);
     }
 
     /** 简历页测试数据：仅当两张表都为空时填充 */

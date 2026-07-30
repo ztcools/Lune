@@ -43,3 +43,24 @@ CC BY 曲目的 `license` 必须保留，否则不符合许可要求。
 | `lune-bg-night-lake.webp` | 青绿夜湖 | 树洞 |
 | `lune-bg-street.webp` | 日式街道 | 随笔 / 记录 |
 | `lune-bg-starry-tree.webp` | 星空孤树 | Landing 备选 |
+
+### 移动端竖屏版 `*-m.webp`
+
+同一批图按 **9:16 居中裁切**（宽 = 高 × 0.5625）另存一份，用于 `*_bg_mobile` 配置项。
+横图直接铺到竖屏上时，`background-size: cover` 会按高度放大、把两侧裁掉，
+主体（人物、桥拱、街道纵深）往往被切出画面；竖裁版在裁切阶段就保住了构图中心，
+且体积只有横版的 ~30%（8 张共 272 KB），省的是手机流量。
+
+处理：`cwebp -q 80 -crop <x> 0 <w> <h>`，`x` 取居中偏移。裁切不改变授权，
+版权与上表一致（同源同许可）。
+
+| 文件 | 尺寸 | 对应横版 |
+|------|------|----------|
+| `lune-bg-sky-rooftop-m.webp` | 608×1080 | `lune-bg-sky-rooftop.webp` |
+| `lune-bg-green-bridge-m.webp` | 608×1080 | `lune-bg-green-bridge.webp` |
+| `lune-bg-starry-tree-m.webp` | 608×1080 | `lune-bg-starry-tree.webp` |
+| `lune-bg-street-m.webp` | 608×1080 | `lune-bg-street.webp` |
+| `lune-bg-valley-dusk-m.webp` | 608×1080 | `lune-bg-valley-dusk.webp` |
+| `lune-bg-night-lake-m.webp` | 456×810 | `lune-bg-night-lake.webp` |
+| `lune-bg-water-door-m.webp` | 450×800 | `lune-bg-water-door.webp` |
+| `lune-bg-grass-field-m.webp` | 394×700 | `lune-bg-grass-field.webp` |

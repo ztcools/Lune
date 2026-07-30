@@ -91,7 +91,10 @@
     <!-- ====== 页面背景设置 ====== -->
     <div class="section-card">
       <div class="section-title">🖼️ 页面背景设置</div>
-      <p class="section-hint">每个区域可添加多张图片，页面将随机选取显示</p>
+      <p class="section-hint">
+        每个区域可添加多张图片，页面将随机选取显示。
+        每区分「PC 端 / 移动端」两套：移动端留空时自动沿用 PC 端的图。
+      </p>
 
       <el-collapse v-model="activeBgSections" class="bg-collapse">
         <el-collapse-item v-for="bg in bgSections" :key="bg.key" :name="bg.key">
@@ -100,39 +103,53 @@
               <span class="bg-icon">{{ bg.icon }}</span>
               <span class="bg-label">{{ bg.label }}</span>
               <el-tag size="small" round :type="bgImages[bg.key]?.length ? 'success' : 'info'">
-                {{ bgImages[bg.key]?.length || 0 }} 张
+                PC {{ bgImages[bg.key]?.length || 0 }}
+              </el-tag>
+              <el-tag size="small" round :type="bgImages[bg.key + '_mobile']?.length ? 'warning' : 'info'">
+                移动 {{ bgImages[bg.key + '_mobile']?.length || 0 }}
               </el-tag>
             </div>
           </template>
 
           <div class="bg-content">
+            <!-- 竖屏和横幅的构图完全不同，所以移动端单独一套图，而不是复用 PC 图裁切 -->
+            <el-radio-group v-model="deviceMap[bg.key]" size="small" class="device-switch">
+              <el-radio-button label="pc">🖥️ PC 端</el-radio-button>
+              <el-radio-button label="mobile">📱 移动端</el-radio-button>
+            </el-radio-group>
+            <p class="device-hint" v-if="deviceMap[bg.key] === 'mobile'">
+              建议竖图（如 1080×1920）。此处为空时移动端自动回落到 PC 端图片。
+            </p>
+
             <!-- 图片网格 -->
-            <div class="bg-grid" v-if="bgImages[bg.key]?.length">
-              <div v-for="(url, i) in bgImages[bg.key]" :key="i" class="bg-img-card">
+            <div class="bg-grid" v-if="bgImages[curKey(bg)]?.length">
+              <div v-for="(url, i) in bgImages[curKey(bg)]" :key="i" class="bg-img-card">
                 <div class="bg-img-wrap">
-                  <el-image :src="url" fit="cover" :preview-src-list="bgImages[bg.key]" :initial-index="i" />
+                  <el-image :src="url" fit="cover" :preview-src-list="bgImages[curKey(bg)]" :initial-index="i" />
                 </div>
                 <span class="bg-img-name">{{ getShortName(url) }}</span>
-                <el-button class="bg-img-del" circle size="small" :icon="Close" @click="removeBg(bg.key, i)" />
+                <el-button class="bg-img-del" circle size="small" :icon="Close" @click="removeBg(curKey(bg), i)" />
               </div>
             </div>
             <el-empty v-else description="暂无图片，上传或选择即自动生效" :image-size="48" />
 
             <!-- 添加方式（上传/选择即生效，无需二次确认） -->
-            <el-tabs v-model="addMethodMap[bg.key]" type="border-card" class="add-tabs">
+            <el-tabs v-model="addMethodMap[curKey(bg)]" type="border-card" class="add-tabs">
               <el-tab-pane label="📁 本地上传" name="upload">
                 <el-upload class="bg-upload" :action="uploadUrl" :headers="uploadHeaders"
-                  :on-success="r => onBgUploaded(bg.key, r)" :show-file-list="false" accept="image/*" drag>
+                  :on-success="r => onBgUploaded(curKey(bg), r)" :show-file-list="false" accept="image/*" drag>
                   <el-icon :size="32"><UploadFilled /></el-icon>
                   <div>拖拽或点击上传，自动添加并生效</div>
-                  <div class="upload-tip">建议尺寸 ≥1920×1080，横幅更清晰</div>
+                  <div class="upload-tip">
+                    {{ deviceMap[bg.key] === 'mobile' ? '建议尺寸 ≥1080×1920（竖图）' : '建议尺寸 ≥1920×1080，横幅更清晰' }}
+                  </div>
                 </el-upload>
               </el-tab-pane>
               <el-tab-pane label="🖼️ 资源库" name="picker">
                 <div class="picker-grid" v-if="pickerList.length">
                   <div v-for="r in pickerList" :key="r.id" class="picker-item"
-                    :class="{ selected: bgImages[bg.key].includes(r.path) }"
-                    @click="togglePickerItem(bg.key, r.path)">
+                    :class="{ selected: bgImages[curKey(bg)].includes(r.path) }"
+                    @click="togglePickerItem(curKey(bg), r.path)">
                     <el-image :src="r.path" fit="cover" />
                     <span>{{ r.filename }}</span>
                   </div>
@@ -144,8 +161,8 @@
               </el-tab-pane>
               <el-tab-pane label="🔗 URL 输入" name="url">
                 <div class="url-row">
-                  <el-input v-model="urlInputMap[bg.key]" placeholder="粘贴图片 URL，回车即添加生效" @keyup.enter="addBgUrl(bg.key)" />
-                  <el-button type="primary" @click="addBgUrl(bg.key)">添加</el-button>
+                  <el-input v-model="urlInputMap[curKey(bg)]" placeholder="粘贴图片 URL，回车即添加生效" @keyup.enter="addBgUrl(curKey(bg))" />
+                  <el-button type="primary" @click="addBgUrl(curKey(bg))">添加</el-button>
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -200,8 +217,19 @@ const bgSections = [
   { key: 'resume_hero_bg', label: '简历 · 顶部 Banner', icon: '🌿' },
 ]
 
+// 每个区域两套 key：xxx_bg（PC）与 xxx_bg_mobile（移动端）。
+// 移动端那 14 个 key 其实早就被 stores/app.js 读了，只是从来没人能配 ——
+// 既没种子数据也没后台入口，于是 usePageBackground 的移动端分支永远走不到。
+const bgKeysOf = (s) => [s.key, s.key + '_mobile']
+const allBgKeys = bgSections.flatMap(bgKeysOf)
+
 const bgImages = reactive({})
-bgSections.forEach(s => { bgImages[s.key] = [] })
+allBgKeys.forEach(k => { bgImages[k] = [] })
+
+// 当前正在编辑哪一端（每个区域独立记忆）
+const deviceMap = reactive({})
+bgSections.forEach(s => { deviceMap[s.key] = 'pc' })
+const curKey = (bg) => deviceMap[bg.key] === 'mobile' ? bg.key + '_mobile' : bg.key
 
 const activeBgSections = ref([])
 // 首页音乐歌单
@@ -211,7 +239,7 @@ const configLoaded = ref(false)
 // 每个背景区独立的添加方式 / URL 输入（上传即生效，无中间态）
 const addMethodMap = reactive({})
 const urlInputMap = reactive({})
-bgSections.forEach(s => { addMethodMap[s.key] = 'upload'; urlInputMap[s.key] = '' })
+allBgKeys.forEach(k => { addMethodMap[k] = 'upload'; urlInputMap[k] = '' })
 const uploadUrl = '/api/admin/resources/upload'
 const uploadHeaders = { Authorization: 'Bearer ' + localStorage.getItem('token') }
 
@@ -241,12 +269,12 @@ async function loadAllConfigs() {
       noticeStr.value = Array.isArray(arr) ? arr.join('\n') : (data.notices || '')
     } catch { noticeStr.value = data.notices || '' }
 
-    // 解析背景图 JSON 数组
-    bgSections.forEach(s => {
+    // 解析背景图 JSON 数组（PC + 移动端各 14 个 key）
+    allBgKeys.forEach(k => {
       try {
-        const arr = JSON.parse(data[s.key] || '[]')
-        bgImages[s.key] = Array.isArray(arr) ? arr : []
-      } catch { bgImages[s.key] = [] }
+        const arr = JSON.parse(data[k] || '[]')
+        bgImages[k] = Array.isArray(arr) ? arr : []
+      } catch { bgImages[k] = [] }
     })
 
     // 解析音乐歌单
@@ -350,8 +378,12 @@ function togglePickerItem(key, path) {
 
 async function saveBgConfig(key, msg) {
   try {
-    await siteConfigApi.save({ configKey: key, configValue: JSON.stringify(bgImages[key]), configType: 'public', description: '' })
-    ElMessage.success(msg || '背景已更新')
+    // 带上 description，让 site_config 表自己说清这条是哪个页面的哪一端
+    const isMobile = key.endsWith('_mobile')
+    const section = bgSections.find(s => s.key === (isMobile ? key.slice(0, -'_mobile'.length) : key))
+    const desc = section ? `${section.label}背景图（${isMobile ? '移动端' : 'PC 端'}）` : ''
+    await siteConfigApi.save({ configKey: key, configValue: JSON.stringify(bgImages[key]), configType: 'public', description: desc })
+    ElMessage.success(msg || (isMobile ? '移动端背景已更新' : '背景已更新'))
   } catch (e) { ElMessage.error('保存失败') }
 }
 
@@ -434,6 +466,8 @@ function getShortName(url) {
 .bg-icon { font-size: 18px; }
 .bg-label { font-weight: 500; color: #333; }
 .bg-content { padding-top: 12px; }
+.device-switch { margin-bottom: 10px; }
+.device-hint { font-size: 12px; color: #b08a4a; margin: 0 0 12px; line-height: 1.6; }
 
 /* ====== Image Grid ====== */
 .bg-grid {

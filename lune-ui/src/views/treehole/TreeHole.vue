@@ -72,6 +72,11 @@
     <!-- ====== Timeline Section ====== -->
     <div class="timeline-section" ref="timelineRef">
       <div class="timeline-wrapper my-animation-hideToShow">
+        <!-- treehole_content_bg 此前是个死配置：后台能配、库里有值，但没人渲染它。
+             放在 wrapper 内部而不是外部 —— wrapper 自己有 0.86 的白底，
+             背景图搁外面会被整块盖掉。 -->
+        <PageBg :image="contentBg" variant="green" />
+
         <div class="tree-hole-container">
           <ol class="tree-hole-list" v-if="treeHoleList.length > 0">
             <li
@@ -198,6 +203,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { treeHoleApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
+import PageBg from '../../components/PageBg.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
 
@@ -207,6 +213,7 @@ const userStore = useUserStore()
 const danmakuList = ref([])
 const danmakuContent = ref('')
 const danmakuBg = usePageBackground('treeholeDanmaku')
+const contentBg = usePageBackground('treeholeContent')
 // 弹幕交互：悬停高亮 / 点击弹卡片并暂停该条
 const hoverId = ref(null)
 const pausedId = ref(null)
@@ -407,7 +414,10 @@ function formatDate(d) {
 .danmaku-section {
   position: relative;
   width: 100%;
+  /* 手机上 100vh 是「地址栏收起后」的高度，首屏就比可视区高出 60~100px，
+     「往下看更多」正好被顶出屏幕。dvh 跟随可视区变化，旧浏览器回落到 vh。 */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 .bg-overlay {
@@ -626,13 +636,17 @@ function formatDate(d) {
 }
 
 .timeline-wrapper {
-  background: rgba(255, 255, 255, 0.92);
+  /* 0.92 → 0.86：留一点透，好让 PageBg 的背景图与光斑透上来 */
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(4px);
   padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
 /* ====== Tree Hole Container ====== */
 .tree-hole-container {
+  position: relative; z-index: 1;
   padding: 20px;
   margin: 0 auto;
 }
@@ -829,6 +843,7 @@ function formatDate(d) {
 
 /* Pagination */
 .pagination-wrap {
+  position: relative; z-index: 1;
   display: flex;
   justify-content: center;
   margin-top: 30px;

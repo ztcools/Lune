@@ -67,5 +67,15 @@ const bgUrl = computed(() => {
 
 @media (max-width: 768px) {
   .page-bg-blob { filter: blur(50px); }
+  /* iOS Safari 不支持 background-attachment: fixed —— 它会退化成把图钉在视口上
+     重绘，滚动时每帧都要合成一张全屏图，长页面直接掉帧。移动端改回 scroll。 */
+  .page-bg-img { background-attachment: scroll; }
+  /* 三层 45vw 的高斯模糊在手机 GPU 上并不便宜，砍掉最不起眼的第三层 */
+  .page-bg .blob-3 { display: none; }
+}
+
+/* 用户在系统里开了「减少动效」：留渐变、去漂移 */
+@media (prefers-reduced-motion: reduce) {
+  .page-bg-blob { animation: none !important; }
 }
 </style>

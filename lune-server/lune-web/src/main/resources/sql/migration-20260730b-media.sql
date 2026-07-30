@@ -46,3 +46,30 @@ ON DUPLICATE KEY UPDATE
   config_value = IF(
     config_value IS NULL OR config_value = '' OR config_value LIKE '%alcy.cc%' OR config_value LIKE '%dmoe.cc%',
     VALUES(config_value), config_value);
+
+-- ---------- 3. 移动端竖屏背景图 ----------
+-- 这 14 个 *_bg_mobile key 前端（stores/app.js + usePageBackground）一直在读，
+-- 而库里存的还是 t.alcy.cc 随机 API：横版 PC 图已换成自托管，手机端反而留着
+-- 一个失效外链 —— 移动端分支优先级更高，等于手机上背景全黑。
+-- 这里换成同一批图的 9:16 竖裁版（见 media/CREDITS.md）：构图中心不被 cover 裁掉，
+-- 体积约为横版的 30%。取值与 PC 端一一对应，保持两端观感一致。
+INSERT INTO site_config (config_key, config_value, config_type, description) VALUES
+('landing_bg_mobile',          '["/media/bg/lune-bg-valley-dusk-m.webp","/media/bg/lune-bg-starry-tree-m.webp"]', 'public', 'Landing 页背景（移动端竖屏）'),
+('home_hero_bg_mobile',        '["/media/bg/lune-bg-sky-rooftop-m.webp","/media/bg/lune-bg-grass-field-m.webp"]', 'public', '首页顶部 Banner（移动端竖屏）'),
+('home_content_bg_mobile',     '["/media/bg/lune-bg-water-door-m.webp"]',                                          'public', '首页内容区（移动端竖屏）'),
+('family_hero_bg_mobile',      '["/media/bg/lune-bg-grass-field-m.webp","/media/bg/lune-bg-green-bridge-m.webp"]', 'public', '家页顶部 Banner（移动端竖屏）'),
+('family_content_bg_mobile',   '["/media/bg/lune-bg-water-door-m.webp"]',                                          'public', '家页内容区（移动端竖屏）'),
+('treehole_danmaku_bg_mobile', '["/media/bg/lune-bg-night-lake-m.webp","/media/bg/lune-bg-starry-tree-m.webp"]',   'public', '树洞弹幕区（移动端竖屏）'),
+('treehole_content_bg_mobile', '["/media/bg/lune-bg-night-lake-m.webp"]',                                          'public', '树洞时间线（移动端竖屏）'),
+('essay_hero_bg_mobile',       '["/media/bg/lune-bg-street-m.webp","/media/bg/lune-bg-sky-rooftop-m.webp"]',       'public', '随笔顶部 Banner（移动端竖屏）'),
+('essay_content_bg_mobile',    '["/media/bg/lune-bg-water-door-m.webp"]',                                          'public', '随笔内容区（移动端竖屏）'),
+('record_hero_bg_mobile',      '["/media/bg/lune-bg-green-bridge-m.webp","/media/bg/lune-bg-street-m.webp"]',      'public', '记录顶部 Banner（移动端竖屏）'),
+('record_content_bg_mobile',   '["/media/bg/lune-bg-water-door-m.webp"]',                                          'public', '记录内容区（移动端竖屏）'),
+('wish_hero_bg_mobile',        '["/media/bg/lune-bg-sky-rooftop-m.webp","/media/bg/lune-bg-valley-dusk-m.webp"]',  'public', '许愿池顶部 Banner（移动端竖屏）'),
+('wish_content_bg_mobile',     '["/media/bg/lune-bg-grass-field-m.webp"]',                                         'public', '许愿池内容区（移动端竖屏）'),
+('resume_hero_bg_mobile',      '["/media/bg/lune-bg-green-bridge-m.webp","/media/bg/lune-bg-valley-dusk-m.webp"]', 'public', '简历页顶部 Banner（移动端竖屏）')
+ON DUPLICATE KEY UPDATE
+  config_value = IF(
+    config_value IS NULL OR config_value = '' OR config_value = '[]'
+      OR config_value LIKE '%alcy.cc%' OR config_value LIKE '%dmoe.cc%',
+    VALUES(config_value), config_value);
