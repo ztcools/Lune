@@ -36,8 +36,11 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
                 "default-src 'self'; "
                 + "img-src 'self' data: https:; "
                 + "media-src 'self' https:; "
-                + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                + "font-src 'self' https://fonts.gstatic.com; "
+                // 字体走国内可达镜像（fonts.loli.net 提供 CSS，gstatic.loli.net 提供 woff2）。
+                // 不再放行 fonts.googleapis.com / fonts.gstatic.com：大陆访问不到，
+                // 留着只会给攻击面白送两个可加载外部样式的源。详见 lune-ui/index.html。
+                + "style-src 'self' 'unsafe-inline' https://fonts.loli.net; "
+                + "font-src 'self' https://gstatic.loli.net; "
                 + "script-src 'self'; "
                 + "connect-src 'self'; "
                 + "object-src 'none'; "

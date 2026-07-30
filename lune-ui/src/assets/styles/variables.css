@@ -50,7 +50,11 @@
   --maxMaxLightGray: rgba(242, 242, 242, 0.5);
   --green: #66bb6a;
   --lightYellow: #fff8e1;
-  --globalFont: 'Quicksand', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* Quicksand 自托管（仅 latin 分片），中文交给系统字体：
+     Noto Sans SC 单字重就有 400+ 个 unicode-range 分片，为正文引入
+     CDN 依赖不值得，而各平台自带的黑体观感与加载都更好。 */
+  --globalFont: 'Quicksand', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', 'Hiragino Sans GB', sans-serif;
 
   /* ===== 自然原野系列 ===== */
   --nature-green: #4caf50;
@@ -78,13 +82,20 @@
   --input-focus-shadow: 0 0 0 4px rgba(102, 187, 106, 0.18);
 
   /* ===== 字体 ===== */
-  --trendy-font: 'Fredoka', 'Comfortaa', 'Quicksand', 'Noto Sans SC', sans-serif;
-  /* 书法/诗意字体 */
-  --calligraphy-font: 'Ma Shan Zheng', 'Zhi Mang Xing', 'Noto Serif SC', serif;
-  --cursive-font: 'Zhi Mang Xing', 'Long Cang', 'Ma Shan Zheng', cursive;
-  --handwriting-font: 'Long Cang', 'Caveat', 'Ma Shan Zheng', cursive;
-  /* 文章/正文个性字体 */
-  --article-font: 'Noto Serif SC', 'Noto Sans SC', serif;
+  --trendy-font: 'Fredoka', 'Comfortaa', 'Quicksand', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  /* 书法/诗意字体。前三款由 utils/loadFonts.js 在首屏后从国内镜像注入，
+     兜底放楷体（Windows/macOS 都自带）—— 同为毛笔骨架，镜像挂掉时
+     观感降级但不至于掉成黑体，把书法感整个丢掉。 */
+  --calligraphy-font: 'Ma Shan Zheng', 'Zhi Mang Xing', 'KaiTi', 'STKaiti',
+    'Kaiti SC', 'Noto Serif SC', serif;
+  --cursive-font: 'Zhi Mang Xing', 'Long Cang', 'Ma Shan Zheng', 'KaiTi',
+    'STKaiti', cursive;
+  --handwriting-font: 'Long Cang', 'Caveat', 'Ma Shan Zheng', 'KaiTi',
+    'STKaiti', cursive;
+  /* 文章正文：拉丁走 Georgia，中文走系统宋体（思源宋体 → 苹方宋 → 宋体） */
+  --article-font: 'Georgia', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC',
+    'SimSun', serif;
 
   /* ===== 断点（统一） =====
      mobile < 768px | tablet 768-1024px | desktop > 1024px */

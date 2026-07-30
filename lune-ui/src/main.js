@@ -5,6 +5,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import { setupSecurity } from './utils/security'
+import { scheduleCjkDisplayFonts } from './utils/loadFonts'
 import './assets/styles/variables.css'
 import './assets/styles/global.css'
 import './assets/styles/animations.css'
@@ -23,3 +24,6 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 app.mount('#app')
+
+// 装饰性中文书法体在首屏之后再注入，避免渲染阻塞（详见 utils/loadFonts.js）
+scheduleCjkDisplayFonts()
