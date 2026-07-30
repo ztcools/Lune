@@ -3,86 +3,169 @@
     <transition name="card-fade">
       <div v-if="visible" class="card-overlay" @click.self="$emit('close')">
         <transition name="card-pop">
-          <div v-if="visible" class="login-card">
+          <div
+            v-if="visible"
+            class="login-card"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="isRegister ? '注册' : '登录'"
+          >
             <div class="card-glow" />
+
+            <button class="card-close" type="button" aria-label="关闭" @click="$emit('close')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+              </svg>
+            </button>
+
             <div class="card-inner">
               <div class="card-header">
-                <div class="card-logo">
-                  <span class="logo-icon">🌙</span>
-                </div>
+                <div class="card-logo"><span class="logo-icon">🌙</span></div>
                 <h2 class="card-title">{{ isRegister ? '加入 Lune' : '欢迎回来' }}</h2>
-                <p class="card-subtitle">{{ isRegister ? '创建一个新账号，开始记录美好生活' : '登录你的账号，继续探索美好' }}</p>
+                <p class="card-subtitle">
+                  {{ isRegister ? '创建账号，一起记录美好生活' : '登录你的账号，继续探索美好' }}
+                </p>
+              </div>
+
+              <!-- 分段控件替代原先那个挤在密码框角上的「注册」小字：
+                   两个入口地位相同，用户一眼就知道自己在哪一步 -->
+              <div class="seg" role="tablist">
+                <span class="seg-thumb" :class="{ right: isRegister }" aria-hidden="true" />
+                <button
+                  v-for="t in tabs" :key="t.key"
+                  class="seg-btn" :class="{ on: isRegister === t.reg }"
+                  type="button" role="tab" :aria-selected="isRegister === t.reg"
+                  @click="switchTab(t.reg)"
+                >{{ t.label }}</button>
               </div>
 
               <transition name="slide-fade" mode="out-in">
-                <div v-if="!isRegister" key="login" class="card-form">
-                  <div class="input-group">
-                    <div class="input-wrapper">
-                      <span class="input-icon">👤</span>
-                      <input v-model="loginForm.account" type="text" placeholder="用户名或邮箱" class="nature-input" @keyup.enter="handleLogin" />
-                    </div>
-                  </div>
-                  <div class="input-group">
-                    <div class="input-wrapper">
-                      <span class="input-icon">🔒</span>
-                      <input v-model="loginForm.password" type="password" placeholder="密码" class="nature-input" @keyup.enter="handleLogin" />
-                    </div>
-                    <span class="switch-link" @click="isRegister = true">注册</span>
-                  </div>
-                  <div class="btn-group">
-                    <button class="nature-btn nature-btn-primary" @click="handleLogin" :disabled="loginLoading">
-                      <span v-if="!loginLoading">登 录</span>
-                      <span v-else class="btn-loading"><i class="spinner" /> 登录中...</span>
-                    </button>
-                    <button class="nature-btn nature-btn-ghost" @click="$emit('close')">取消</button>
-                  </div>
-                </div>
+                <!-- ============ 登录 ============ -->
+                <form v-if="!isRegister" key="login" class="card-form" @submit.prevent="handleLogin" novalidate>
+                  <AuthField
+                    ref="loginFirstRef"
+                    v-model="loginForm.account"
+                    label="用户名或邮箱"
+                    name="username"
+                    autocomplete="username"
+                    :error="errs.account"
+                    @enter="handleLogin"
+                  >
+                    <template #icon><IconUser /></template>
+                  </AuthField>
 
-                <div v-else key="register" class="card-form">
-                  <div class="input-group">
-                    <div class="input-wrapper">
-                      <span class="input-icon">👤</span>
-                      <input v-model="registerForm.username" type="text" placeholder="设置用户名" class="nature-input" />
-                    </div>
+                  <AuthField
+                    v-model="loginForm.password"
+                    label="密码"
+                    type="password"
+                    name="current-password"
+                    autocomplete="current-password"
+                    :error="errs.password"
+                    @enter="handleLogin"
+                  >
+                    <template #icon><IconLock /></template>
+                  </AuthField>
+
+                  <transition name="err-fade">
+                    <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
+                  </transition>
+
+                  <button class="nature-btn nature-btn-primary" type="submit" :disabled="loginLoading">
+                    <span v-if="!loginLoading">登 录</span>
+                    <span v-else class="btn-loading"><i class="spinner" />登录中…</span>
+                  </button>
+
+                  <p class="form-tip">
+                    还没有账号？<span class="link" @click="switchTab(true)">立即注册</span>
+                  </p>
+                </form>
+
+                <!-- ============ 注册 ============ -->
+                <form v-else key="register" class="card-form" @submit.prevent="handleRegister" novalidate>
+                  <AuthField
+                    ref="regFirstRef"
+                    v-model="registerForm.username"
+                    label="用户名"
+                    name="new-username"
+                    autocomplete="username"
+                    :error="errs.username"
+                  >
+                    <template #icon><IconUser /></template>
+                  </AuthField>
+
+                  <AuthField
+                    v-model="registerForm.email"
+                    label="邮箱地址"
+                    name="email"
+                    autocomplete="email"
+                    inputmode="email"
+                    :error="errs.email"
+                  >
+                    <template #icon><IconMail /></template>
+                  </AuthField>
+
+                  <AuthField
+                    v-model="registerForm.code"
+                    label="邮箱验证码"
+                    name="one-time-code"
+                    autocomplete="one-time-code"
+                    inputmode="numeric"
+                    maxlength="6"
+                    :error="errs.code"
+                  >
+                    <template #icon><IconShield /></template>
+                    <template #suffix>
+                      <button
+                        class="code-btn" type="button"
+                        :disabled="codeSending || countdown > 0 || !emailValid"
+                        :title="emailValid ? '' : '请先填写正确的邮箱'"
+                        @click="sendCode"
+                      >{{ countdown > 0 ? `${countdown}s` : (codeSending ? '发送中' : '发送验证码') }}</button>
+                    </template>
+                  </AuthField>
+
+                  <AuthField
+                    v-model="registerForm.password"
+                    label="设置密码"
+                    type="password"
+                    name="new-password"
+                    autocomplete="new-password"
+                    :error="errs.regPassword"
+                  >
+                    <template #icon><IconLock /></template>
+                  </AuthField>
+
+                  <!-- 强度条只在开始输入后出现，避免空表单上就挂着一排灰格子 -->
+                  <div v-if="registerForm.password" class="pw-meter">
+                    <span v-for="i in 3" :key="i" class="pw-bar" :class="{ on: pwScore >= i, [pwLevel.cls]: pwScore >= i }" />
+                    <em class="pw-text" :class="pwLevel.cls">{{ pwLevel.text }}</em>
                   </div>
-                  <div class="input-group">
-                    <div class="input-wrapper">
-                      <span class="input-icon">🔒</span>
-                      <input v-model="registerForm.password" type="password" placeholder="设置密码" class="nature-input" />
-                    </div>
-                  </div>
-                  <div class="input-group">
-                    <div class="input-wrapper">
-                      <span class="input-icon">🔒</span>
-                      <input v-model="registerForm.confirmPassword" type="password" placeholder="确认密码" class="nature-input" />
-                    </div>
-                  </div>
-                  <div class="input-group">
-                    <div class="input-wrapper">
-                      <span class="input-icon">📧</span>
-                      <input v-model="registerForm.email" type="email" placeholder="邮箱地址" class="nature-input" />
-                    </div>
-                  </div>
-                  <div class="input-group">
-                    <div class="input-wrapper code-wrapper">
-                      <span class="input-icon">✉️</span>
-                      <input v-model="registerForm.code" type="text" placeholder="验证码" class="nature-input" maxlength="6" />
-                      <button class="code-btn" @click="sendCode" :disabled="codeSending || countdown > 0">
-                        {{ countdown > 0 ? `${countdown}s` : '发送' }}
-                      </button>
-                    </div>
-                  </div>
-                  <div class="input-group">
-                    <span class="switch-link back-link" @click="isRegister = false">← 返回登录</span>
-                  </div>
-                  <div class="btn-group">
-                    <button class="nature-btn nature-btn-primary" @click="handleRegister" :disabled="registerLoading">
-                      <span v-if="!registerLoading">注 册</span>
-                      <span v-else class="btn-loading"><i class="spinner" /> 注册中...</span>
-                    </button>
-                    <button class="nature-btn nature-btn-ghost" @click="$emit('close')">取消</button>
-                  </div>
-                </div>
+
+                  <AuthField
+                    v-model="registerForm.confirmPassword"
+                    label="确认密码"
+                    type="password"
+                    name="confirm-password"
+                    autocomplete="new-password"
+                    :error="errs.confirmPassword"
+                    @enter="handleRegister"
+                  >
+                    <template #icon><IconLock /></template>
+                  </AuthField>
+
+                  <transition name="err-fade">
+                    <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
+                  </transition>
+
+                  <button class="nature-btn nature-btn-primary" type="submit" :disabled="registerLoading">
+                    <span v-if="!registerLoading">注 册</span>
+                    <span v-else class="btn-loading"><i class="spinner" />注册中…</span>
+                  </button>
+
+                  <p class="form-tip">
+                    已有账号？<span class="link" @click="switchTab(false)">返回登录</span>
+                  </p>
+                </form>
               </transition>
             </div>
           </div>
@@ -93,10 +176,39 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onUnmounted, h } from 'vue'
 import { useUserStore } from '../stores/user'
 import { authApi } from '../api/modules'
+import AuthField from './auth/AuthField.vue'
 import { ElMessage } from 'element-plus'
+
+/**
+ * 前台登录/注册弹窗。
+ *
+ * 表单观感统一走 AuthField（与后台登录页共用），这里只负责流程：
+ * 分段切换、验证码倒计时、行内校验、Esc 关闭与滚动锁。
+ */
+
+// 图标用内联 SVG 而不是 emoji：emoji 在各平台渲染差异大、还会跟着系统字体
+// 变粗变彩，是原先这张卡片显得「廉价」的主要来源。
+const stroke = { fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round' }
+const svg = (...paths) => h('svg', { viewBox: '0 0 24 24', width: 18, height: 18, ...stroke }, paths)
+const IconUser = () => svg(
+  h('circle', { cx: 12, cy: 8.2, r: 3.6 }),
+  h('path', { d: 'M4.8 20c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6' })
+)
+const IconLock = () => svg(
+  h('rect', { x: 4.5, y: 10.5, width: 15, height: 9.5, rx: 2.6 }),
+  h('path', { d: 'M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7' })
+)
+const IconMail = () => svg(
+  h('rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2.6 }),
+  h('path', { d: 'M4 7l8 6 8-6' })
+)
+const IconShield = () => svg(
+  h('path', { d: 'M12 3.5l7 2.6v5.2c0 4.2-2.9 7.4-7 9.2-4.1-1.8-7-5-7-9.2V6.1l7-2.6Z' }),
+  h('path', { d: 'M9.2 12.2l2 2 3.6-3.9' })
+)
 
 const props = defineProps({
   visible: { type: Boolean, default: false }
@@ -109,14 +221,69 @@ const loginLoading = ref(false)
 const registerLoading = ref(false)
 const codeSending = ref(false)
 const countdown = ref(0)
+const formError = ref('')
 let countdownTimer = null
+
+const tabs = [
+  { key: 'login', label: '登录', reg: false },
+  { key: 'register', label: '注册', reg: true }
+]
 
 const loginForm = reactive({ account: '', password: '' })
 const registerForm = reactive({ username: '', password: '', confirmPassword: '', email: '', code: '' })
+const errs = reactive({ account: '', password: '', username: '', email: '', code: '', regPassword: '', confirmPassword: '' })
+
+const loginFirstRef = ref(null)
+const regFirstRef = ref(null)
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const emailValid = computed(() => EMAIL_RE.test(registerForm.email))
+
+// 三档强度：够长 / 有字母+数字 / 再加符号或更长
+const pwScore = computed(() => {
+  const p = registerForm.password
+  if (!p) return 0
+  let s = 0
+  if (p.length >= 8) s++
+  if (/[a-zA-Z]/.test(p) && /\d/.test(p)) s++
+  if (/[^a-zA-Z0-9]/.test(p) || p.length >= 12) s++
+  return s
+})
+const pwLevel = computed(() => (
+  [{ cls: 'weak', text: '偏弱' }, { cls: 'weak', text: '偏弱' }, { cls: 'mid', text: '一般' }, { cls: 'good', text: '很强' }][pwScore.value]
+))
+
+function clearErrs() {
+  formError.value = ''
+  Object.keys(errs).forEach(k => { errs[k] = '' })
+}
+
+function switchTab(reg) {
+  if (isRegister.value === reg) return
+  isRegister.value = reg
+  clearErrs()
+  focusFirst()
+}
+
+function focusFirst() {
+  nextTick(() => {
+    (isRegister.value ? regFirstRef.value : loginFirstRef.value)?.focus()
+  })
+}
+
+function onEsc(e) { if (e.key === 'Escape') emit('close') }
 
 watch(() => props.visible, (v) => {
-  if (!v) {
+  if (v) {
+    // 打开时锁背景滚动 + 焦点落到第一个输入框，键盘用户不用先 Tab 一圈
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onEsc)
+    focusFirst()
+  } else {
+    document.body.style.overflow = ''
+    window.removeEventListener('keydown', onEsc)
     isRegister.value = false
+    clearErrs()
     clearCountdown()
     Object.assign(loginForm, { account: '', password: '' })
     Object.assign(registerForm, { username: '', password: '', confirmPassword: '', email: '', code: '' })
@@ -128,14 +295,19 @@ function clearCountdown() {
   countdown.value = 0
 }
 
-onUnmounted(clearCountdown)
+onUnmounted(() => {
+  clearCountdown()
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', onEsc)
+})
 
 async function sendCode() {
-  if (!registerForm.email) { ElMessage.warning('请先输入邮箱'); return }
+  if (!emailValid.value) { errs.email = '请填写正确的邮箱地址'; return }
+  errs.email = ''
   codeSending.value = true
   try {
     await authApi.sendCode(registerForm.email)
-    ElMessage.success('验证码已发送')
+    ElMessage.success('验证码已发送，请查收邮箱')
     clearCountdown()
     countdown.value = 60
     countdownTimer = setInterval(() => {
@@ -143,14 +315,17 @@ async function sendCode() {
       if (countdown.value <= 0) clearCountdown()
     }, 1000)
   } catch (e) {
-    ElMessage.error(e?.message || '发送失败')
+    formError.value = e?.message || '验证码发送失败，请稍后再试'
   } finally {
     codeSending.value = false
   }
 }
 
 async function handleLogin() {
-  if (!loginForm.account || !loginForm.password) { ElMessage.warning('请填写账号和密码'); return }
+  clearErrs()
+  errs.account = loginForm.account ? '' : '请输入用户名或邮箱'
+  errs.password = loginForm.password ? '' : '请输入密码'
+  if (errs.account || errs.password) return
   loginLoading.value = true
   try {
     await userStore.login(loginForm.account, loginForm.password)
@@ -158,19 +333,26 @@ async function handleLogin() {
     emit('logged-in')
     emit('close')
   } catch (e) {
-    ElMessage.error(e?.message || '登录失败')
+    // 后端的「剩余尝试次数」「账号已锁定」提示要原样传给用户
+    formError.value = e?.message || '登录失败，请稍后再试'
   } finally {
     loginLoading.value = false
   }
 }
 
 async function handleRegister() {
-  if (!registerForm.username || !registerForm.password || !registerForm.confirmPassword || !registerForm.email || !registerForm.code) {
-    ElMessage.warning('请填写所有字段'); return
-  }
-  if (registerForm.password !== registerForm.confirmPassword) {
-    ElMessage.warning('两次密码不一致'); return
-  }
+  clearErrs()
+  errs.username = registerForm.username ? '' : '请设置用户名'
+  errs.email = registerForm.email ? (emailValid.value ? '' : '邮箱格式不正确') : '请输入邮箱'
+  errs.code = registerForm.code ? '' : '请输入邮箱验证码'
+  errs.regPassword = registerForm.password
+    ? (registerForm.password.length >= 6 ? '' : '密码至少 6 位')
+    : '请设置密码'
+  errs.confirmPassword = registerForm.confirmPassword
+    ? (registerForm.confirmPassword === registerForm.password ? '' : '两次输入的密码不一致')
+    : '请再次输入密码'
+  if (Object.values(errs).some(Boolean)) return
+
   registerLoading.value = true
   try {
     await userStore.register(registerForm)
@@ -178,7 +360,7 @@ async function handleRegister() {
     emit('logged-in')
     emit('close')
   } catch (e) {
-    ElMessage.error(e?.message || '注册失败')
+    formError.value = e?.message || '注册失败，请稍后再试'
   } finally {
     registerLoading.value = false
   }
@@ -189,167 +371,193 @@ async function handleRegister() {
 .card-overlay {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
+  padding: 20px;
+  background: rgba(24, 44, 27, 0.34);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 .login-card {
   position: relative;
-  width: 420px; max-width: 92vw;
-  background: linear-gradient(145deg, rgba(255,255,255,0.85) 0%, rgba(232,245,233,0.9) 40%, rgba(200,230,201,0.85) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 32px;
-  border: 1.5px solid rgba(255,255,255,0.5);
+  width: 400px; max-width: 100%;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  background: linear-gradient(150deg, rgba(255,255,255,0.94) 0%, rgba(240,249,241,0.92) 46%, rgba(219,239,221,0.9) 100%);
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  border-radius: 26px;
+  border: 1.5px solid rgba(255,255,255,0.66);
   box-shadow:
-    0 8px 40px rgba(56, 142, 60, 0.15),
-    0 2px 8px rgba(0,0,0,0.06),
-    inset 0 1px 0 rgba(255,255,255,0.6);
-  overflow: hidden;
+    0 18px 56px rgba(38, 92, 44, 0.18),
+    0 2px 8px rgba(0,0,0,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.7);
   font-family: var(--trendy-font);
+  scrollbar-width: none;
 }
+.login-card::-webkit-scrollbar { display: none; }
 
 .card-glow {
   position: absolute; top: -50%; left: -50%;
   width: 200%; height: 200%;
-  background: radial-gradient(circle at 30% 20%, rgba(129,199,132,0.2) 0%, transparent 50%),
-              radial-gradient(circle at 70% 80%, rgba(255,183,77,0.15) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(129,199,132,0.16) 0%, transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(255,183,77,0.1) 0%, transparent 50%);
   pointer-events: none;
-  animation: glowFloat 6s ease-in-out infinite;
+  animation: glowFloat 9s ease-in-out infinite;
 }
 @keyframes glowFloat {
   0%, 100% { transform: translate(0, 0); }
   50% { transform: translate(10px, -10px); }
 }
 
-.card-inner { position: relative; padding: 40px 36px 32px; z-index: 1; }
-
-.card-header { text-align: center; margin-bottom: 28px; }
-.card-logo {
-  width: 72px; height: 72px; margin: 0 auto 16px;
-  background: var(--nature-gradient);
-  border-radius: 22px;
+.card-close {
+  position: absolute; top: 14px; right: 14px; z-index: 2;
+  width: 30px; height: 30px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 20px rgba(76,175,80,0.35);
-  animation: logoBounce 3s ease-in-out infinite;
+  border: none; cursor: pointer;
+  color: #6d8a70; background: rgba(255,255,255,0.6);
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
-@keyframes logoBounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-.logo-icon { font-size: 36px; }
+.card-close:hover { color: #2e7d32; background: #fff; transform: rotate(90deg); }
 
-.card-title {
-  font-size: 26px; font-weight: 700; color: #2e7d32;
-  margin: 0 0 6px; letter-spacing: 1px;
-}
-.card-subtitle {
-  font-size: 14px; color: #689f63; margin: 0;
-}
+.card-inner { position: relative; padding: 32px 30px 26px; z-index: 1; }
 
-.card-form { padding: 0 8px; }
+.card-header { text-align: center; margin-bottom: 20px; }
+.card-logo {
+  width: 58px; height: 58px; margin: 0 auto 14px;
+  background: var(--nature-gradient);
+  border-radius: 19px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 22px rgba(76,175,80,0.3);
+}
+.logo-icon { font-size: 28px; }
 
-.input-group { margin-bottom: 16px; position: relative; }
-.input-wrapper {
-  display: flex; align-items: center;
-  background: rgba(255,255,255,0.7);
-  border: 1.5px solid rgba(129,199,132,0.3);
-  border-radius: 18px;
-  padding: 2px; padding-left: 14px;
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
-.input-wrapper:focus-within {
-  border-color: #66bb6a;
-  box-shadow: 0 0 0 4px rgba(76,175,80,0.12), 0 4px 12px rgba(76,175,80,0.1);
-  background: rgba(255,255,255,0.95);
-  transform: translateY(-1px);
-}
-.input-icon { font-size: 16px; margin-right: 8px; flex-shrink: 0; }
-.nature-input {
-  flex: 1; border: none; outline: none; background: transparent;
-  font-size: 15px; padding: 12px 8px; color: #333;
-  font-family: var(--trendy-font); font-weight: 500;
-}
-.nature-input::placeholder { color: #a5c8a0; }
+.card-title { font-size: 23px; font-weight: 700; color: #2b5c31; margin: 0 0 5px; letter-spacing: 1px; }
+.card-subtitle { font-size: 13px; color: #6d8a70; margin: 0; }
 
-.code-wrapper { padding-right: 6px; }
+/* ============ 分段控件 ============ */
+.seg {
+  position: relative;
+  display: grid; grid-template-columns: 1fr 1fr;
+  padding: 4px; margin-bottom: 22px;
+  background: rgba(200, 230, 201, 0.42);
+  border-radius: 14px;
+}
+.seg-thumb {
+  position: absolute; top: 4px; left: 4px;
+  width: calc(50% - 4px); height: calc(100% - 8px);
+  background: #fff; border-radius: 11px;
+  box-shadow: 0 2px 8px rgba(46, 92, 49, 0.12);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.seg-thumb.right { transform: translateX(100%); }
+.seg-btn {
+  position: relative; z-index: 1;
+  border: none; background: transparent; cursor: pointer;
+  padding: 9px 0; font-family: inherit;
+  font-size: 14px; font-weight: 600; letter-spacing: 1px;
+  color: #7d9880;
+  transition: color 0.25s ease;
+}
+.seg-btn.on { color: var(--nature-green-dark); }
+
+.card-form { display: grid; gap: 15px; }
+
+/* ============ 验证码按钮 ============ */
 .code-btn {
   flex-shrink: 0; border: none; outline: none;
-  background: var(--nature-gradient);
-  color: #fff; font-size: 13px; font-weight: 600;
-  padding: 8px 14px; border-radius: 14px; cursor: pointer;
-  font-family: var(--trendy-font);
-  transition: all 0.3s ease;
+  background: rgba(76, 175, 80, 0.12);
+  color: var(--nature-green-dark);
+  font-family: inherit; font-size: 12.5px; font-weight: 700;
+  padding: 7px 11px; border-radius: 10px; cursor: pointer;
   white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
-.code-btn:hover:not(:disabled) { transform: scale(1.05); filter: brightness(1.1); }
-.code-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.code-btn:hover:not(:disabled) { background: var(--nature-gradient); color: #fff; }
+.code-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.switch-link {
-  position: absolute; right: 4px; bottom: -20px;
-  font-size: 13px; color: #66bb6a; cursor: pointer;
-  font-weight: 600; transition: all 0.2s;
-  user-select: none;
+/* ============ 密码强度 ============ */
+.pw-meter { display: flex; align-items: center; gap: 5px; margin-top: -6px; padding: 0 2px; }
+.pw-bar {
+  flex: 1; height: 4px; border-radius: 3px;
+  background: rgba(129, 199, 132, 0.22);
+  transition: background 0.25s ease;
 }
-.switch-link:hover { color: #388e3c; text-decoration: underline; }
-.switch-link.back-link { position: static; display: inline-block; }
+.pw-bar.on.weak { background: #e2a45c; }
+.pw-bar.on.mid { background: #8bc34a; }
+.pw-bar.on.good { background: #43a047; }
+.pw-text { font-size: 11.5px; font-style: normal; margin-left: 4px; min-width: 26px; }
+.pw-text.weak { color: #c98a3a; }
+.pw-text.mid { color: #6f9b34; }
+.pw-text.good { color: var(--nature-green-dark); }
 
-.btn-group { display: flex; gap: 12px; margin-top: 24px; }
+/* ============ 错误 / 提示 / 按钮 ============ */
+.form-error {
+  margin: 0; padding: 10px 13px;
+  font-size: 12.5px; line-height: 1.6; color: #b5453f;
+  background: rgba(229, 115, 115, 0.1);
+  border: 1px solid rgba(229, 115, 115, 0.26);
+  border-radius: 12px;
+}
+.err-fade-enter-active, .err-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.err-fade-enter-from, .err-fade-leave-to { opacity: 0; transform: translateY(-4px); }
+
+.form-tip { margin: 2px 0 0; text-align: center; font-size: 12.5px; color: #7d9880; }
+.form-tip .link { color: var(--nature-green-dark); font-weight: 700; cursor: pointer; }
+.form-tip .link:hover { text-decoration: underline; }
 
 .nature-btn {
-  flex: 1; border: none; outline: none;
-  font-size: 16px; font-weight: 600;
-  padding: 14px 20px; border-radius: 18px; cursor: pointer;
-  font-family: var(--trendy-font);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  letter-spacing: 2px;
+  border: none; outline: none; cursor: pointer;
+  font-family: inherit; font-size: 15.5px; font-weight: 700;
+  padding: 13px 20px; border-radius: 14px;
+  letter-spacing: 3px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
 .nature-btn-primary {
-  background: var(--nature-gradient);
+  margin-top: 3px;
+  background: linear-gradient(135deg, #43a047, #66bb6a);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(76,175,80,0.35);
+  box-shadow: 0 6px 18px rgba(67, 160, 71, 0.28);
 }
-.nature-btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(76,175,80,0.45);
-  filter: brightness(1.08);
-}
-.nature-btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.97); }
-.nature-btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+.nature-btn-primary:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 10px 24px rgba(67,160,71,0.34); filter: brightness(1.05); }
+.nature-btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+.nature-btn-primary:disabled { opacity: 0.68; cursor: not-allowed; }
+.nature-btn:focus-visible { box-shadow: 0 0 0 4px rgba(102, 187, 106, 0.35); }
 
-.nature-btn-ghost {
-  background: rgba(255,255,255,0.5);
-  color: #689f63;
-  border: 1.5px solid rgba(129,199,132,0.4);
-}
-.nature-btn-ghost:hover {
-  background: rgba(255,255,255,0.9);
-  border-color: #81c784;
-  transform: translateY(-1px);
-}
-
-.btn-loading { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-loading { display: inline-flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 1px; }
 .spinner {
-  width: 16px; height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
   border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin 0.65s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.card-fade-enter-active, .card-fade-leave-active { transition: opacity 0.3s ease; }
+/* ============ 过渡 ============ */
+.card-fade-enter-active, .card-fade-leave-active { transition: opacity 0.28s ease; }
 .card-fade-enter-from, .card-fade-leave-to { opacity: 0; }
 
-.card-pop-enter-active { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.card-pop-enter-active { transition: all 0.38s cubic-bezier(0.34, 1.4, 0.64, 1); }
 .card-pop-leave-active { transition: all 0.2s ease-in; }
-.card-pop-enter-from { opacity: 0; transform: scale(0.85) translateY(20px); }
-.card-pop-leave-to { opacity: 0; transform: scale(0.9) translateY(10px); }
+.card-pop-enter-from { opacity: 0; transform: scale(0.9) translateY(16px); }
+.card-pop-leave-to { opacity: 0; transform: scale(0.94) translateY(8px); }
 
-.slide-fade-enter-active { transition: all 0.35s ease-out; }
-.slide-fade-leave-active { transition: all 0.2s ease-in; }
-.slide-fade-enter-from { opacity: 0; transform: translateX(25px); }
-.slide-fade-leave-to { opacity: 0; transform: translateX(-25px); }
+.slide-fade-enter-active { transition: all 0.3s ease-out; }
+.slide-fade-leave-active { transition: all 0.18s ease-in; }
+.slide-fade-enter-from { opacity: 0; transform: translateX(18px); }
+.slide-fade-leave-to { opacity: 0; transform: translateX(-18px); }
+
+@media (max-width: 480px) {
+  .card-inner { padding: 26px 20px 22px; }
+  .card-title { font-size: 21px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-glow { animation: none; }
+  .card-pop-enter-active, .card-pop-leave-active,
+  .slide-fade-enter-active, .slide-fade-leave-active { transition: opacity 0.15s ease; }
+  .card-pop-enter-from, .card-pop-leave-to,
+  .slide-fade-enter-from, .slide-fade-leave-to { transform: none; }
+}
 </style>
