@@ -76,45 +76,62 @@ sudo bash deploy.sh --prod
 
 ### 4.1 填写备案号与域名
 
-```bash
-vim .env
-# 填入：
-DOMAIN=blog.example.com        # 你的域名
-BEIAN_ICP=京ICP备XXXXXXXX号     # 你的备案号
-```
+**备案号**：登录后台 → **设置 → 基础信息 → ICP备案号** 填入 `京ICP备XXXXXXXX号`，
+保存后立即在 Landing 页脚显示（存 `site_config.beian_icp`，不需要重启容器）。
+> 备案号不是环境变量。`.env` 里的 `DOMAIN` 也没有任何服务读取，它只是给你
+> 自己留个记录 —— 域名要手动写进 nginx 配置和 certbot 命令（见 4.2 / 4.3）。
 
-域名解析：到 DNS 服务商把 `blog.example.com` 的 **A 记录** 指向服务器公网 IP。
+**域名解析**：到 DNS 服务商把 `blog.example.com` 的 **A 记录** 指向 `111.231.14.63`，
+用 `dig +short blog.example.com` 确认生效后再申请证书（证书校验要求域名已解析）。
 
 ### 4.2 申请免费 HTTPS 证书（Let's Encrypt）
 
+80 端口被 nginx 容器占着，`certbot --standalone` 会起自己的临时服务器抢 80 端口，
+必然报 `Address already in use`。两条可行路线，选 **webroot**（不中断服务）：
+
 ```bash
-# 安装 certbot
 sudo apt install -y certbot
 
-# 申请证书（需先确保 80 端口可访问且域名已解析）
-sudo certbot certonly --standalone -d blog.example.com
+# webroot 校验：certbot 把校验文件写到宿主机目录，nginx 容器挂载同一目录对外提供
+sudo mkdir -p /opt/lune/certbot-webroot
+# → 先按 4.3 第 1 步放开 certbot-webroot 挂载并重启 nginx，再执行下面这条
+sudo certbot certonly --webroot -w /opt/lune/certbot-webroot -d blog.example.com
 
-# 证书位置：
+# 证书位置（宿主机）：
 #   /etc/letsencrypt/live/blog.example.com/fullchain.pem
 #   /etc/letsencrypt/live/blog.example.com/privkey.pem
 ```
 
+> 备选：`docker compose -f docker-compose.prod.yml stop nginx` 后用 `--standalone`
+> 申请，成功再 `start nginx` —— 简单但有约 1 分钟停机。
+
 ### 4.3 启用 HTTPS
 
-1. 把证书挂载进 nginx 容器：在 `docker-compose.prod.yml` 的 `nginx.volumes` 加：
-   ```yaml
-   - /etc/letsencrypt:/etc/nginx/ssl:ro
-   ```
-2. 打开 `docker/nginx/nginx.prod.conf` 底部 **HTTPS Server 预留块**，取消注释并把
-   `your-domain.com` 全部替换为你的域名，把上方 HTTP server 改为 301 跳转。
-3. `.env` 设置 `HSTS_ENABLED=true`。
-4. 重启：`docker compose -f docker-compose.prod.yml up -d --build nginx backend`。
+1. **改 compose**（`/opt/lune/docker-compose.prod.yml`）：把 `nginx` 服务下预留的三行
+   注释放开 —— `"443:443"`、`/etc/letsencrypt:/etc/nginx/ssl:ro`、
+   `./certbot-webroot:/var/www/certbot`，然后 `up -d nginx` 让 webroot 生效。
+2. **改 nginx 配置**（`docker/nginx/nginx.prod.conf`，在**本地**改）：放开底部
+   **HTTPS Server 预留块**，把 `your-domain.com` 换成真实域名，并把上方 HTTP server
+   改成 301 跳转 + 保留 `/.well-known/acme-challenge/`（预留块注释里有现成片段）。
+3. **重新出镜像**：nginx 配置是 `COPY` 进镜像的，改完必须重建。按
+   [SERVER-DEPLOYMENT.md](SERVER-DEPLOYMENT.md) 的方式**本地** build → `docker save`
+   → scp → 服务器 `docker load`（服务器上不 build，2C4G 跑前端构建会 OOM）。
+4. **开 HSTS**：`/opt/lune/.env` 设 `HSTS_ENABLED=true`，`up -d backend` 重启后端。
+   顺序很重要 —— 证书没生效就下发 HSTS，浏览器会记住「只走 HTTPS」整整一年。
+5. **放行 443**：云控制台安全组加 443 入站规则，否则证书配好了外网照样连不上。
 
 ### 4.4 证书自动续期
 
 ```bash
-# certbot 自带 systemd timer，验证：
+# certbot 自带 systemd timer，先确认续期本身能跑通：
 sudo certbot renew --dry-run
+
+# 续期后 nginx 容器不会自动重载新证书，挂个 deploy-hook：
+sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-lune-nginx.sh >/dev/null <<'EOF'
+#!/bin/sh
+docker exec lune-nginx nginx -s reload
+EOF
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-lune-nginx.sh
 ```
 
 ---

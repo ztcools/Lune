@@ -28,7 +28,10 @@ RUN apk add --no-cache curl
 RUN rm -f /etc/nginx/conf.d/default.conf
 
 # 复制自定义 nginx 配置
+# lune-common.conf 是 server 级公共配置，被 lune.conf 内 include（HTTP / 预留的
+# HTTPS server 共用一份），缺了它 nginx 直接起不来 —— 两个文件必须一起 COPY
 COPY docker/nginx/nginx.prod.conf /etc/nginx/conf.d/lune.conf
+COPY docker/nginx/lune-common.conf /etc/nginx/lune-common.conf
 
 # 从构建阶段复制前端产物
 COPY --from=frontend-build /build/dist/ /usr/share/nginx/html/

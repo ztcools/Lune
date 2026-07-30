@@ -13,8 +13,13 @@ services:
     container_name: lune-nginx
     ports:
       - "${NGINX_PORT:-80}:80"
+      # ICP 备案下来后：放开 443 并挂载证书，同时启用 nginx.prod.conf
+      # 底部的 HTTPS Server 预留块（步骤见 docs/DEPLOYMENT.md 第四章）
+      # - "443:443"
     volumes:
       - upload_data:/var/www/upload:ro
+      # - /etc/letsencrypt:/etc/nginx/ssl:ro
+      # - ./certbot-webroot:/var/www/certbot   # certbot --webroot 续期用（宿主机同一目录）
     depends_on:
       backend:
         condition: service_healthy
@@ -57,6 +62,21 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - UPLOAD_PATH=/app/upload
       - TZ=Asia/Shanghai
+      # admin 账号首次创建时的初始密码（DataInitializer 只在空表时用一次）
+      - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-admin123}
+      # ===== ICP 备案 / CDN 上线后要用的开关 =====
+      # 这几个 key 在 application.yml 里是读的，但此前没从 .env 透传进容器 ——
+      # 也就是说在 /opt/lune/.env 里改 STORAGE_TYPE=oss 或 HSTS_ENABLED=true
+      # 曾经完全不生效（容器内始终是默认值）。补上，让文档写的 Phase 2/3 真的可切。
+      - STORAGE_TYPE=${STORAGE_TYPE:-local}
+      - OSS_ENDPOINT=${OSS_ENDPOINT:-}
+      - OSS_BUCKET=${OSS_BUCKET:-}
+      - OSS_ACCESS_KEY=${OSS_ACCESS_KEY:-}
+      - OSS_SECRET_KEY=${OSS_SECRET_KEY:-}
+      - OSS_CDN_DOMAIN=${OSS_CDN_DOMAIN:-}
+      # HSTS 只能在证书配好之后开：HTTP 站点一旦下发 HSTS，浏览器会把
+      # http:// 强制升级成 https:// 并记住一年，等于自己把站点锁死。
+      - HSTS_ENABLED=${HSTS_ENABLED:-false}
       # 2C4G 服务器 JVM 限制：堆 512M，元空间 128M
       - JAVA_OPTS=-Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     depends_on:

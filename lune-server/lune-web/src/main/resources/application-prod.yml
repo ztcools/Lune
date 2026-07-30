@@ -22,6 +22,10 @@ spring:
 
 server:
   shutdown: graceful
+  # 后端只经由 nginx 访问（容器仅监听 127.0.0.1:8081），由 nginx 覆写
+  # X-Forwarded-Proto/Host。开启后 Spring 才会按转发头还原请求协议 ——
+  # ICP 备案接入 HTTPS 后，重定向和 Cookie 的 Secure 判定才不会退回 http。
+  forward-headers-strategy: framework
 
 logging:
   level:

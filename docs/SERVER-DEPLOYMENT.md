@@ -164,24 +164,21 @@ docker compose up -d
 ### Phase 2: 域名 + HTTPS
 **触发条件**: ICP 备案完成 + 域名解析到 111.231.14.63
 
-1. **修改 nginx 配置** `docker/nginx/nginx.prod.conf`:
-   - 启用 80 → 443 强制跳转
-   - 启用 443 SSL server（已有预留块）
-   - 配置 HSTS (`HSTS_ENABLED=true`)
+**完整步骤见 [DEPLOYMENT.md 第四章](DEPLOYMENT.md#四icp-备案下来之后)**（唯一权威版本，
+这里只列本机特有的注意点，避免两份步骤各写一半后互相矛盾）：
 
-2. **申请证书**（推荐 Let's Encrypt）:
-   ```bash
-   # 安装 certbot
-   sudo apt install certbot python3-certbot-nginx
-   # 申请证书
-   sudo certbot --nginx -d your-domain.com
-   ```
-
-3. **更新环境变量**:
-   - `.env` 增加 `HSTS_ENABLED=true`
-   - `application-prod.yml` 检查 `server.forward-headers-strategy: framework`
-
-4. **重启 nginx**: `docker compose restart nginx`
+- **备案号填后台**，不是填 `.env` —— 后台「设置 → 基础信息 → ICP备案号」，
+  存 `site_config.beian_icp`，保存即在 Landing 页脚生效。
+- **不要用 `certbot --nginx`**：那个插件改的是宿主机的 nginx，本项目 nginx 跑在容器里，
+  配置还是 `COPY` 进镜像的。用 `certbot certonly --webroot`（见 DEPLOYMENT.md 4.2）。
+- **改完 nginx 配置不能只 `restart nginx`**：配置在镜像里，必须本地重建镜像 →
+  `docker save` → scp → `docker load` → `up -d nginx`。
+- **`HSTS_ENABLED=true` 最后再开**，且必须在 https 确认能打开之后：
+  HTTP 站点下发 HSTS 会被浏览器记住一年，等于自己把站点锁死。
+- 预留位已就位：`docker-compose.prod.yml` 的 nginx 服务有 `443` 与证书挂载的注释行，
+  `nginx.prod.conf` 底部有 443 server 预留块（`include lune-common.conf`，
+  不需要复制 location），`application-prod.yml` 已开 `forward-headers-strategy: framework`。
+- 云控制台安全组记得放行 **443**。
 
 ### Phase 3: OSS 对象存储（图片/视频外置）
 **触发条件**: 用户量增长或上传量增大，服务器 5M 带宽吃紧
@@ -200,6 +197,11 @@ docker compose up -d
    OSS_SECRET_KEY=xxx
    OSS_CDN_DOMAIN=cdn.your-domain.com
    ```
+
+   > 这些变量已由 `docker-compose.prod.yml` 透传进 backend 容器（`STORAGE_TYPE` /
+   > `OSS_*` / `HSTS_ENABLED` / `ADMIN_DEFAULT_PASSWORD`）。在此之前 compose 只传到
+   > `JAVA_OPTS`，`.env` 里改这些 key 是不生效的 —— 若你的服务器上是旧版 compose 文件，
+   > 记得一并更新。
 
 3. **代码已就绪** `OssStorageService.java` 已预留接口，仅需实现 `upload()` 方法（参考 `LocalStorageService.java`)
 

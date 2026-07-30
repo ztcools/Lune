@@ -52,6 +52,9 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev-secret-only-for-local-development}
       - UPLOAD_PATH=/app/upload
       - TZ=Asia/Shanghai
+      - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-admin123}
+      # 本地固定走磁盘：OSS / HSTS 是生产开关，dev 不透传（保持 application.yml 默认）
+      - STORAGE_TYPE=local
     depends_on:
       mysql:
         condition: service_healthy
