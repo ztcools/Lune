@@ -8,6 +8,8 @@ import com.lune.service.CommentService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/comments")
 public class CommentController {
@@ -25,6 +27,17 @@ public class CommentController {
                                             @RequestParam(defaultValue = "1") int page,
                                             @RequestParam(defaultValue = "10") int size) {
         return Result.success(commentService.listByArticle(articleId, type, sourceId, page, size));
+    }
+
+    /**
+     * 评论数统计 GET /api/comments/counts?type=article
+     *
+     * <p>返回 目标ID -> 评论数。供列表页一次性拿齐各条目的评论数，
+     * 替代「拉一大页评论到前端自己数」的老办法（见 CommentService#countByTarget）。
+     */
+    @GetMapping("/counts")
+    public Result<Map<Long, Long>> counts(@RequestParam(required = false) String type) {
+        return Result.success(commentService.countByTarget(type));
     }
 
     @PostMapping

@@ -82,6 +82,13 @@ async function toggleRole(row) {
   const newRole = row.role === 'ADMIN' ? 'USER' : 'ADMIN'
   const actionText = newRole === 'ADMIN' ? '设为管理员' : '设为用户'
 
+  // 自降级会当场丢掉后台入口。后端也拦（UserServiceImpl#updateRole），
+  // 这里提前挡一次是为了给出人话提示，而不是等一个 500。
+  if (newRole === 'USER' && userStore.user?.id === row.id) {
+    ElMessage.warning('不能取消自己的管理员权限！')
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
       `确认将用户「${row.nickname || row.username}」${actionText}？`,

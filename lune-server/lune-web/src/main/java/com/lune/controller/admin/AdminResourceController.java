@@ -23,8 +23,9 @@ public class AdminResourceController {
 
     @GetMapping
     public Result<PageResult<Resource>> list(@RequestParam(defaultValue = "1") int page,
-                                              @RequestParam(defaultValue = "20") int size) {
-        return Result.success(resourceService.listResources(page, size));
+                                              @RequestParam(defaultValue = "20") int size,
+                                              @RequestParam(required = false) String type) {
+        return Result.success(resourceService.listResources(page, size, type));
     }
 
     @PostMapping("/upload")

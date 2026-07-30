@@ -103,10 +103,13 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
-    public PageResult<Resource> listResources(int page, int size) {
-        var result = resourceMapper.selectPage(new Page<>(page, size),
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Resource>()
-                        .orderByDesc(Resource::getCreateTime));
+    public PageResult<Resource> listResources(int page, int size, String type) {
+        var wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Resource>()
+                .orderByDesc(Resource::getCreateTime);
+        if (type != null && !type.isBlank()) {
+            wrapper.eq(Resource::getType, type);
+        }
+        var result = resourceMapper.selectPage(new Page<>(page, size), wrapper);
         return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 

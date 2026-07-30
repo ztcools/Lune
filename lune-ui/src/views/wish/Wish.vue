@@ -173,11 +173,16 @@ function toggleComment(w) {
 
 async function fetchComments(sourceId) {
   try {
-    const data = await commentApi.list({ sourceId, type: 'wish' })
+    const data = await commentApi.list({ sourceId, type: 'wish', page: 1, size: 50 })
     comments.value = data?.records || data || []
     const target = wishList.value.find(x => x.id === sourceId)
-    if (target) target.commentCount = comments.value.length
-  } catch (e) { comments.value = [] }
+    // commentCount 是后端算好的（WishServiceImpl 聚合查询），这里只有拿到
+    // 权威的 total 才覆盖它。用 records.length 会把它改成当前页的条数。
+    if (target && data?.total != null) target.commentCount = data.total
+  } catch (e) {
+    console.error('加载评论失败:', e)
+    comments.value = []
+  }
 }
 
 async function submitComment(w) {

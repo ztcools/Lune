@@ -145,7 +145,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long id) {
         var user = userMapper.selectById(id);
-        if (user != null && "ADMIN".equals(user.getRole())) {
+        // 大小写一并挡住：role 曾是自由文本，历史数据里可能存着 'admin'
+        if (user != null && "ADMIN".equalsIgnoreCase(user.getRole())) {
             throw new BusinessException("不能删除管理员");
         }
         userMapper.deleteById(id);
@@ -153,9 +154,31 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateRole(Long id, String role) {
+        // role 直接来自请求参数，且 JwtAuthFilter 是拿 "ROLE_" + role 当权限用的。
+        // 不做白名单的话，写进去一个 'admin' 或拼错的字符串，账号既不是 ADMIN
+        // 也不是 USER —— 权限判断静默失效，且只能改库救回来。
+        String normalized = role == null ? "" : role.trim().toUpperCase();
+        if (!"ADMIN".equals(normalized) && !"USER".equals(normalized)) {
+            throw new BusinessException("角色只能是 ADMIN 或 USER");
+        }
         var user = userMapper.selectById(id);
         if (user == null) throw new BusinessException("用户不存在");
-        user.setRole(role);
+
+        boolean wasAdmin = "ADMIN".equalsIgnoreCase(user.getRole());
+        if (wasAdmin && "USER".equals(normalized)) {
+            // 自降级会让当前这个人立刻失去后台入口；降掉最后一个管理员则全站无人能进后台。
+            // 两种情况都只能改库恢复，所以在这里拦住。
+            if (id.equals(getCurrentUserId())) {
+                throw new BusinessException("不能取消自己的管理员权限");
+            }
+            Long adminCount = userMapper.selectCount(new LambdaQueryWrapper<User>()
+                    .apply("UPPER(role) = 'ADMIN'"));
+            if (adminCount != null && adminCount <= 1) {
+                throw new BusinessException("至少需要保留一个管理员");
+            }
+        }
+
+        user.setRole(normalized);
         userMapper.updateById(user);
     }
 }

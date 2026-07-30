@@ -172,6 +172,11 @@
 
           <!-- Filtered: flat grid -->
           <div v-show="indexType === 2">
+            <!-- 筛选态必须有出口：进了分类视图没有「返回全部」就只能刷新页面 -->
+            <div class="filter-bar">
+              <span class="filter-label">分类：{{ currentSortName }}</span>
+              <span class="filter-reset" @click="clearSort()">← 返回全部</span>
+            </div>
             <div v-if="filteredArticles.length === 0" style="text-align: center; padding: 80px 0;">
               <el-empty description="暂无文章" />
             </div>
@@ -264,6 +269,14 @@ const pagination = reactive({
 const total = ref(0)
 // 侧边栏「获赞」总数，来自 GET /api/articles/total-likes
 const totalLikes = ref(0)
+// 文章ID -> 评论数。留成状态而不是就地赋值，是为了「下一页」追加进来的
+// 文章也能补上评论数 —— 否则筛选列表翻页后新加载的卡片评论数恒为 0
+const commentCounts = ref({})
+
+const currentSortName = computed(() => {
+  const cat = categories.value.find(c => c.id === pagination.sortId)
+  return cat ? cat.name : '全部'
+})
 
 const groupedArticles = computed(() => {
   const groups = {}
@@ -292,7 +305,9 @@ function onArticleLiked({ articleId, likeCount }) {
 }
 function onArticleCommented() {
   const aid = readerArticleId.value
-  const upd = (arr) => arr.forEach(a => { if (a.id === aid) a._cc = (a._cc || 0) + 1 })
+  // 连 commentCounts 一起加，否则之后翻页追加进来的同一篇文章会带回旧的评论数
+  commentCounts.value[aid] = (commentCounts.value[aid] || 0) + 1
+  const upd = (arr) => arr.forEach(a => { if (a.id === aid) a._cc = commentCounts.value[aid] })
   upd(allArticles.value)
   upd(filteredArticles.value)
 }
@@ -333,6 +348,16 @@ async function selectSort(cat) {
   pagination.sortId = cat.id; pagination.current = 1; pagination.size = 10
   filteredArticles.value = []
   await getArticles()
+  // 必须切到 2：分类结果渲染在 indexType === 2 的扁平网格里。
+  // 这里原先写的是 1，于是点分类卡片只是滚动一下，筛选结果和它的「下一页」永远看不见。
+  indexType.value = 2
+  nextTick(() => {
+    document.querySelector('.recent-posts')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+function clearSort() {
+  pagination.sortId = null; pagination.current = 1; pagination.total = 0
+  filteredArticles.value = []
   indexType.value = 1
   nextTick(() => {
     document.querySelector('.recent-posts')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -345,6 +370,8 @@ async function getArticles() {
     if (pagination.sortId) params.categoryId = pagination.sortId
     const data = await articleApi.list(params)
     if (data && data.records) {
+      // 追加的同时补评论数：评论数是单独一次聚合查询拿的，不跟文章分页走
+      data.records.forEach(a => { a._cc = commentCounts.value[a.id] || 0 })
       filteredArticles.value = [...filteredArticles.value, ...data.records]
       pagination.total = data.total
     }
@@ -365,13 +392,12 @@ async function fetchRecommendArticles() {
 async function fetchArticleComments() {
   try {
     const { commentApi } = await import('../../api/modules')
-    const data = await commentApi.list({ page: 1, size: 1000 })
-    const records = data?.records || data || []
-    const counts = {}
-    records.forEach(c => { const aid = c.articleId; if (aid && aid > 0) counts[aid] = (counts[aid] || 0) + 1 })
-    allArticles.value.forEach(a => { a._cc = counts[a.id] || 0 })
-    filteredArticles.value.forEach(a => { a._cc = counts[a.id] || 0 })
-  } catch (e) { /* silent */ }
+    // 计数下推到 SQL（GET /api/comments/counts）。原先是拉 size=1000 的评论到浏览器自己数：
+    // 把所有评论正文发给每个访客，且评论总数超过 1000 之后开始静默少算。
+    commentCounts.value = (await commentApi.counts('article')) || {}
+    allArticles.value.forEach(a => { a._cc = commentCounts.value[a.id] || 0 })
+    filteredArticles.value.forEach(a => { a._cc = commentCounts.value[a.id] || 0 })
+  } catch (e) { console.error('Failed to fetch comment counts:', e) }
 }
 async function fetchCategories() {
   try { categories.value = await categoryApi.list('article') }
@@ -389,7 +415,10 @@ function scrollToContent() {
 onMounted(async () => {
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
   startTypewriter()
-  await Promise.all([fetchAllArticles(), fetchCategories(), fetchRecommendArticles(), fetchArticleComments(), fetchTotalLikes()])
+  // fetchArticleComments 要往 allArticles 的元素上写 _cc，必须等文章先到位。
+  // 原先五个请求一起塞进 Promise.all，评论数常常写在空数组上，卡片评论数恒为 0。
+  await Promise.all([fetchAllArticles(), fetchCategories(), fetchRecommendArticles(), fetchTotalLikes()])
+  await fetchArticleComments()
 })
 onUnmounted(() => {
   if (typewriterTimer) clearInterval(typewriterTimer)
@@ -631,6 +660,22 @@ onUnmounted(() => {
   font-family: var(--article-font);
 }
 .article-meta { display: flex; gap: 14px; color: var(--greyFont); font-size: 12px; margin-top: 10px; font-family: var(--trendy-font); }
+
+/* ============================
+   Filter bar (分类筛选态)
+   ============================ */
+.filter-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 18px; margin-bottom: 18px; border-radius: 14px;
+  background: rgba(255,255,255,0.55); backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.filter-label { font-family: var(--trendy-font); color: var(--fontColor); font-weight: 600; }
+.filter-reset {
+  font-size: 13px; color: var(--greyFont); cursor: pointer; user-select: none;
+  padding: 5px 12px; border-radius: 2rem; transition: color 0.25s, background 0.25s;
+}
+.filter-reset:hover { color: var(--themeBackground); background: rgba(0,0,0,0.03); }
 
 /* ============================
    Pagination

@@ -1,6 +1,7 @@
 package com.lune.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lune.common.BusinessException;
 import com.lune.common.PageResult;
@@ -15,6 +16,7 @@ import com.lune.service.WishService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,12 +47,18 @@ public class WishServiceImpl implements WishService {
         Map<Long, com.lune.entity.User> userMap = userIds.isEmpty() ? Map.of()
                 : userMapper.selectBatchIds(userIds).stream()
                     .collect(Collectors.toMap(com.lune.entity.User::getId, Function.identity()));
-        // 填充评论数
+        // 填充评论数：COUNT 下推到 SQL。原先是把这些许愿的评论整行捞回来在 JVM 里
+        // groupingBy —— 只为了几个数字，把全部评论正文读进了内存。
         Set<Long> wishIds = list.stream().map(Wish::getId).collect(Collectors.toSet());
-        List<Comment> comments = commentMapper.selectList(new LambdaQueryWrapper<Comment>()
-                .eq(Comment::getType, "wish").in(Comment::getSourceId, wishIds));
-        Map<Long, Long> commentCount = comments.stream()
-                .collect(Collectors.groupingBy(Comment::getSourceId, Collectors.counting()));
+        var countQw = new QueryWrapper<Comment>();
+        countQw.select("source_id AS target_id", "COUNT(*) AS c")
+               .eq("type", "wish").in("source_id", wishIds).groupBy("source_id");
+        Map<Long, Long> commentCount = new HashMap<>();
+        for (Map<String, Object> row : commentMapper.selectMaps(countQw)) {
+            if (row.get("target_id") instanceof Number id && row.get("c") instanceof Number c) {
+                commentCount.put(id.longValue(), c.longValue());
+            }
+        }
         // 当前用户点赞状态
         Set<Long> likedIds = Set.of();
         if (currentUserId != null) {

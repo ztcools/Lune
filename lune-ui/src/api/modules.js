@@ -42,6 +42,8 @@ export const tagApi = {
 
 export const commentApi = {
   list: (params) => request.get('/comments', { params }),
+  // 评论数统计：目标ID -> 条数。列表页用它一次拿齐，不要再拉一大页评论自己数
+  counts: (type) => request.get('/comments/counts', { params: { type } }),
   listAll: (params) => request.get('/admin/comments', { params }),
   create: (data) => request.post('/comments', data),
   delete: (id) => request.delete(`/admin/comments/${id}`)

@@ -100,7 +100,7 @@
             <div class="note-pin">📌</div>
             <div class="note-text">{{ b.content }}</div>
             <div class="note-footer">
-              <span class="note-name">{{ b.username || randomNick() }}</span>
+              <span class="note-name">{{ b.username || anonNick(b, i) }}</span>
               <span class="note-time">{{ timeAgo(b.createTime) }}</span>
             </div>
           </div>
@@ -164,7 +164,11 @@ const familyHeroBg = usePageBackground('familyHero')
 const familyContentBg = usePageBackground('familyContent')
 const paintingUrl = familyContentBg
 
-function randomNick() { const nicks=['小星星','月亮船','阳光','微风','彩虹糖','云朵','海浪','樱花','蒲公英','小太阳']; return nicks[Math.floor(Math.random()*nicks.length)] }
+// 匿名祝福的展示昵称。必须是纯函数：模板里每次渲染都会调它，而在一起时长的
+// 秒表每秒触发一次重渲染 —— 用 Math.random() 的话昵称会一秒换一次。
+// 按祝福 id（无 id 则按下标）取模，同一条祝福永远是同一个昵称。
+const ANON_NICKS = ['小星星','月亮船','阳光','微风','彩虹糖','云朵','海浪','樱花','蒲公英','小太阳']
+function anonNick(b, i) { return ANON_NICKS[(Number(b?.id) || i) % ANON_NICKS.length] }
 
 const userStore = useUserStore()
 const defaultMan = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#7ba7d9" width="100" height="100"/><circle cx="50" cy="38" r="18" fill="#fff" opacity="0.9"/><ellipse cx="50" cy="85" rx="28" ry="18" fill="#fff" opacity="0.9"/></svg>')

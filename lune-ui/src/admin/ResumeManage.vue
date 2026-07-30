@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { resumeApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import MediaEditor from './MediaEditor.vue'
@@ -158,8 +158,8 @@ const projRules = { name: [{ required: true, message: '请输入项目名', trig
 
 onMounted(() => { fetchWork(); fetchProj() })
 
-async function fetchWork() { workLoading.value = true; try { workList.value = await resumeApi.listWork() || [] } catch (e) {} finally { workLoading.value = false } }
-async function fetchProj() { projLoading.value = true; try { projectList.value = await resumeApi.listProject() || [] } catch (e) {} finally { projLoading.value = false } }
+async function fetchWork() { workLoading.value = true; try { workList.value = await resumeApi.listWork() || [] } catch (e) { console.error('加载工作经历失败:', e); ElMessage.error('加载工作经历失败') } finally { workLoading.value = false } }
+async function fetchProj() { projLoading.value = true; try { projectList.value = await resumeApi.listProject() || [] } catch (e) { console.error('加载项目失败:', e); ElMessage.error('加载项目失败') } finally { projLoading.value = false } }
 
 function showWorkDialog(row) {
   editWork.value = row
@@ -168,12 +168,19 @@ function showWorkDialog(row) {
   workDlg.value = true
 }
 
+// 勾上「至今」只是把结束时间的输入框 v-if 掉，值还留在表单里，
+// 于是会存下 isCurrent=true 且 endDate=2024-05-01 这种自相矛盾的记录。
+watch(() => workForm.isCurrent, (cur) => { if (cur) workForm.endDate = '' })
+
 async function saveWork() {
   const valid = await workFormRef.value?.validate().catch(() => false); if (!valid) return
+  if (!workForm.isCurrent && !workForm.endDate) { ElMessage.warning('请选择结束时间，或勾选「至今」'); return }
   saving.value = true
   try {
-    if (editWork.value) await resumeApi.updateWork(editWork.value.id, { ...workForm })
-    else await resumeApi.createWork({ ...workForm })
+    // 兜底：即使有别的路径改了 isCurrent，也不把过期的 endDate 送上去
+    const payload = { ...workForm, endDate: workForm.isCurrent ? null : workForm.endDate }
+    if (editWork.value) await resumeApi.updateWork(editWork.value.id, payload)
+    else await resumeApi.createWork(payload)
     ElMessage.success('已保存'); workDlg.value = false; fetchWork()
   } catch (e) { ElMessage.error(e?.message || '保存失败') } finally { saving.value = false }
 }

@@ -1,15 +1,12 @@
 <template>
   <div>
     <div class="handle-box">
-      <el-select clearable v-model="resourceType" placeholder="资源类型" class="handle-select mrb10">
-        <el-option label="用户头像" value="userAvatar" />
-        <el-option label="文章封面" value="articleCover" />
-        <el-option label="文章图片" value="articlePicture" />
-        <el-option label="网站头像" value="webAvatar" />
-        <el-option label="背景图片" value="webBackgroundImage" />
-        <el-option label="随机头像" value="randomAvatar" />
-        <el-option label="随机封面" value="randomCover" />
-        <el-option label="收藏夹封面" value="favoritesCover" />
+      <!-- 选项必须是 resource.type 里真实存在的值。原来那八项（userAvatar /
+           articleCover / …）本项目从来没写过，选中即空列表。后端只按
+           MIME 分 image / file 两类（见 ResourceServiceImpl#upload）。 -->
+      <el-select clearable v-model="resourceType" placeholder="资源类型" class="handle-select mrb10" @change="search">
+        <el-option label="图片" value="image" />
+        <el-option label="文件" value="file" />
       </el-select>
       <el-button type="primary" @click="search">搜索</el-button>
       <el-button type="primary" @click="resourceDialog=true">新增资源</el-button>
@@ -101,10 +98,16 @@ onMounted(() => getResources())
 
 async function getResources() {
   try {
-    const data = await resourceApi.list({ page:page.value, size:10 })
+    const params = { page: page.value, size: 10 }
+    // 「资源类型」下拉此前只是摆设，参数从没送出去过
+    if (resourceType.value) params.type = resourceType.value
+    const data = await resourceApi.list(params)
     resources.value = data?.records || []
     total.value = data?.total || 0
-  } catch(e){}
+  } catch (e) {
+    console.error('加载资源列表失败:', e)
+    ElMessage.error('加载资源列表失败')
+  }
 }
 
 function search() { page.value=1; getResources() }

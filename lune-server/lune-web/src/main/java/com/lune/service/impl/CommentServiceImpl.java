@@ -1,6 +1,7 @@
 package com.lune.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lune.common.PageResult;
 import com.lune.dto.CommentRequest;
@@ -12,6 +13,7 @@ import io.jsonwebtoken.Claims;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -72,6 +74,35 @@ public class CommentServiceImpl implements CommentService {
         var result = commentMapper.selectPage(new Page<>(page, size), wrapper);
         populateUserInfo(result.getRecords());
         return PageResult.of(result.getRecords(), result.getTotal(), page, size);
+    }
+
+    @Override
+    public Map<Long, Long> countByTarget(String type) {
+        // 文章评论用 article_id 归并，其余（随笔/许愿/树洞）用 source_id。
+        // 判别文章不看 type：历史数据里文章评论的 type 有 null 也有 'article'，
+        // 用 article_id > 0 才和前端原有的口径一致。
+        boolean byArticle = type == null || type.isBlank() || "article".equals(type);
+        String keyColumn = byArticle ? "article_id" : "source_id";
+
+        var qw = new QueryWrapper<Comment>();
+        qw.select(keyColumn + " AS target_id", "COUNT(*) AS c")
+          .eq("status", 1)
+          .groupBy(keyColumn);
+        if (byArticle) {
+            qw.gt("article_id", 0);
+        } else {
+            qw.eq("type", type).gt("source_id", 0);
+        }
+
+        var counts = new HashMap<Long, Long>();
+        for (Map<String, Object> row : commentMapper.selectMaps(qw)) {
+            Object id = row.get("target_id");
+            Object c = row.get("c");
+            if (id instanceof Number n && c instanceof Number cn) {
+                counts.put(n.longValue(), cn.longValue());
+            }
+        }
+        return counts;
     }
 
     @Override

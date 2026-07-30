@@ -186,6 +186,9 @@ function parseMedia(json) {
 
 async function fetchEssays(reset = false) {
   try {
+    // reset 必须在请求之前生效：原先是拿到响应后才把 current 归 1，
+    // 于是在第 3 页发/删随笔时请求的仍是 page=3，却被当成第 1 页铺上去。
+    if (reset) { pagination.value.current = 1; essayList.value = []; expandedEssayId.value = null }
     const data = await essayApi.list({ page: pagination.value.current, size: 10 })
     if (data && data.records) {
       data.records.forEach((c) => {
@@ -197,22 +200,20 @@ async function fetchEssays(reset = false) {
         if (c.weather) c.weather = getWeatherEmoji(c.weather)
         if (c.mood) c.mood = getMoodEmoji(c.mood)
       })
-      if (reset) { pagination.value.current = 1; essayList.value = []; expandedEssayId.value = null }
       essayList.value = essayList.value.concat(data.records)
       total.value = data.total
       fetchCommentCounts()
     }
-  } catch (e) { /* silent */ }
+  } catch (e) { console.error('加载随笔失败:', e) }
 }
 
 async function fetchCommentCounts() {
   try {
-    const data = await commentApi.list({ type: 'essay', page: 1, size: 500 })
-    const records = data?.records || (Array.isArray(data) ? data : [])
-    const counts = {}
-    records.forEach(c => { const sid = c.sourceId || c.articleId; if (sid) counts[sid] = (counts[sid] || 0) + 1 })
+    // 计数下推到 SQL（GET /api/comments/counts?type=essay）。原先拉 size=500 的
+    // 评论到浏览器自己数：泄漏全部评论正文，且评论超过 500 条后静默少算。
+    const counts = (await commentApi.counts('essay')) || {}
     essayList.value.forEach(e => { e._cc = counts[e.id] || 0 })
-  } catch (e) { /* silent */ }
+  } catch (e) { console.error('加载评论数失败:', e) }
 }
 
 function stripEmoji(s) { return s ? s.replace(/^[\u{1F000}-\u{1FFFF}]\S*\s*/u, '') : s }
@@ -234,13 +235,18 @@ function toggleComment(essay) {
 }
 async function fetchComments(sourceId) {
   try {
-    const data = await commentApi.list({ sourceId, type: 'essay' })
+    const data = await commentApi.list({ sourceId, type: 'essay', page: 1, size: 50 })
     essayComments.value = data?.records || data || []
     if (expandedEssayId.value) {
       const target = essayList.value.find(e => e.id === expandedEssayId.value)
-      if (target) target._cc = essayComments.value.length
+      // 用后端的 total，不能用 records.length —— 那是当前这一页的条数，
+      // 评论超过 size 就会把卡片上的评论数改小。
+      if (target) target._cc = data?.total ?? essayComments.value.length
     }
-  } catch (e) { essayComments.value = [] }
+  } catch (e) {
+    console.error('加载评论失败:', e)
+    essayComments.value = []
+  }
 }
 async function submitComment(essay) {
   const text = (commentText.value[essay.id] || '').trim()
