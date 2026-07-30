@@ -5,8 +5,8 @@
       <div class="bg-image" :style="{ backgroundImage: `url(${heroBg})` }"></div>
       <div class="bg-overlay"></div>
       <div class="hero-info">
-        <h1 class="hero-title">许愿池</h1>
-        <p class="hero-subtitle">说出你想要的小工具，也许就帮你实现了呢 ✨</p>
+        <h1 class="hero-title">星愿池</h1>
+        <p class="hero-subtitle">说出你想要的小工具，也许就帮你实现了呢</p>
         <button class="wish-fab" @click="openCreate">
           <span class="wish-fab-icon">🌠</span> 许下心愿
         </button>
@@ -77,7 +77,7 @@
         </div>
       </div>
 
-      <el-empty v-else description="许愿池空空如也，来许第一个心愿吧 🌠" />
+      <el-empty v-else description="星愿池空空如也，来许第一个心愿吧" />
 
       <div class="load-more" v-if="total > wishList.length">
         <button class="load-btn" @click="loadMore">加载更多心愿</button>
@@ -150,7 +150,7 @@ async function submitWish() {
   posting.value = true
   try {
     await wishApi.create({ title: form.title.trim(), content: form.content.trim() })
-    ElMessage.success('心愿已投入许愿池 🌠')
+    ElMessage.success('心愿已投入星愿池')
     form.title = ''; form.content = ''; createVisible.value = false
     page.value = 1; wishList.value = []; fetchWishes()
   } catch (e) { ElMessage.error('许愿失败') }

@@ -5,8 +5,8 @@
       <div class="bg-image" :style="{ backgroundImage: `url(${bannerImage})` }"></div>
       <div class="bg-overlay"></div>
       <div class="hero-info">
-        <h1>记录</h1>
-        <p class="hero-subtitle">记录生活的每一个精彩瞬间 ✨</p>
+        <h1>光阴集</h1>
+        <p class="hero-subtitle">记录生活的每一个精彩瞬间</p>
       </div>
       <div class="hero-wave"></div>
     </div>

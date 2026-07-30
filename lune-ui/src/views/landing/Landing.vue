@@ -27,14 +27,11 @@
         </h3>
       </div>
 
-      <!-- 动作按钮 -->
-      <div class="hero-actions">
-        <button class="btn" @click="$router.push('/home')">Crush!</button>
-        <button class="btn btn-resume" @click="$router.push('/resume')">
-          <span class="btn-emoji">🌿</span> 我的简历
-        </button>
-        <button class="btn btn-wish" @click="$router.push('/wish')">
-          <span class="btn-emoji">🌠</span> 许愿池
+      <!-- 入口门扉：原来并排三个按钮（进入/简历/许愿池），视觉上抢戏又分散注意，
+           简历改从导航进、许愿池本来就在导航里，这里只留一道门。 -->
+      <div class="gate-wrap">
+        <button class="gate" @click="$router.push('/home')">
+          <span class="gate-text">入 内</span>
         </button>
       </div>
 
@@ -71,7 +68,7 @@ const appStore = useAppStore()
 
 const titleChars = ref([])
 const typedText = ref('')
-const fullText = computed(() => '记录美好生活，分享成长点滴 ✨')
+const fullText = computed(() => '一纸浮生，半卷光阴')
 
 // 从 store 获取随机封面，或使用默认图片
 const coverImage = usePageBackground('landing')
@@ -90,7 +87,11 @@ onMounted(() => {
   titleChars.value = (appStore.webInfo.webTitle || 'Lune').split('')
   window.addEventListener('scroll', onScrollFooter, { passive: true })
 
-  // 打字机效果（渐进打出，停顿后回退）
+  // 打字机效果（渐进打出，停顿后回退）；「减少动态效果」下直接显示整句
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    typedText.value = fullText.value
+    return
+  }
   let i = 0
   let forward = true
   let holdTicks = 0
@@ -202,42 +203,60 @@ function scrollDown() {
   font-weight: 200;
 }
 
-/* ===== 动作按钮 ===== */
-.hero-actions {
+/* ===== 入口门扉 ===== */
+.gate-wrap {
   display: flex;
-  gap: 16px;
   justify-content: center;
-  margin-top: 10px;
+  margin-top: 14px;
+  z-index: 12;
 }
-/* Crush button from Uiverse.io by nikk7007 */
-.btn {
- --color: #00A97F; --color2: rgb(10, 25, 30);
- padding: 0.8em 1.75em; background-color: transparent; border-radius: 6px;
- border: .3px solid var(--color); transition: .5s; position: relative;
- overflow: hidden; cursor: pointer; z-index: 1; font-weight: 300;
- font-size: 17px; font-family: 'Roboto', 'Segoe UI', sans-serif;
- text-transform: uppercase; color: var(--color);
-}
-.btn::after, .btn::before {
- content: ''; display: block; height: 100%; width: 100%;
- transform: skew(90deg) translate(-50%, -50%); position: absolute;
- inset: 50%; left: 25%; z-index: -1; transition: .5s ease-out;
- background-color: var(--color);
-}
-.btn::before {
- top: -50%; left: -25%;
- transform: skew(90deg) rotate(180deg) translate(-50%, -50%);
-}
-.btn:hover::before { transform: skew(45deg) rotate(180deg) translate(-50%, -50%); }
-.btn:hover::after { transform: skew(45deg) translate(-50%, -50%); }
-.btn:hover { color: var(--color2); }
-.btn:active { filter: brightness(.7); transform: scale(.98); }
 
-/* 简历按钮 —— 自然绿 */
-.btn-resume { --color: #66bb6a; }
-/* 许愿池按钮 —— 暖金 */
-.btn-wish { --color: #ffb74d; }
-.btn-emoji { margin-right: 4px; }
+.gate {
+  position: relative;
+  padding: 17px 54px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.45s ease, border-color 0.45s ease, letter-spacing 0.45s ease;
+}
+
+.gate-text {
+  position: relative;
+  z-index: 2;
+  color: #fff;
+  font-family: var(--calligraphy-font);
+  font-size: 21px;
+  letter-spacing: 8px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* hover 时一圈光晕从中心荡开：只动 transform / opacity，不触发重排 */
+.gate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.45), transparent 62%);
+  opacity: 0;
+  transform: scale(0.35);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.7s ease;
+  pointer-events: none;
+}
+.gate:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.85); }
+.gate:hover::after { opacity: 1; transform: scale(1.6); }
+.gate:active { transform: scale(0.97); }
+
+/* 门框四角的细线，弱化「按钮」感 */
+.gate::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 1px;
+  pointer-events: none;
+}
 
 /* ===== 波浪效果 ===== */
 #bannerWave1 {
@@ -303,5 +322,15 @@ function scrollDown() {
   .printer h3 {
     font-size: 16px;
   }
+
+  .gate { padding: 15px 42px; }
+  .gate-text { font-size: 19px; letter-spacing: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate, .gate::after { transition: none; }
+  .gate:hover::after { opacity: 0; transform: scale(0.35); }
+  .gate:active { transform: none; }
+  .cursor { animation: none; }
 }
 </style>

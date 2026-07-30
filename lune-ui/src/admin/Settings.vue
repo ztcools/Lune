@@ -200,21 +200,23 @@ import { Plus, Close, UploadFilled } from '@element-plus/icons-vue'
 const basic = reactive({})
 const noticeStr = ref('')
 
+// label 用前台的栏目名（云栖阁/风语林…），免得站长照着旧名配错位置；
+// key 是 site_config 里的字段名，一律不动。
+// treehole_content_bg 随树洞时间线的下线失去渲染位置，故不再提供入口（库里的 key 保留）。
 const bgSections = [
   { key: 'landing_bg', label: 'Landing 页', icon: '🏠' },
-  { key: 'home_hero_bg', label: '首页 · 顶部 Banner', icon: '📰' },
-  { key: 'home_content_bg', label: '首页 · 内容区', icon: '📄' },
-  { key: 'family_hero_bg', label: '家 · 顶部 Banner', icon: '👨‍👩‍👧' },
-  { key: 'family_content_bg', label: '家 · 内容区', icon: '💝' },
-  { key: 'treehole_danmaku_bg', label: '树洞 · 弹幕区', icon: '💬' },
-  { key: 'treehole_content_bg', label: '树洞 · 时间线', icon: '📜' },
-  { key: 'essay_hero_bg', label: '随笔 · 顶部 Banner', icon: '✍️' },
-  { key: 'essay_content_bg', label: '随笔 · 内容区', icon: '📝' },
-  { key: 'record_hero_bg', label: '记录 · 顶部 Banner', icon: '📸' },
-  { key: 'record_content_bg', label: '记录 · 内容区', icon: '🎞️' },
-  { key: 'wish_hero_bg', label: '许愿池 · 顶部 Banner', icon: '🌠' },
-  { key: 'wish_content_bg', label: '许愿池 · 内容区', icon: '💫' },
-  { key: 'resume_hero_bg', label: '简历 · 顶部 Banner', icon: '🌿' },
+  { key: 'home_hero_bg', label: '云栖阁 · 顶部 Banner', icon: '📰' },
+  { key: 'home_content_bg', label: '云栖阁 · 内容区', icon: '📄' },
+  { key: 'family_hero_bg', label: '长相守 · 顶部 Banner', icon: '👨‍👩‍👧' },
+  { key: 'family_content_bg', label: '长相守 · 内容区', icon: '💝' },
+  { key: 'treehole_danmaku_bg', label: '风语林 · 弹幕区', icon: '💬' },
+  { key: 'essay_hero_bg', label: '浮生记 · 顶部 Banner', icon: '✍️' },
+  { key: 'essay_content_bg', label: '浮生记 · 内容区', icon: '📝' },
+  { key: 'record_hero_bg', label: '光阴集 · 顶部 Banner', icon: '📸' },
+  { key: 'record_content_bg', label: '光阴集 · 内容区', icon: '🎞️' },
+  { key: 'wish_hero_bg', label: '星愿池 · 顶部 Banner', icon: '🌠' },
+  { key: 'wish_content_bg', label: '星愿池 · 内容区', icon: '💫' },
+  { key: 'resume_hero_bg', label: '山海志 · 顶部 Banner', icon: '🌿' },
 ]
 
 // 每个区域两套 key：xxx_bg（PC）与 xxx_bg_mobile（移动端）。
