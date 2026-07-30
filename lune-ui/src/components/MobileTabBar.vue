@@ -8,7 +8,7 @@
       @click="goTab(tab.path)"
       @touchstart.passive="onTouchStart"
     >
-      <span class="tabbar-icon">{{ tab.icon }}</span>
+      <LineIcon class="tabbar-icon" :name="tab.icon" :size="20" />
       <span class="tabbar-label">{{ tab.label }}</span>
       <span class="tabbar-dot"></span>
     </div>
@@ -20,7 +20,7 @@
       @click="showUserSheet = true"
       @touchstart.passive="onTouchStart"
     >
-      <span class="tabbar-icon">👤</span>
+      <LineIcon class="tabbar-icon" name="user" :size="20" />
       <span class="tabbar-label">我的</span>
       <span class="tabbar-dot"></span>
     </div>
@@ -42,40 +42,41 @@
               <div class="sheet-user">
                 <div class="sheet-name">{{ userStore.isLoggedIn ? (userStore.nickname || '游客') : '未登录' }}</div>
                 <div class="sheet-tip" :class="{ 'login-tip': !userStore.isLoggedIn }">
-                  {{ userStore.isLoggedIn ? '欢迎回来～' : '👆 点击登录 / 注册' }}
+                  {{ userStore.isLoggedIn ? '欢迎回来～' : '点击登录 / 注册' }}
                 </div>
               </div>
               <div v-if="!userStore.isLoggedIn" class="sheet-login-cta">
-                立即登录 →
+                立即登录
+                <LineIcon name="arrow-right" :size="13" />
               </div>
             </div>
             <div class="sheet-grid">
               <div class="sheet-item" @click="goPage('/record')">
-                <span class="sheet-icon">📒</span>
-                <span class="sheet-label">记录</span>
+                <LineIcon class="sheet-icon" name="book" :size="22" />
+                <span class="sheet-label">光阴集</span>
               </div>
               <div class="sheet-item" @click="goPage('/wish')">
-                <span class="sheet-icon">🌠</span>
-                <span class="sheet-label">许愿池</span>
+                <LineIcon class="sheet-icon" name="star" :size="22" />
+                <span class="sheet-label">星愿池</span>
               </div>
               <div class="sheet-item" @click="goPage('/resume')">
-                <span class="sheet-icon">🌿</span>
-                <span class="sheet-label">简历</span>
+                <LineIcon class="sheet-icon" name="route" :size="22" />
+                <span class="sheet-label">山海志</span>
               </div>
               <div v-if="userStore.isAdmin" class="sheet-item" @click="goAdmin">
-                <span class="sheet-icon">💻</span>
+                <LineIcon class="sheet-icon" name="grid" :size="22" />
                 <span class="sheet-label">后台</span>
               </div>
               <div v-if="userStore.isLoggedIn" class="sheet-item" @click="showProfile = true; showUserSheet = false">
-                <span class="sheet-icon">⚙️</span>
+                <LineIcon class="sheet-icon" name="sliders" :size="22" />
                 <span class="sheet-label">设置</span>
               </div>
               <div v-if="!userStore.isLoggedIn" class="sheet-item" @click="onLogin">
-                <span class="sheet-icon">🔐</span>
+                <LineIcon class="sheet-icon" name="user" :size="22" />
                 <span class="sheet-label">登录</span>
               </div>
               <div v-else class="sheet-item danger" @click="onLogout">
-                <span class="sheet-icon">🚪</span>
+                <LineIcon class="sheet-icon" name="log-out" :size="22" />
                 <span class="sheet-label">退出</span>
               </div>
             </div>
@@ -95,6 +96,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import LoginCard from './LoginCard.vue'
 import ProfileCard from './ProfileCard.vue'
+import LineIcon from './LineIcon.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -108,10 +110,10 @@ const visible = ref(true)
 const isLanding = computed(() => route.name === 'Landing')
 
 const mainTabs = [
-  { path: '/home', icon: '🏠', label: '首页' },
-  { path: '/family', icon: '💕', label: '家' },
-  { path: '/treehole', icon: '🌳', label: '树洞' },
-  { path: '/essay', icon: '✏️', label: '随笔' }
+  { path: '/home', icon: 'home', label: '云栖阁' },
+  { path: '/family', icon: 'heart', label: '长相守' },
+  { path: '/treehole', icon: 'leaf', label: '风语林' },
+  { path: '/essay', icon: 'brush', label: '浮生记' }
 ]
 
 function isActive(path) {
@@ -181,27 +183,31 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 悬浮胶囊：不再是贴底的整条白板，左右留白 + 大圆角 */
 .mobile-tabbar {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
-  height: calc(56px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  left: 12px; right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  height: 54px;
   display: flex;
   justify-content: space-around;
   align-items: stretch;
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 22px;
+  box-shadow: 0 6px 26px rgba(20, 40, 28, 0.1), 0 1px 3px rgba(20, 40, 28, 0.06);
   z-index: 1000;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
 }
 .mobile-tabbar.hidden {
-  transform: translateY(100%);
+  transform: translateY(calc(100% + 14px));
+  opacity: 0;
 }
 
 .tabbar-item {
@@ -210,46 +216,42 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   cursor: pointer;
   position: relative;
-  color: #8a8a8e;
+  color: #9a9a9e;
   transition: color 0.25s;
 }
-.tabbar-item:active {
-  transform: scale(0.92);
-}
+.tabbar-item.active { color: var(--nature-green-dark, #2e7d32); }
+.tabbar-item:active { opacity: 0.65; }
 
 .tabbar-icon {
-  font-size: 22px;
-  line-height: 1;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  filter: grayscale(0.4);
+  display: block;
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .tabbar-item.active .tabbar-icon {
-  transform: scale(1.18) translateY(-2px);
-  filter: grayscale(0) drop-shadow(0 2px 8px rgba(102, 187, 106, 0.4));
+  transform: translateY(-2px);
 }
 
 .tabbar-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.5px;
-  font-family: var(--trendy-font, sans-serif);
-  transition: all 0.25s;
+  letter-spacing: 1px;
+  line-height: 1;
+  font-family: var(--calligraphy-font, sans-serif);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .tabbar-item.active .tabbar-label {
-  color: var(--nature-green, #66bb6a);
-  font-weight: 700;
+  transform: translateY(-2px);
 }
 
 .tabbar-dot {
   position: absolute;
-  bottom: 6px;
-  width: 4px;
-  height: 4px;
+  bottom: 5px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
-  background: var(--nature-green, #66bb6a);
+  background: currentColor;
   opacity: 0;
   transform: scale(0);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -257,6 +259,10 @@ onUnmounted(() => {
 .tabbar-item.active .tabbar-dot {
   opacity: 1;
   transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabbar-icon, .tabbar-label, .tabbar-dot, .mobile-tabbar { transition: none; }
 }
 
 /* ============ ActionSheet ============ */
@@ -299,12 +305,12 @@ onUnmounted(() => {
 .sheet-header.clickable {
   cursor: pointer;
   padding: 12px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-  border: 1.5px dashed rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, rgba(47, 111, 106, 0.08), rgba(63, 79, 143, 0.08));
+  border: 1.5px dashed rgba(47, 111, 106, 0.3);
   margin: -4px -4px 12px;
 }
 .sheet-header.clickable:active {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+  background: linear-gradient(135deg, rgba(47, 111, 106, 0.15), rgba(63, 79, 143, 0.15));
   transform: scale(0.98);
 }
 .sheet-user { flex: 1; min-width: 0; }
@@ -320,7 +326,7 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 .sheet-tip.login-tip {
-  color: #667eea;
+  color: #2f6f6a;
   font-weight: 600;
   animation: tipPulse 2s ease-in-out infinite;
 }
@@ -330,14 +336,17 @@ onUnmounted(() => {
 }
 .sheet-login-cta {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2f6f6a, #3f4f8f);
   color: #fff;
   font-size: 13px;
   font-weight: 700;
   border-radius: 20px;
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+  box-shadow: 0 4px 12px rgba(47, 111, 106, 0.35);
   animation: ctaBounce 2s ease-in-out infinite;
 }
 @keyframes ctaBounce {
@@ -368,13 +377,16 @@ onUnmounted(() => {
 .sheet-item.danger:active {
   background: rgba(255, 59, 48, 0.08);
 }
-.sheet-icon { font-size: 24px; }
+.sheet-icon { color: var(--nature-green-dark, #2e7d32); }
 .sheet-label {
   font-size: 12px;
   color: #3a3a3c;
   font-weight: 500;
+  letter-spacing: 0.5px;
+  font-family: var(--calligraphy-font, sans-serif);
 }
-.sheet-item.danger .sheet-label { color: #ff3b30; }
+.sheet-item.danger .sheet-icon,
+.sheet-item.danger .sheet-label { color: #e5544b; }
 
 /* 动画 */
 .sheet-enter-active, .sheet-leave-active {
@@ -386,5 +398,11 @@ onUnmounted(() => {
 .sheet-enter-from, .sheet-leave-to { opacity: 0; }
 .sheet-enter-from .sheet-panel, .sheet-leave-to .sheet-panel {
   transform: translateY(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-tip.login-tip, .sheet-login-cta { animation: none; }
+  .sheet-enter-active, .sheet-leave-active,
+  .sheet-enter-active .sheet-panel, .sheet-leave-active .sheet-panel { transition: none; }
 }
 </style>

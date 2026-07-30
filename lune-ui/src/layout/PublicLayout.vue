@@ -17,29 +17,23 @@
           <h2 @click="goHome" class="site-title-link">{{ appStore.webInfo.webName || 'Lune' }}</h2>
         </div>
 
+        <!-- 移动端音乐条：原来吊在屏幕底部压着 TabBar，挪到站名右边这片留白里。
+             放在常驻布局里还有个好处 —— 跨页切换不会重挂载，音乐不断。 -->
+        <MusicPlayer v-if="appStore.mobile" variant="bar" class="toolbar-music" />
+
         <!-- PC端导航菜单 -->
         <div v-if="!appStore.mobile">
           <ul class="scroll-menu">
-            <li @click="$router.push({ path: '/home' })" :class="{ active: route.path === '/home' }">
-              <div class="my-menu">🏠 <span>首页</span></div>
-            </li>
-            <li @click="$router.push({ path: '/family' })" :class="{ active: route.path === '/family' }">
-              <div class="my-menu">❤️ <span>家</span></div>
-            </li>
-            <li @click="$router.push({ path: '/treehole' })" :class="{ active: route.path === '/treehole' }">
-              <div class="my-menu">🌳 <span>树洞</span></div>
-            </li>
-            <li @click="$router.push({ path: '/essay' })" :class="{ active: route.path === '/essay' }">
-              <div class="my-menu">🏖️ <span>随笔</span></div>
-            </li>
-            <li @click="$router.push({ path: '/record' })" :class="{ active: route.path === '/record' }">
-              <div class="my-menu">📒 <span>记录</span></div>
-            </li>
-            <li @click="$router.push({ path: '/wish' })" :class="{ active: route.path === '/wish' }">
-              <div class="my-menu">🌠 <span>许愿池</span></div>
+            <li
+              v-for="item in navItems"
+              :key="item.path"
+              @click="$router.push({ path: item.path })"
+              :class="{ active: route.path === item.path }"
+            >
+              <div class="my-menu"><LineIcon :name="item.icon" :size="16" /><span>{{ item.label }}</span></div>
             </li>
             <li v-if="userStore.isAdmin" @click="goAdmin()">
-              <div class="my-menu">💻️ <span>后台</span></div>
+              <div class="my-menu"><LineIcon name="grid" :size="16" /><span>后台</span></div>
             </li>
 
             <li class="avatar-menu-item">
@@ -52,14 +46,14 @@
                   </el-avatar>
                   <div class="avatar-menu-drop" :class="{ pinned: dropdownPinned, show: dropdownHover }"
                     @mouseenter="dropdownHover = true" @mouseleave="dropdownHover = false">
-                    <div class="drop-item" @click="showProfile = true; closeDropdown()">👤 个人信息</div>
-                    <div class="drop-item" @click="handleLogout()">🚪 退出</div>
+                    <div class="drop-item" @click="showProfile = true; closeDropdown()"><LineIcon name="user" :size="15" />个人信息</div>
+                    <div class="drop-item" @click="handleLogout()"><LineIcon name="arrow-right" :size="15" />退出</div>
                   </div>
                 </div>
               </template>
               <template v-else>
                 <div class="login-btn-nav" @click="showLogin = true">
-                  <span class="login-btn-icon">👤</span>
+                  <LineIcon name="user" :size="15" />
                   <span>登录</span>
                 </div>
               </template>
@@ -105,6 +99,8 @@ import { useUserStore } from '../stores/user'
 import LoginCard from '../components/LoginCard.vue'
 import ProfileCard from '../components/ProfileCard.vue'
 import MobileTabBar from '../components/MobileTabBar.vue'
+import MusicPlayer from '../components/MusicPlayer.vue'
+import LineIcon from '../components/LineIcon.vue'
 import Spotlight from '../components/effects/Spotlight.vue'
 import FloatPetals from '../components/effects/FloatPetals.vue'
 import WalkingDog from '../components/effects/WalkingDog.vue'
@@ -114,6 +110,18 @@ const router = useRouter()
 const route = useRoute()
 
 const isLanding = computed(() => route.name === 'Landing')
+
+// 前台栏目名走三字雅称（后台菜单保留功能名）；简历原来只能从 Landing 进，
+// 现在 Landing 只留一道门，所以「山海志」必须在这里有入口。
+const navItems = [
+  { path: '/home', label: '云栖阁', icon: 'home' },
+  { path: '/family', label: '长相守', icon: 'heart' },
+  { path: '/treehole', label: '风语林', icon: 'leaf' },
+  { path: '/essay', label: '浮生记', icon: 'brush' },
+  { path: '/record', label: '光阴集', icon: 'book' },
+  { path: '/wish', label: '星愿池', icon: 'star' },
+  { path: '/resume', label: '山海志', icon: 'route' }
+]
 
 // 可爱的"到底啦"提示（随机一条）
 const cuteTexts = ['～ 到底啦，去别处逛逛吧 ～', '🌸 被你发现啦，这里是最底部 🌸', '～ 到底啦，喝口水休息下 ～', '🍃 到底啦，风把秘密都吹走啦 🍃']
@@ -233,16 +241,27 @@ onUnmounted(() => {
 }
 
 .scroll-menu {
-  margin: 0 25px 0 0; display: flex; justify-content: flex-end; padding: 0; gap: 6px;
+  margin: 0 25px 0 0; display: flex; justify-content: flex-end; padding: 0; gap: 2px;
 }
 .scroll-menu li {
-  list-style: none; margin: 0 10px; font-size: 17px;
+  list-style: none; margin: 0 7px; font-size: 17px;
   height: 60px; line-height: 60px; position: relative;
   cursor: pointer; display: flex; flex-direction: column; align-items: center;
 }
 .scroll-menu li:hover .my-menu span { color: var(--nature-green-light); }
 .toolbar-content.enter .scroll-menu li:hover .my-menu span { color: var(--nature-green); }
-.scroll-menu li .my-menu { height: 52px; line-height: 52px; font-weight: 600; }
+.scroll-menu li .my-menu {
+  height: 52px; font-weight: 600;
+  display: flex; align-items: center; gap: 5px;
+}
+/* 三字雅称用书法体，图标跟着文字颜色走 */
+.scroll-menu li .my-menu span {
+  font-family: var(--calligraphy-font); letter-spacing: 2px; white-space: nowrap;
+}
+.scroll-menu li .my-menu :deep(.line-icon) { opacity: 0.75; transition: opacity 0.25s; }
+.scroll-menu li:hover .my-menu :deep(.line-icon),
+.scroll-menu li.active .my-menu :deep(.line-icon) { opacity: 1; }
+.scroll-menu li.active .my-menu :deep(.line-icon) { color: var(--nature-green); }
 .scroll-menu li.active .my-menu span {
   color: var(--nature-green); font-weight: 700;
   text-shadow: 0 0 12px rgba(102,187,106,0.5);
@@ -307,10 +326,23 @@ onUnmounted(() => {
 
 .main-container { flex: 1; }
 
+/* 加了「山海志」后 PC 端一共 8 项，窄屏笔记本（769~1050）收紧一点免得挤到站名 */
+@media screen and (min-width: 769px) and (max-width: 1050px) {
+  .scroll-menu { margin-right: 12px; }
+  .scroll-menu li { margin: 0 3px; font-size: 15px; }
+  .scroll-menu li .my-menu { gap: 3px; }
+  .scroll-menu li .my-menu span { letter-spacing: 1px; }
+  .login-btn-nav { padding: 0 12px; margin-left: 4px; }
+}
+
+/* 移动端音乐条：站名右边那片留白 */
+.toolbar-music { flex: 1; min-width: 0; margin-left: 12px; }
+
 /* 移动端：主内容区底部预留 TabBar 空间 */
 @media screen and (max-width: 768px) {
   .main-container {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    /* TabBar 是悬浮胶囊（54px 高 + 底部 10px 间距），再留一点呼吸位 */
+    padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   }
   .toolbar-content {
     height: 50px;

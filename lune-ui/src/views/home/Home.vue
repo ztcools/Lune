@@ -59,7 +59,16 @@
           <div class="myAside-container">
             <!-- Info card -->
             <div class="card-content1 glass-card shadow-box">
-              <el-avatar class="user-avatar" :size="120" :src="appStore.ownerInfo.avatar">
+              <!-- 点击转一圈：全局 .user-avatar 只有 hover 旋转，移动端没有 hover，
+                   等于给了个点不动的暗示。这里只做旋转，不接大图预览。 -->
+              <el-avatar
+                class="user-avatar"
+                :class="{ spinning: avatarSpinning }"
+                :size="120"
+                :src="appStore.ownerInfo.avatar"
+                @click="spinAvatar"
+                @animationend="avatarSpinning = false"
+              >
                 {{ (appStore.ownerInfo.nickname || 'L').charAt(0) }}
               </el-avatar>
               <div class="web-name">{{ appStore.ownerInfo.nickname || 'Lune' }}</div>
@@ -83,8 +92,9 @@
               </a>
             </div>
 
-            <!-- BGM Player（后台可配置真实音频歌单） -->
-            <MusicPlayer :fallback="fallbackSongs" />
+            <!-- BGM Player（后台可配置真实音频歌单）
+                 移动端不在这里渲染：由 PublicLayout 的顶栏承载，保证全站单实例 -->
+            <MusicPlayer v-if="!appStore.mobile" :fallback="fallbackSongs" />
 
             <!-- Recommended articles -->
             <div v-if="recommendArticles.length > 0" class="recommend-card glass-card shadow-box">
@@ -111,11 +121,9 @@
                 :style="{ background: sortColors[index % sortColors.length] }"
                 class="sort-card shadow-box-mini"
               >
-                <div>速览</div>
+                <div class="sort-hint">速览</div>
                 <div class="sort-name">{{ cat.name }}</div>
-                <div style="font-weight: bold; margin-top: 15px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden">
-                  {{ cat.description || '点击浏览' + cat.name + '相关文章' }}
-                </div>
+                <div class="sort-desc">{{ cat.description || '点击浏览' + cat.name + '相关文章' }}</div>
               </div>
             </div>
           </div>
@@ -258,6 +266,15 @@ const notices = computed(() => safeJsonParse(appStore.webInfo.notices, []))
 
 const indexType = ref(1)
 const showAside = ref(true)
+// 头像点击旋转一圈（转完才接受下一次点击，免得中途重置像卡住）
+const avatarSpinning = ref(false)
+let avatarTimer = null
+function spinAvatar() {
+  if (avatarSpinning.value) return
+  avatarSpinning.value = true
+  // 「减少动态效果」下动画被禁用，animationend 不会触发，兜底解锁
+  avatarTimer = setTimeout(() => { avatarSpinning.value = false }, 1000)
+}
 const readerArticleId = ref(null)
 const sortColors = ['#FF623E', '#51C492', '#F9DB88', '#5362f6', '#e485f8', '#ff9c55']
 
@@ -426,6 +443,7 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   if (typewriterTimer) clearInterval(typewriterTimer)
+  if (avatarTimer) clearTimeout(avatarTimer)
 })
 </script>
 
@@ -599,8 +617,10 @@ onUnmounted(() => {
   animation: hideToShow 1s ease-in-out; cursor: pointer; color: var(--white); transition: transform 0.2s;
 }
 .sort-card:hover { transform: scale(1.03); }
+.sort-hint { font-size: 13px; opacity: 0.85; }
 .sort-name { font-weight: bold; font-size: 25px; margin-top: 15px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .sort-name:after { top: 74px; width: 22px; left: 26px; height: 2px; background: var(--white); content: ""; border-radius: 1px; position: absolute; }
+.sort-desc { font-weight: bold; margin-top: 15px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
 /* ============================
    Article Cards — Grid
@@ -714,6 +734,36 @@ onUnmounted(() => {
 @media screen and (max-width: 768px) {
   h1 { font-size: 28px; }
   .playful { font-size: 28px; }
+
+  /* 侧栏（信息卡 + 推荐 + 速览）不该挡在正文前面，移动端整块挪到文章列表之后 */
+  .recent-posts { order: 1; }
+  .aside-content { order: 2; margin-top: 28px; }
+  .myAside-container > div:not(:last-child) { margin-bottom: 16px; }
+
+  /* 速览：原来是 6 张 padding 10/25/15、字号 25px 的竖排大块，连着滑很久。
+     改成横向可滑的胶囊行，一屏能看到一张半，剩下的横向滑。 */
+  .selectSort {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .selectSort::-webkit-scrollbar { display: none; }
+  .selectSort > div:not(:last-child) { margin-bottom: 0; }
+  .sort-card {
+    flex: 0 0 68%;
+    scroll-snap-align: start;
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+  .sort-card .sort-hint { display: none; }
+  .sort-name { font-size: 17px; margin-top: 0; }
+  /* 那条小横线是写死 top:74px 的绝对定位，卡片一缩就跑到外面去了 */
+  .sort-name:after { display: none; }
+  .sort-desc { margin-top: 6px; font-size: 12px; opacity: 0.9; }
   .article-grid {
     grid-template-columns: 1fr;
     gap: 12px;
