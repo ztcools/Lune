@@ -1,6 +1,7 @@
 package com.lune.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lune.common.ClientIp;
 import com.lune.common.Result;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -141,15 +142,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return entry[1] <= limit;
     }
 
+    /**
+     * 限流桶的 key 必须取不可伪造的真实 IP。原实现取 X-Forwarded-For 的第一段，
+     * 那正是客户端可自填的位置——每次请求换个值即得到全新桶，
+     * 后端全部按 IP 的限流（含登录 5r/m）形同虚设。详见 {@link ClientIp}。
+     */
     private String clientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp;
-        }
-        return request.getRemoteAddr();
+        return ClientIp.resolve(request);
     }
 }

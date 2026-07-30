@@ -38,11 +38,28 @@ public class UserServiceImpl implements UserService {
         return claims.get("userId", Long.class);
     }
 
+    /**
+     * 站长公开名片（未登录可访问，简历页/首页署名使用）。
+     *
+     * 该接口只暴露站长（role=ADMIN）本人：原实现对任意 userId 都返回整个 User，
+     * 只清了 password，于是遍历自增 id 就能拖走全站用户的邮箱与角色。
+     * 简历页确实要展示站长邮箱作为联系方式，所以这里保留 email，
+     * 但把与展示无关的账号字段（role/status/deleted/时间戳）一并清掉——
+     * 少给一个字段，就少一分账号枚举与撞库的输入。
+     */
     @Override
     public User getPublicProfile(Long userId) {
         var user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
+        // 非站长一律按「不存在」处理，避免以是否报错来判定 id 是否被占用
+        if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new BusinessException("用户不存在");
+        }
         user.setPassword(null);
+        user.setRole(null);
+        user.setStatus(null);
+        user.setDeleted(null);
+        user.setCreateTime(null);
+        user.setUpdateTime(null);
         return user;
     }
 
