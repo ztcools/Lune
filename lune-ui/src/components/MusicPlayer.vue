@@ -8,7 +8,7 @@
       </div>
       <div class="mini-info">
         <div class="mini-name">{{ currentSong?.name || '暂无音乐' }}</div>
-        <div class="mini-artist">{{ currentSong?.artist || '点我展开' }}</div>
+        <div class="mini-artist" :class="{ 'is-hint': hint }">{{ hint || currentSong?.artist || '点我展开' }}</div>
       </div>
       <button class="mini-play-btn" @click.stop="toggleMusic">
         <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="18" height="18"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
@@ -56,11 +56,24 @@
         </div>
         <div class="music-song-artist">{{ currentSong?.artist || '在后台添加音乐吧' }}</div>
         <div class="music-time" v-if="duration > 0">{{ fmtTime(currentTime) }} / {{ fmtTime(duration) }}</div>
+        <!-- 播放失败/受阻提示：原先失败是完全静默的，与「暂停」无法区分 -->
+        <div class="music-hint" v-if="hint">{{ hint }}</div>
+        <!-- CC BY 曲目要求可见署名，见 public/media/CREDITS.md -->
+        <div class="music-license" v-if="currentSong?.license">{{ currentSong.license }}</div>
       </div>
     </template>
 
     <!-- 隐藏的音频元素 -->
-    <audio ref="audioRef" :src="currentSong?.url" @timeupdate="onTimeUpdate" @ended="nextSong" @loadedmetadata="onLoaded" preload="metadata"></audio>
+    <audio
+      ref="audioRef"
+      :src="currentSong?.url"
+      @timeupdate="onTimeUpdate"
+      @ended="nextSong"
+      @loadedmetadata="onLoaded"
+      @error="onError"
+      @stalled="onStalled"
+      preload="metadata"
+    ></audio>
   </div>
 </template>
 
@@ -71,7 +84,7 @@
  * - HTML5 Audio 播放，支持进度/歌词/上下首/旋转唱片
  * - 无配置时不渲染播放（提示去后台添加）
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { siteConfigApi } from '../api/modules'
 import { useAppStore } from '../stores/app'
 
@@ -91,9 +104,24 @@ const currentTime = ref(0)
 const duration = ref(0)
 const songList = ref([])
 const songIdx = ref(0)
+const hint = ref('')
+// 用户的播放意图，与 musicPlaying（实际播放状态）分开：
+// 坏链接会让 musicPlaying 变 false，但意图仍是「想听」，自动跳转后应继续播放
+const wantPlay = ref(false)
+// 加载失败的曲目下标：切歌时跳过，避免反复卡在同一个坏链接上
+const brokenIdx = ref(new Set())
+let hintTimer = null
 
 const currentSong = computed(() => songList.value[songIdx.value] || null)
 const displayLyric = computed(() => currentSong.value?.lrc || '')
+
+function setHint(msg, autoClearMs = 0) {
+  hint.value = msg
+  if (hintTimer) { clearTimeout(hintTimer); hintTimer = null }
+  if (msg && autoClearMs > 0) {
+    hintTimer = setTimeout(() => { hint.value = ''; hintTimer = null }, autoClearMs)
+  }
+}
 
 onMounted(async () => {
   try {
@@ -103,10 +131,14 @@ onMounted(async () => {
     if (raw) { try { const a = JSON.parse(raw); if (Array.isArray(a)) list = a.filter(s => s && s.url) } catch {} }
     songList.value = list.length ? list : props.fallback
   } catch { songList.value = props.fallback }
+  if (!songList.value.length) setHint('暂无音乐，请在后台添加歌单')
 })
 
 function toggleMusic() {
-  if (!currentSong.value) return
+  if (!currentSong.value) {
+    setHint('暂无可播放的音乐，请在后台添加', 4000)
+    return
+  }
   if (musicPlaying.value) pause()
   else play()
 }
@@ -114,26 +146,79 @@ function toggleMusic() {
 function play() {
   const el = audioRef.value
   if (!el || !currentSong.value?.url) return
-  el.play().then(() => { musicPlaying.value = true }).catch(() => { musicPlaying.value = false })
+  setHint('')
+  wantPlay.value = true
+  el.play()
+    .then(() => { musicPlaying.value = true })
+    .catch((err) => {
+      musicPlaying.value = false
+      // 浏览器自动播放策略拦截 ≠ 资源加载失败，两者提示不同
+      if (err?.name === 'NotAllowedError') setHint('请点击播放按钮开始（浏览器限制自动播放）', 4000)
+      else if (err?.name === 'NotSupportedError') markBrokenAndSkip('音频格式不支持')
+      else setHint('播放失败，请稍后重试', 4000)
+    })
 }
-function pause() { audioRef.value?.pause(); musicPlaying.value = false }
+function pause() { audioRef.value?.pause(); musicPlaying.value = false; wantPlay.value = false }
 
-function nextSong() {
-  if (!songList.value.length) return
-  songIdx.value = (songIdx.value + 1) % songList.value.length
-  resetAndPlay()
+/** 全部曲目都坏掉时返回 true —— 用于终止跳转，避免无限递归 */
+function allBroken() {
+  return songList.value.length > 0 && brokenIdx.value.size >= songList.value.length
 }
-function prevSong() {
+
+function markBrokenAndSkip(reason) {
   if (!songList.value.length) return
-  songIdx.value = (songIdx.value - 1 + songList.value.length) % songList.value.length
-  resetAndPlay()
-}
-function resetAndPlay() {
-  musicProgress.value = 0; currentTime.value = 0
-  if (musicPlaying.value) {
-    // 等 audio src 更新后播放
-    setTimeout(() => play(), 50)
+  brokenIdx.value.add(songIdx.value)
+  musicPlaying.value = false
+  if (allBroken()) {
+    wantPlay.value = false
+    setHint(`音乐资源加载失败（${reason}）`)
+    return
   }
+  setHint('已跳过无法播放的曲目', 3000)
+  step(1)
+}
+
+function onError() {
+  // <audio> 加载失败（404 / 网络错误 / 解码失败）。
+  // 修复前这里没有任何处理，坏链接和「暂停」在界面上完全一样 —— 正是本次 bug 的表象。
+  // src 为空时部分浏览器也会触发 error，此时不应把曲目标记为损坏
+  if (!currentSong.value?.url) return
+  const code = audioRef.value?.error?.code
+  const reason = code === 4 ? '资源不存在或格式不支持' : code === 2 ? '网络错误' : '加载失败'
+  markBrokenAndSkip(reason)
+}
+
+function onStalled() {
+  if (musicPlaying.value) setHint('缓冲中…', 3000)
+}
+
+/** 按 dir 方向找到下一个未损坏的曲目 */
+function step(dir) {
+  const n = songList.value.length
+  if (!n) return
+  if (allBroken()) { setHint('音乐资源加载失败'); return }
+  let i = songIdx.value
+  for (let tried = 0; tried < n; tried++) {
+    i = (i + dir + n) % n
+    if (!brokenIdx.value.has(i)) break
+  }
+  songIdx.value = i
+  resetAndPlay()
+}
+
+function nextSong() { step(1) }
+function prevSong() { step(-1) }
+
+function resetAndPlay() {
+  musicProgress.value = 0; currentTime.value = 0; duration.value = 0
+  if (!wantPlay.value) return
+  // 等 :src 绑定更新到 DOM 后再 load/play（原实现用 setTimeout(50) 猜时序，不可靠）
+  nextTick(() => {
+    const el = audioRef.value
+    if (!el) return
+    el.load()
+    play()
+  })
 }
 
 function onTimeUpdate() {
@@ -158,7 +243,10 @@ function fmtTime(s) {
   return `${m}:${String(sec).padStart(2, '0')}`
 }
 
-onUnmounted(() => pause())
+onUnmounted(() => {
+  pause()
+  if (hintTimer) { clearTimeout(hintTimer); hintTimer = null }
+})
 </script>
 
 <style scoped>
@@ -185,6 +273,14 @@ onUnmounted(() => pause())
 .music-progress-fill { height: 100%; background: var(--nature-gradient); border-radius: 3px; transition: width 0.2s linear; }
 .music-song-artist { font-size: 12px; color: #8aa88a; }
 .music-time { font-size: 11px; color: #a0b0a0; font-family: var(--trendy-font); }
+.music-hint {
+  font-size: 11px; color: #c98a5a;
+  background: rgba(255, 183, 77, 0.14);
+  padding: 3px 10px; border-radius: 10px;
+  text-align: center; line-height: 1.5;
+}
+.music-license { font-size: 10px; color: #b3c4b3; letter-spacing: 0.2px; }
+.mini-artist.is-hint { color: #c98a5a; }
 
 /* ============ 移动端迷你播放器 ============ */
 .music-card.mobile {
