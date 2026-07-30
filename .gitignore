@@ -44,3 +44,7 @@ backups/
 
 # --- 部署文档（不需要提交）---
 部署文档.md
+
+# GeoLite2 离线库（66MB 二进制，需按月更新，不入 git）
+# 获取方式见 docs/GEOIP-SETUP.md 或 scripts/fetch-geoip.sh
+data/geoip/*.mmdb

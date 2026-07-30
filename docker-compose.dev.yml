@@ -33,6 +33,9 @@ services:
     volumes:
       - upload_data:/app/upload
       - maven_cache:/root/.m2
+      # GeoLite2 离线库以只读挂载提供，不打进 jar/镜像（66MB，且需按月更新）
+      # 文件缺失时后端会告警降级：只记 IP、不记地区
+      - ./data/geoip:/app/geoip:ro
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - DB_HOST=mysql

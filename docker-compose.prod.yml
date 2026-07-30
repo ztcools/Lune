@@ -38,6 +38,9 @@ services:
       - "127.0.0.1:8081:8081"
     volumes:
       - upload_data:/app/upload
+      # GeoLite2 离线库以只读挂载提供，不打进 jar/镜像：
+      # 否则这 66MB 会跟着每次 docker save + scp 重传一遍（5Mbps 上行约 2 分钟）
+      - ./data/geoip:/app/geoip:ro
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - DB_HOST=mysql

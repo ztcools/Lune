@@ -215,13 +215,27 @@ CREATE TABLE `resource` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 访问日志：地理字段由 GeoIpService 解析后写入（province 已归一化为
+-- 中国地图 GeoJSON 的全称，如「浙江省」，可直接 GROUP BY 喂给地图）
+-- 注意：此处必须与 sql/lune.sql 保持一致，否则 make dev 全新卷起来的表
+-- 缺列，插入会以 WARN 静默失败、visit_log 永远为空
 CREATE TABLE `visit_log` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `ip` VARCHAR(50) DEFAULT NULL,
+    `country` VARCHAR(50) DEFAULT NULL,
+    `province` VARCHAR(50) DEFAULT NULL,
+    `city` VARCHAR(50) DEFAULT NULL,
+    `longitude` DECIMAL(10,6) DEFAULT NULL,
+    `latitude` DECIMAL(10,6) DEFAULT NULL,
     `user_agent` VARCHAR(500) DEFAULT NULL,
     `path` VARCHAR(200) DEFAULT NULL,
+    `method` VARCHAR(10) DEFAULT NULL,
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_ip` (`ip`),
+    KEY `idx_create_time` (`create_time`),
+    KEY `idx_province` (`province`),
+    KEY `idx_path` (`path`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `work_experience` (
