@@ -49,8 +49,8 @@ ON DUPLICATE KEY UPDATE
 
 -- ---------- 3. 移动端竖屏背景图 ----------
 -- 这 14 个 *_bg_mobile key 前端（stores/app.js + usePageBackground）一直在读，
--- 而库里存的还是 t.alcy.cc 随机 API：横版 PC 图已换成自托管，手机端反而留着
--- 一个失效外链 —— 移动端分支优先级更高，等于手机上背景全黑。
+-- 而库里存的还是 t.alcy.cc 随机 API：横版 PC 图已换成自托管，手机端反而留在
+-- 第三方随机图上 —— 而移动端分支优先级更高，等于手机用户永远看不到精选图。
 -- 这里换成同一批图的 9:16 竖裁版（见 media/CREDITS.md）：构图中心不被 cover 裁掉，
 -- 体积约为横版的 30%。取值与 PC 端一一对应，保持两端观感一致。
 INSERT INTO site_config (config_key, config_value, config_type, description) VALUES

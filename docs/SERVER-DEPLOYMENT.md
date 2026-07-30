@@ -17,7 +17,7 @@
 | **内存** | 4 GB (3.6 GiB 可用) |
 | **磁盘** | 59 GB 总量，51 GB 可用 |
 | **带宽** | 5 Mbps |
-| **网络限制** | ⚠️ 仅可访问国内网络（无法拉取海外 Docker 镜像 / GitHub 直连慢） |
+| **网络限制** | ⚠️ Docker Hub 直连不通（`registry-1.docker.io` 超时），必须走下方镜像；GitHub 可达但握手约 8s；`fonts.googleapis.com` 解析到国内 IPv6、拿不到真实字体文件 —— 故字体/图片/音乐全部自托管 |
 | **Docker** | 29.1.3 (apt 安装) |
 | **Docker Compose** | v2.27.0（用户级安装于 `~/.docker/cli-plugins/`） |
 | **Registry Mirror** | docker.1ms.run / docker.xuanyuan.me / hub.rat.dev |

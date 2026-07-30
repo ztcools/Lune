@@ -7,27 +7,24 @@ import com.lune.common.PageResult;
 import com.lune.dto.CommentRequest;
 import com.lune.entity.Comment;
 import com.lune.mapper.CommentMapper;
-import com.lune.mapper.UserMapper;
 import com.lune.service.CommentService;
+import com.lune.service.support.UserInfoFiller;
 import io.jsonwebtoken.Claims;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class CommentServiceImpl implements CommentService {
 
     private final CommentMapper commentMapper;
-    private final UserMapper userMapper;
+    private final UserInfoFiller userInfoFiller;
 
-    public CommentServiceImpl(CommentMapper commentMapper, UserMapper userMapper) {
+    public CommentServiceImpl(CommentMapper commentMapper, UserInfoFiller userInfoFiller) {
         this.commentMapper = commentMapper;
-        this.userMapper = userMapper;
+        this.userInfoFiller = userInfoFiller;
     }
 
     private Long getCurrentUserId() {
@@ -36,25 +33,6 @@ public class CommentServiceImpl implements CommentService {
             return claims.get("userId", Long.class);
         }
         return null;
-    }
-
-    private void populateUserInfo(java.util.List<Comment> comments) {
-        Set<Long> userIds = comments.stream()
-                .map(Comment::getUserId)
-                .filter(id -> id != null && id > 0)
-                .collect(Collectors.toSet());
-        if (userIds.isEmpty()) return;
-        var users = userMapper.selectBatchIds(userIds);
-        Map<Long, com.lune.entity.User> userMap = users.stream()
-                .collect(Collectors.toMap(com.lune.entity.User::getId, Function.identity()));
-        for (Comment c : comments) {
-            var u = userMap.get(c.getUserId());
-            if (u != null) {
-                c.setUsername(u.getUsername());
-                c.setNickname(u.getNickname());
-                c.setAvatar(u.getAvatar());
-            }
-        }
     }
 
     @Override
@@ -72,7 +50,7 @@ public class CommentServiceImpl implements CommentService {
             wrapper.eq(Comment::getSourceId, sourceId);
         }
         var result = commentMapper.selectPage(new Page<>(page, size), wrapper);
-        populateUserInfo(result.getRecords());
+        userInfoFiller.fill(result.getRecords());
         return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 
@@ -120,14 +98,7 @@ public class CommentServiceImpl implements CommentService {
         comment.setReplyTo(request.getReplyTo());
         comment.setStatus(1);
         commentMapper.insert(comment);
-        if (currentUserId != null) {
-            var user = userMapper.selectById(currentUserId);
-            if (user != null) {
-                comment.setUsername(user.getUsername());
-                comment.setNickname(user.getNickname());
-                comment.setAvatar(user.getAvatar());
-            }
-        }
+        userInfoFiller.fillOne(comment);
         return comment;
     }
 

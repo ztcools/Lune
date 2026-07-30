@@ -20,15 +20,4 @@ public final class SecurityUtils {
         }
         return null;
     }
-
-    /**
-     * 获取当前登录用户名
-     */
-    public static String getCurrentUsername() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof Claims claims) {
-            return claims.getSubject();
-        }
-        return null;
-    }
 }

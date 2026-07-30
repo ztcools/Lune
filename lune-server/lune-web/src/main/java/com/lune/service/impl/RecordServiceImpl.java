@@ -6,44 +6,20 @@ import com.lune.common.BusinessException;
 import com.lune.common.PageResult;
 import com.lune.entity.Record;
 import com.lune.mapper.RecordMapper;
-import com.lune.mapper.UserMapper;
 import com.lune.security.SecurityUtils;
 import com.lune.service.RecordService;
+import com.lune.service.support.UserInfoFiller;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class RecordServiceImpl implements RecordService {
 
     private final RecordMapper recordMapper;
-    private final UserMapper userMapper;
+    private final UserInfoFiller userInfoFiller;
 
-    public RecordServiceImpl(RecordMapper recordMapper, UserMapper userMapper) {
+    public RecordServiceImpl(RecordMapper recordMapper, UserInfoFiller userInfoFiller) {
         this.recordMapper = recordMapper;
-        this.userMapper = userMapper;
-    }
-
-    private void populateUserInfo(java.util.List<Record> list) {
-        Set<Long> userIds = list.stream()
-                .map(Record::getUserId)
-                .filter(id -> id != null && id > 0)
-                .collect(Collectors.toSet());
-        if (userIds.isEmpty()) return;
-        var users = userMapper.selectBatchIds(userIds);
-        Map<Long, com.lune.entity.User> userMap = users.stream()
-                .collect(Collectors.toMap(com.lune.entity.User::getId, Function.identity()));
-        for (Record r : list) {
-            var u = userMap.get(r.getUserId());
-            if (u != null) {
-                r.setUsername(u.getUsername());
-                r.setNickname(u.getNickname());
-                r.setAvatar(u.getAvatar());
-            }
-        }
+        this.userInfoFiller = userInfoFiller;
     }
 
     @Override
@@ -54,7 +30,7 @@ public class RecordServiceImpl implements RecordService {
             wrapper.eq(Record::getCategoryId, categoryId);
         }
         var result = recordMapper.selectPage(new Page<>(page, size), wrapper);
-        populateUserInfo(result.getRecords());
+        userInfoFiller.fill(result.getRecords());
         return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 
@@ -62,12 +38,7 @@ public class RecordServiceImpl implements RecordService {
     public Record createRecord(Record record) {
         record.setUserId(SecurityUtils.getCurrentUserId());
         recordMapper.insert(record);
-        var user = userMapper.selectById(record.getUserId());
-        if (user != null) {
-            record.setUsername(user.getUsername());
-            record.setNickname(user.getNickname());
-            record.setAvatar(user.getAvatar());
-        }
+        userInfoFiller.fillOne(record);
         return record;
     }
 

@@ -11,7 +11,6 @@ export const useAppStore = defineStore('app', {
     webInfo: { webName: 'Lune', webTitle: 'Lune', notices: '[]', footer: '', favicon: '' },
     bgImages: {},
     ownerInfo: { nickname: 'Lune', avatar: '' },
-    sortInfo: [],
     toolbar: { visible: true, enter: false },
     darkMode: false,
     mobile: false

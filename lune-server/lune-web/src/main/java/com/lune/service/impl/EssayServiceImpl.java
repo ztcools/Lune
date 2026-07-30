@@ -6,44 +6,20 @@ import com.lune.common.BusinessException;
 import com.lune.common.PageResult;
 import com.lune.entity.Essay;
 import com.lune.mapper.EssayMapper;
-import com.lune.mapper.UserMapper;
 import com.lune.security.SecurityUtils;
 import com.lune.service.EssayService;
+import com.lune.service.support.UserInfoFiller;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class EssayServiceImpl implements EssayService {
 
     private final EssayMapper essayMapper;
-    private final UserMapper userMapper;
+    private final UserInfoFiller userInfoFiller;
 
-    public EssayServiceImpl(EssayMapper essayMapper, UserMapper userMapper) {
+    public EssayServiceImpl(EssayMapper essayMapper, UserInfoFiller userInfoFiller) {
         this.essayMapper = essayMapper;
-        this.userMapper = userMapper;
-    }
-
-    private void populateUserInfo(java.util.List<Essay> list) {
-        Set<Long> userIds = list.stream()
-                .map(Essay::getUserId)
-                .filter(id -> id != null && id > 0)
-                .collect(Collectors.toSet());
-        if (userIds.isEmpty()) return;
-        var users = userMapper.selectBatchIds(userIds);
-        Map<Long, com.lune.entity.User> userMap = users.stream()
-                .collect(Collectors.toMap(com.lune.entity.User::getId, Function.identity()));
-        for (Essay e : list) {
-            var u = userMap.get(e.getUserId());
-            if (u != null) {
-                e.setUsername(u.getUsername());
-                e.setNickname(u.getNickname());
-                e.setAvatar(u.getAvatar());
-            }
-        }
+        this.userInfoFiller = userInfoFiller;
     }
 
     @Override
@@ -52,7 +28,7 @@ public class EssayServiceImpl implements EssayService {
                 .eq(Essay::getStatus, 1)
                 .orderByDesc(Essay::getCreateTime);
         var result = essayMapper.selectPage(new Page<>(page, size), wrapper);
-        populateUserInfo(result.getRecords());
+        userInfoFiller.fill(result.getRecords());
         return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 
@@ -60,12 +36,7 @@ public class EssayServiceImpl implements EssayService {
     public Essay getEssayById(Long id) {
         var essay = essayMapper.selectById(id);
         if (essay == null) throw new BusinessException("随笔不存在");
-        var user = userMapper.selectById(essay.getUserId());
-        if (user != null) {
-            essay.setUsername(user.getUsername());
-            essay.setNickname(user.getNickname());
-            essay.setAvatar(user.getAvatar());
-        }
+        userInfoFiller.fillOne(essay);
         return essay;
     }
 
@@ -74,12 +45,7 @@ public class EssayServiceImpl implements EssayService {
         essay.setUserId(SecurityUtils.getCurrentUserId());
         essay.setStatus(1);
         essayMapper.insert(essay);
-        var user = userMapper.selectById(essay.getUserId());
-        if (user != null) {
-            essay.setUsername(user.getUsername());
-            essay.setNickname(user.getNickname());
-            essay.setAvatar(user.getAvatar());
-        }
+        userInfoFiller.fillOne(essay);
         return essay;
     }
 

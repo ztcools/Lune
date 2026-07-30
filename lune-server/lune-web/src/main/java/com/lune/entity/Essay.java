@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 @TableName("essay")
-public class Essay {
+public class Essay implements UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long userId;

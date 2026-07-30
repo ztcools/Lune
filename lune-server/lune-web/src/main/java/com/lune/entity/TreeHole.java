@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 @TableName("tree_hole")
-public class TreeHole {
+public class TreeHole implements UserOwned {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long userId;
