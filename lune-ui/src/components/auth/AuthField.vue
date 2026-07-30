@@ -87,19 +87,21 @@ defineExpose({ focus: () => inputEl.value?.focus() })
 <style scoped>
 .af { position: relative; }
 
+/* 描边/图标色走 --af-* 变量：调用方（LoginCard、admin/Login）在外层
+   定义墨青色板即可换肤，这里的默认值保留原来的绿。 */
 .af-box {
   position: relative;
   display: flex; align-items: center; gap: 10px;
   padding: 0 14px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1.5px solid rgba(67, 160, 71, 0.16);
+  background: #fbfdfd;
+  border: 1.5px solid var(--af-line, rgba(67, 160, 71, 0.16));
   border-radius: 14px;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 }
 .af-box:focus-within {
   background: #fff;
-  border-color: rgba(67, 160, 71, 0.55);
-  box-shadow: 0 0 0 4px rgba(102, 187, 106, 0.14);
+  border-color: var(--af-line-on, rgba(67, 160, 71, 0.55));
+  box-shadow: 0 0 0 4px var(--af-ring, rgba(102, 187, 106, 0.14));
 }
 .af.is-error .af-box {
   border-color: rgba(229, 115, 115, 0.6);
@@ -108,10 +110,10 @@ defineExpose({ focus: () => inputEl.value?.focus() })
 
 .af-icon {
   display: flex; align-items: center;
-  color: #7ba97e; flex-shrink: 0;
+  color: var(--af-muted, #7ba97e); flex-shrink: 0;
   transition: color 0.25s ease;
 }
-.af-box:focus-within .af-icon { color: var(--nature-green-dark); }
+.af-box:focus-within .af-icon { color: var(--af-accent, var(--nature-green-dark)); }
 
 .af-input {
   flex: 1; min-width: 0;
@@ -126,7 +128,7 @@ defineExpose({ focus: () => inputEl.value?.focus() })
 .af-label {
   position: absolute; left: 42px; top: 50%;
   transform: translateY(-50%);
-  font-size: 15px; color: #9bb69e;
+  font-size: 15px; color: var(--af-muted, #9bb69e);
   pointer-events: none;
   transition: top 0.2s ease, font-size 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
@@ -135,17 +137,17 @@ defineExpose({ focus: () => inputEl.value?.focus() })
 .af-input:not(:placeholder-shown) ~ .af-label {
   top: 9px; transform: none;
   font-size: 11.5px; font-weight: 600; letter-spacing: 0.4px;
-  color: var(--nature-green-dark);
+  color: var(--af-accent, var(--nature-green-dark));
 }
 .af.is-error .af-input:not(:placeholder-shown) ~ .af-label { color: #d9736f; }
 
 .af-eye {
   flex-shrink: 0; display: flex; align-items: center;
   border: none; background: transparent; padding: 4px;
-  color: #9bb69e; cursor: pointer; border-radius: 8px;
+  color: var(--af-muted, #9bb69e); cursor: pointer; border-radius: 8px;
   transition: color 0.2s ease, background 0.2s ease;
 }
-.af-eye:hover { color: var(--nature-green-dark); background: rgba(102, 187, 106, 0.1); }
+.af-eye:hover { color: var(--af-accent, var(--nature-green-dark)); background: var(--af-ring, rgba(102, 187, 106, 0.1)); }
 
 .af-msg {
   margin: 5px 2px 0; font-size: 12px; line-height: 1.5;

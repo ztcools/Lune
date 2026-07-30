@@ -7,15 +7,18 @@
 
       <div class="visual-body">
         <div class="brand">
-          <span class="brand-mark">🌙</span>
+          <span class="brand-mark"><LineIcon name="moon" :size="20" :stroke-width="1.6" /></span>
           <span class="brand-name">Lune</span>
         </div>
 
         <h2 class="visual-title">记录美好生活<br />的后台</h2>
-        <p class="visual-sub">文章、随笔、树洞、许愿池 —— 站点的一切都从这里开始。</p>
+        <p class="visual-sub">云栖阁、浮生记、风语林、星愿池 —— 站点的一切都从这里开始。</p>
 
         <ul class="visual-points">
-          <li v-for="p in points" :key="p">{{ p }}</li>
+          <li v-for="p in points" :key="p.text">
+            <LineIcon :name="p.icon" :size="15" />
+            <span>{{ p.text }}</span>
+          </li>
         </ul>
       </div>
 
@@ -26,7 +29,7 @@
     <main class="panel">
       <div class="panel-inner">
         <div class="brand brand-mobile">
-          <span class="brand-mark">🌙</span>
+          <span class="brand-mark"><LineIcon name="moon" :size="20" :stroke-width="1.6" /></span>
           <span class="brand-name">Lune</span>
         </div>
 
@@ -71,7 +74,7 @@
             </template>
           </AuthField>
 
-          <p v-if="capsOn" class="caps-hint">⇪ Caps Lock 已开启</p>
+          <p v-if="capsOn" class="caps-hint">Caps Lock 已开启</p>
 
           <label class="remember">
             <input type="checkbox" v-model="remember" />
@@ -105,6 +108,7 @@ import { useUserStore } from '../stores/user'
 import { useAppStore } from '../stores/app'
 import { usePageBackground } from '../composables/usePageBackground'
 import AuthField from '../components/auth/AuthField.vue'
+import LineIcon from '../components/LineIcon.vue'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -127,9 +131,9 @@ const accountRef = ref(null)
 
 const year = new Date().getFullYear()
 const points = [
-  '📊 访问统计 · 地区分布与趋势',
-  '📝 内容管理 · 文章 / 随笔 / 记录',
-  '🎨 站点装扮 · 背景图与音乐歌单'
+  { icon: 'target', text: '访问统计 · 地区分布与趋势' },
+  { icon: 'file-text', text: '内容管理 · 文章 / 浮生记 / 光阴集' },
+  { icon: 'image', text: '站点装扮 · 背景图与音乐歌单' }
 ]
 
 const onKey = (e) => {
@@ -186,11 +190,23 @@ async function login() {
 </script>
 
 <style scoped>
+/* 与前台登录弹窗同一套局部墨青／靛蓝色板（不动全站绿系令牌） */
 .login-shell {
+  --ink: #2f6f6a;
+  --ink-deep: #1f4f4b;
+  --indigo: #3f4f8f;
+  --ink-soft: #6d8a88;
+  --ink-pale: #eef4f4;
+  --af-line: rgba(47, 111, 106, 0.16);
+  --af-line-on: rgba(47, 111, 106, 0.55);
+  --af-ring: rgba(47, 111, 106, 0.12);
+  --af-muted: #9bafae;
+  --af-accent: #1f4f4b;
+
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--nature-gradient-soft);
+  background: #f4f7f7;
   font-family: var(--globalFont);
 }
 
@@ -202,7 +218,7 @@ async function login() {
   padding: 46px 52px;
   overflow: hidden;
   color: #fff;
-  background: linear-gradient(150deg, #2e7d32 0%, #43a047 45%, #81c784 100%);
+  background: linear-gradient(150deg, #16333a 0%, var(--ink-deep) 45%, var(--indigo) 100%);
 }
 .visual-img {
   position: absolute; inset: 0;
@@ -218,10 +234,10 @@ async function login() {
 .visual-scrim {
   position: absolute; inset: 0;
   background:
-    linear-gradient(115deg, rgba(27, 66, 32, 0.72) 0%, rgba(38, 92, 44, 0.42) 48%, rgba(38, 92, 44, 0.12) 100%),
-    radial-gradient(120% 90% at 12% 88%, rgba(20, 52, 25, 0.5), transparent 60%);
+    linear-gradient(115deg, rgba(15, 38, 44, 0.76) 0%, rgba(31, 79, 75, 0.46) 48%, rgba(63, 79, 143, 0.18) 100%),
+    radial-gradient(120% 90% at 12% 88%, rgba(12, 30, 36, 0.52), transparent 60%);
 }
-.visual.has-img { background: #2b5c31; }
+.visual.has-img { background: #16333a; }
 
 .visual-body { position: relative; z-index: 1; margin-top: auto; max-width: 460px; }
 .visual-foot { position: relative; z-index: 1; margin: 0; font-size: 12.5px; color: rgba(255,255,255,0.66); }
@@ -230,7 +246,6 @@ async function login() {
 .brand-mark {
   width: 40px; height: 40px; border-radius: 13px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 21px;
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(6px);
@@ -240,7 +255,8 @@ async function login() {
 .visual-title {
   margin: 26px 0 12px;
   font-size: 40px; line-height: 1.24; font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  font-family: var(--calligraphy-font, var(--globalFont));
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.22);
 }
 .visual-sub {
@@ -250,6 +266,7 @@ async function login() {
 }
 .visual-points { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .visual-points li {
+  display: flex; align-items: center; gap: 9px;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.92);
   background: rgba(255, 255, 255, 0.12);
@@ -265,43 +282,43 @@ async function login() {
   flex: 0 0 clamp(380px, 34%, 480px);
   display: flex; align-items: center; justify-content: center;
   padding: 40px 30px;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: -18px 0 48px rgba(46, 92, 49, 0.08);
+  background: #fff;
+  box-shadow: -18px 0 48px rgba(15, 40, 40, 0.08);
 }
 .panel-inner { width: 100%; max-width: 340px; }
 
-.brand-mobile { display: none; margin-bottom: 22px; color: var(--nature-green-dark); }
+.brand-mobile { display: none; margin-bottom: 22px; color: var(--ink-deep); }
 .brand-mobile .brand-mark {
-  background: var(--nature-gradient);
+  background: linear-gradient(135deg, var(--ink), var(--indigo));
   border-color: transparent;
-  box-shadow: 0 5px 16px rgba(76, 175, 80, 0.3);
+  color: #fff;
+  box-shadow: 0 5px 16px rgba(47, 111, 106, 0.3);
 }
 
 .panel-head { margin-bottom: 26px; }
 .panel-title {
   margin: 0 0 6px;
-  font-size: 27px; font-weight: 700; letter-spacing: 0.5px;
-  color: #24402a;
+  font-size: 29px; font-weight: 700; letter-spacing: 2px;
+  font-family: var(--calligraphy-font, var(--globalFont));
+  color: #1c3a3a;
 }
-.panel-sub { margin: 0; font-size: 13.5px; color: var(--articleGreyFontColor); }
+.panel-sub { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
 
 .panel-form { display: grid; gap: 16px; }
 
-.caps-hint { margin: -6px 0 0; font-size: 12px; color: #c98a3a; }
+.caps-hint { margin: -6px 0 0; font-size: 12px; color: #c08540; }
 
-.remember { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--maxGreyFont); cursor: pointer; user-select: none; }
+.remember { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); cursor: pointer; user-select: none; }
 .remember input { position: absolute; opacity: 0; width: 0; height: 0; }
 .remember-box {
   width: 16px; height: 16px; border-radius: 5px;
-  border: 1.5px solid rgba(67, 160, 71, 0.4);
+  border: 1.5px solid rgba(47, 111, 106, 0.4);
   background: #fff;
   transition: all 0.2s ease;
   position: relative; flex-shrink: 0;
 }
 .remember input:checked + .remember-box {
-  background: var(--nature-gradient); border-color: transparent;
+  background: linear-gradient(135deg, var(--ink), var(--indigo)); border-color: transparent;
 }
 .remember input:checked + .remember-box::after {
   content: ''; position: absolute; left: 4.6px; top: 1.6px;
@@ -309,7 +326,7 @@ async function login() {
   border: solid #fff; border-width: 0 2px 2px 0;
   transform: rotate(42deg);
 }
-.remember input:focus-visible + .remember-box { box-shadow: 0 0 0 4px rgba(102, 187, 106, 0.2); }
+.remember input:focus-visible + .remember-box { box-shadow: 0 0 0 4px rgba(47, 111, 106, 0.18); }
 
 .form-error {
   margin: 0; padding: 10px 13px;
@@ -327,14 +344,14 @@ async function login() {
   padding: 14px 20px; border-radius: 14px;
   font-family: inherit; font-size: 15.5px; font-weight: 700; letter-spacing: 3px;
   color: #fff;
-  background: linear-gradient(135deg, #43a047, #66bb6a);
-  box-shadow: 0 6px 18px rgba(67, 160, 71, 0.28);
+  background: linear-gradient(135deg, var(--ink-deep) 0%, var(--indigo) 100%);
+  box-shadow: 0 6px 18px rgba(31, 79, 75, 0.26);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
-.submit-btn:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 10px 24px rgba(67, 160, 71, 0.34); filter: brightness(1.04); }
+.submit-btn:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 10px 24px rgba(31, 79, 75, 0.32); filter: brightness(1.08); }
 .submit-btn:active:not(:disabled) { transform: translateY(0) scale(0.99); }
 .submit-btn:disabled { opacity: 0.68; cursor: not-allowed; }
-.submit-btn:focus-visible { box-shadow: 0 0 0 4px rgba(102, 187, 106, 0.35); }
+.submit-btn:focus-visible { box-shadow: 0 0 0 4px rgba(47, 111, 106, 0.3); }
 
 .btn-loading { display: inline-flex; align-items: center; gap: 8px; letter-spacing: 1px; }
 .spinner {
@@ -348,7 +365,7 @@ async function login() {
 .panel-foot { margin: 22px 0 0; font-size: 12px; line-height: 1.7; color: var(--greyFont); }
 .panel-foot code {
   font-size: 11.5px; padding: 1px 5px; border-radius: 5px;
-  background: rgba(67, 160, 71, 0.1); color: var(--nature-green-dark);
+  background: var(--ink-pale); color: var(--ink-deep);
 }
 
 /* ============ 响应式：窄屏折叠成单栏 ============ */
@@ -369,11 +386,11 @@ async function login() {
     flex: 1;
     align-items: flex-start;
     padding: 30px 22px 40px;
-    box-shadow: 0 -14px 32px rgba(46, 92, 49, 0.1);
+    box-shadow: 0 -14px 32px rgba(15, 40, 40, 0.12);
     border-radius: 26px 26px 0 0;
     margin-top: -22px;
     position: relative; z-index: 2;
-    background: rgba(255, 255, 255, 0.94);
+    background: #fff;
   }
   .panel-inner { max-width: 420px; margin: 0 auto; }
   .panel-title { font-size: 23px; }

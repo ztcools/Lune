@@ -2,6 +2,8 @@
   <teleport to="body">
     <transition name="card-fade">
       <div v-if="visible" class="card-overlay" @click.self="$emit('close')">
+        <!-- 缓慢流动的靛蓝／墨青双色光雾（transform 位移，不触发重排） -->
+        <div class="overlay-flow" aria-hidden="true"></div>
         <transition name="card-pop">
           <div
             v-if="visible"
@@ -20,7 +22,7 @@
 
             <div class="card-inner">
               <div class="card-header">
-                <div class="card-logo"><span class="logo-icon">🌙</span></div>
+                <div class="card-logo"><LineIcon name="moon" :size="26" :stroke-width="1.6" /></div>
                 <h2 class="card-title">{{ isRegister ? '加入 Lune' : '欢迎回来' }}</h2>
                 <p class="card-subtitle">
                   {{ isRegister ? '创建账号，一起记录美好生活' : '登录你的账号，继续探索美好' }}
@@ -180,6 +182,7 @@ import { ref, reactive, computed, watch, nextTick, onUnmounted, h } from 'vue'
 import { useUserStore } from '../stores/user'
 import { authApi } from '../api/modules'
 import AuthField from './auth/AuthField.vue'
+import LineIcon from './LineIcon.vue'
 import { ElMessage } from 'element-plus'
 
 /**
@@ -368,13 +371,44 @@ async function handleRegister() {
 </script>
 
 <style scoped>
+/* 局部墨青／靛蓝调色板：只作用在这张卡片上，不动全站绿系令牌 */
 .card-overlay {
+  --ink: #2f6f6a;
+  --ink-deep: #1f4f4b;
+  --indigo: #3f4f8f;
+  --ink-soft: #6d8a88;
+  --ink-pale: #eef4f4;
+  /* 喂给 AuthField（描边/图标/浮动标签） */
+  --af-line: rgba(47, 111, 106, 0.16);
+  --af-line-on: rgba(47, 111, 106, 0.55);
+  --af-ring: rgba(47, 111, 106, 0.12);
+  --af-muted: #9bafae;
+  --af-accent: #1f4f4b;
+
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
-  background: rgba(24, 44, 27, 0.34);
+  overflow: hidden;
+  background: rgba(16, 28, 34, 0.42);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+/* 背景光雾：两团渐变缓慢绕行，比原来的静态绿底「高级」一点 */
+.overlay-flow {
+  position: absolute; inset: -35%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 28% 30%, rgba(63, 79, 143, 0.5) 0%, transparent 46%),
+    radial-gradient(circle at 72% 68%, rgba(47, 111, 106, 0.45) 0%, transparent 48%);
+  filter: blur(10px);
+  will-change: transform;
+  animation: overlayFlow 20s ease-in-out infinite;
+}
+@keyframes overlayFlow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(4%, -3%, 0) scale(1.08); }
+  66% { transform: translate3d(-3%, 4%, 0) scale(1.04); }
 }
 
 .login-card {
@@ -383,32 +417,21 @@ async function handleRegister() {
   max-height: calc(100vh - 40px);
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
-  background: linear-gradient(150deg, rgba(255,255,255,0.94) 0%, rgba(240,249,241,0.92) 46%, rgba(219,239,221,0.9) 100%);
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
-  border-radius: 26px;
-  border: 1.5px solid rgba(255,255,255,0.66);
-  box-shadow:
-    0 18px 56px rgba(38, 92, 44, 0.18),
-    0 2px 8px rgba(0,0,0,0.05),
-    inset 0 1px 0 rgba(255,255,255,0.7);
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 24px 60px rgba(15, 40, 40, 0.14), 0 2px 6px rgba(15, 40, 40, 0.06);
   font-family: var(--trendy-font);
   scrollbar-width: none;
 }
 .login-card::-webkit-scrollbar { display: none; }
 
+/* 白卡上只留一层几乎看不见的冷色晕，用来托住顶部 logo */
 .card-glow {
-  position: absolute; top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(129,199,132,0.16) 0%, transparent 50%),
-    radial-gradient(circle at 70% 80%, rgba(255,183,77,0.1) 0%, transparent 50%);
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(47, 111, 106, 0.07) 0%, transparent 70%);
   pointer-events: none;
-  animation: glowFloat 9s ease-in-out infinite;
-}
-@keyframes glowFloat {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(10px, -10px); }
 }
 
 .card-close {
@@ -416,39 +439,43 @@ async function handleRegister() {
   width: 30px; height: 30px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   border: none; cursor: pointer;
-  color: #6d8a70; background: rgba(255,255,255,0.6);
+  color: var(--ink-soft); background: var(--ink-pale);
   transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
-.card-close:hover { color: #2e7d32; background: #fff; transform: rotate(90deg); }
+.card-close:hover { color: var(--ink-deep); background: #e3eeed; transform: rotate(90deg); }
 
 .card-inner { position: relative; padding: 32px 30px 26px; z-index: 1; }
 
 .card-header { text-align: center; margin-bottom: 20px; }
 .card-logo {
-  width: 58px; height: 58px; margin: 0 auto 14px;
-  background: var(--nature-gradient);
-  border-radius: 19px;
+  width: 54px; height: 54px; margin: 0 auto 14px;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--indigo) 100%);
+  border-radius: 17px;
+  color: #fff;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 22px rgba(76,175,80,0.3);
+  box-shadow: 0 8px 20px rgba(47, 111, 106, 0.28);
 }
-.logo-icon { font-size: 28px; }
 
-.card-title { font-size: 23px; font-weight: 700; color: #2b5c31; margin: 0 0 5px; letter-spacing: 1px; }
-.card-subtitle { font-size: 13px; color: #6d8a70; margin: 0; }
+.card-title {
+  font-size: 25px; font-weight: 700; color: #1c3a3a; margin: 0 0 5px;
+  letter-spacing: 2px;
+  font-family: var(--calligraphy-font, var(--trendy-font));
+}
+.card-subtitle { font-size: 13px; color: var(--ink-soft); margin: 0; }
 
 /* ============ 分段控件 ============ */
 .seg {
   position: relative;
   display: grid; grid-template-columns: 1fr 1fr;
   padding: 4px; margin-bottom: 22px;
-  background: rgba(200, 230, 201, 0.42);
+  background: var(--ink-pale);
   border-radius: 14px;
 }
 .seg-thumb {
   position: absolute; top: 4px; left: 4px;
   width: calc(50% - 4px); height: calc(100% - 8px);
   background: #fff; border-radius: 11px;
-  box-shadow: 0 2px 8px rgba(46, 92, 49, 0.12);
+  box-shadow: 0 2px 8px rgba(15, 40, 40, 0.12);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .seg-thumb.right { transform: translateX(100%); }
@@ -457,40 +484,40 @@ async function handleRegister() {
   border: none; background: transparent; cursor: pointer;
   padding: 9px 0; font-family: inherit;
   font-size: 14px; font-weight: 600; letter-spacing: 1px;
-  color: #7d9880;
+  color: var(--ink-soft);
   transition: color 0.25s ease;
 }
-.seg-btn.on { color: var(--nature-green-dark); }
+.seg-btn.on { color: var(--ink-deep); }
 
 .card-form { display: grid; gap: 15px; }
 
 /* ============ 验证码按钮 ============ */
 .code-btn {
   flex-shrink: 0; border: none; outline: none;
-  background: rgba(76, 175, 80, 0.12);
-  color: var(--nature-green-dark);
+  background: var(--ink-pale);
+  color: var(--ink-deep);
   font-family: inherit; font-size: 12.5px; font-weight: 700;
   padding: 7px 11px; border-radius: 10px; cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
-.code-btn:hover:not(:disabled) { background: var(--nature-gradient); color: #fff; }
+.code-btn:hover:not(:disabled) { background: linear-gradient(135deg, var(--ink), var(--indigo)); color: #fff; }
 .code-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ============ 密码强度 ============ */
 .pw-meter { display: flex; align-items: center; gap: 5px; margin-top: -6px; padding: 0 2px; }
 .pw-bar {
   flex: 1; height: 4px; border-radius: 3px;
-  background: rgba(129, 199, 132, 0.22);
+  background: rgba(47, 111, 106, 0.14);
   transition: background 0.25s ease;
 }
-.pw-bar.on.weak { background: #e2a45c; }
-.pw-bar.on.mid { background: #8bc34a; }
-.pw-bar.on.good { background: #43a047; }
+.pw-bar.on.weak { background: #d9a05b; }
+.pw-bar.on.mid { background: #5f9b94; }
+.pw-bar.on.good { background: var(--ink-deep); }
 .pw-text { font-size: 11.5px; font-style: normal; margin-left: 4px; min-width: 26px; }
-.pw-text.weak { color: #c98a3a; }
-.pw-text.mid { color: #6f9b34; }
-.pw-text.good { color: var(--nature-green-dark); }
+.pw-text.weak { color: #c08540; }
+.pw-text.mid { color: #4d8681; }
+.pw-text.good { color: var(--ink-deep); }
 
 /* ============ 错误 / 提示 / 按钮 ============ */
 .form-error {
@@ -503,8 +530,8 @@ async function handleRegister() {
 .err-fade-enter-active, .err-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
 .err-fade-enter-from, .err-fade-leave-to { opacity: 0; transform: translateY(-4px); }
 
-.form-tip { margin: 2px 0 0; text-align: center; font-size: 12.5px; color: #7d9880; }
-.form-tip .link { color: var(--nature-green-dark); font-weight: 700; cursor: pointer; }
+.form-tip { margin: 2px 0 0; text-align: center; font-size: 12.5px; color: var(--ink-soft); }
+.form-tip .link { color: var(--ink-deep); font-weight: 700; cursor: pointer; }
 .form-tip .link:hover { text-decoration: underline; }
 
 .nature-btn {
@@ -516,14 +543,14 @@ async function handleRegister() {
 }
 .nature-btn-primary {
   margin-top: 3px;
-  background: linear-gradient(135deg, #43a047, #66bb6a);
+  background: linear-gradient(135deg, var(--ink-deep) 0%, var(--indigo) 100%);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(67, 160, 71, 0.28);
+  box-shadow: 0 6px 18px rgba(31, 79, 75, 0.26);
 }
-.nature-btn-primary:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 10px 24px rgba(67,160,71,0.34); filter: brightness(1.05); }
+.nature-btn-primary:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 10px 24px rgba(31, 79, 75, 0.32); filter: brightness(1.08); }
 .nature-btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.99); }
 .nature-btn-primary:disabled { opacity: 0.68; cursor: not-allowed; }
-.nature-btn:focus-visible { box-shadow: 0 0 0 4px rgba(102, 187, 106, 0.35); }
+.nature-btn:focus-visible { box-shadow: 0 0 0 4px rgba(47, 111, 106, 0.3); }
 
 .btn-loading { display: inline-flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 1px; }
 .spinner {
@@ -554,7 +581,7 @@ async function handleRegister() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card-glow { animation: none; }
+  .overlay-flow { animation: none; }
   .card-pop-enter-active, .card-pop-leave-active,
   .slide-fade-enter-active, .slide-fade-leave-active { transition: opacity 0.15s ease; }
   .card-pop-enter-from, .card-pop-leave-to,
