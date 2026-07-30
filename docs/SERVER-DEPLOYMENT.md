@@ -67,13 +67,30 @@
 ### 部署目录
 ```
 /opt/lune/                       # 项目部署根目录（owner: ubuntu）
-├── docker-compose.yml           # 主配置文件（从 docker-compose.prod.yml 复制）
+├── docker-compose.yml           # 主配置文件 ← 仓库 docker-compose.server.yml 的副本
+├── docker-compose.yml.bak-*     # 每次替换前自动留的备份
 ├── .env                         # 环境变量（chmod 600，含 DB/JWT/Redis 密码）
+├── .env.bak-*                   # 同上
+├── prune-orphan-resources.sh    # 素材库死指针体检/清理（见下文）
+├── data/geoip/
+│   └── GeoLite2-City.mmdb       # IP 归属地库（64MB，不入 Git，见 GEOIP-SETUP.md）
+├── deploy-tmp/                  # 上传中转：compose + migration-*.sql（镜像 tar 用完即删）
 └── (容器内自动创建的 volumes)
     ├── mysql_data               # MySQL 数据
     ├── redis_data               # Redis AOF 持久化
     └── upload_data              # 用户上传文件
 ```
+
+> **服务器上的 compose 不要手改。** 它曾经是一份手写文件、不在版本控制里，结果漂移出两个
+> 实际影响功能的差异：没挂 `./data/geoip`（后端启动即降级成「只记 IP 不记地区」，后台的
+> 地区分布和中国地图在生产是空的，而本地有挂载所以一切正常 —— 这种差异最难发现），以及
+> `STORAGE_TYPE / OSS_* / HSTS_ENABLED / ADMIN_DEFAULT_PASSWORD` 全都没透传进容器
+> （也就是说在 `.env` 里改这些开关曾经完全不生效）。现在它由仓库的
+> `docker-compose.server.yml` 生成，改配置请改仓库文件再 scp 覆盖。
+
+> **`deploy.sh` 在这台服务器上跑不了**：它按 `$PROJECT_DIR/lune-server/...` 找迁移 SQL，
+> 而服务器上没有源码目录（按规范不在服务器 git clone / docker build）。迁移请按下面
+> 「四、数据库迁移」的方式手动执行。
 
 ### 临时部署目录
 ```
@@ -92,22 +109,33 @@
 由于服务器只能访问国内网络，**采用本地构建镜像 + scp 上传**的方式：
 
 ```bash
-# 1. 本地构建（含前端 dist 内嵌到 nginx 镜像）
+# 1. 本地构建（前端 dist + /media 自托管资源都内嵌进 nginx 镜像）
 docker compose -f docker-compose.prod.yml --env-file .env.local build
 
-# 2. 导出镜像
-docker save lune-backend:latest lune-nginx:latest -o /tmp/lune-deploy/lune-images.tar
+# 2. 分别导出并压缩（gzip -1：CPU 换带宽，107M + 39M）
+docker save lune-backend:latest | gzip -1 > /tmp/lune-backend.tar.gz
+docker save lune-nginx:latest   | gzip -1 > /tmp/lune-nginx.tar.gz
 
-# 3. 上传到服务器
-scp /tmp/lune-deploy/* ubuntu@111.231.14.63:/tmp/lune-deploy/
+# 3. 上传（镜像 + compose + 迁移 SQL，实测 209MB / 20s）
+ssh ubuntu@111.231.14.63 'mkdir -p /opt/lune/deploy-tmp /opt/lune/data/geoip'
+scp /tmp/lune-backend.tar.gz /tmp/lune-nginx.tar.gz \
+    docker-compose.server.yml \
+    lune-server/lune-web/src/main/resources/sql/migration-*.sql \
+    ubuntu@111.231.14.63:/opt/lune/deploy-tmp/
 
 # 4. 服务器上加载 + 启动
 ssh ubuntu@111.231.14.63
-docker load -i /tmp/lune-deploy/lune-images.tar
-docker pull mysql:8.0 && docker pull redis:7-alpine  # 国内镜像加速
 cd /opt/lune
-docker compose up -d
+gunzip -c deploy-tmp/lune-backend.tar.gz | docker load
+gunzip -c deploy-tmp/lune-nginx.tar.gz   | docker load
+cp docker-compose.yml docker-compose.yml.bak-$(date +%Y%m%d-%H%M%S)   # 先备份
+cp deploy-tmp/docker-compose.server.yml docker-compose.yml
+docker compose --env-file .env config -q && docker compose up -d      # 先校验再起
+rm -f deploy-tmp/*.tar.gz && docker image prune -f                    # 清理，省磁盘
 ```
+
+> 镜像标签固定是 `:latest`，所以 `up -d` 靠的是 **image ID 变了** 才重建容器 —— 输出里
+> 应该看到 `Recreate` 而不是 `Running`。只 `restart` 是不会换镜像的。
 
 ---
 
@@ -119,9 +147,53 @@ docker compose up -d
 | **字符集** | utf8mb4 / utf8mb4_unicode_ci |
 | **表数量** | 18 张 |
 | **演示数据** | 5 文章 / 5 随笔 / 4 记录 / 12 弹幕 / 9 评论 / 4 日记 / 6 许愿 / 1 家页 / 8 标签 / 7 分类 |
-| **管理员账号** | `admin` / `admin123`（BCrypt 加密存储） |
+| **管理员账号** | `admin`（BCrypt 存储；**密码已不是 `admin123`**，见下） |
 
-**迁移方式**：本地 `mysqldump` → 清理警告行 → 服务器 `mysql < dump.sql` 一次性导入。
+> 首次初始化的默认密码是 `ADMIN_DEFAULT_PASSWORD`（缺省 `admin123`），但生产库当前的
+> hash 已经和 `admin123` 不匹配 —— 说明上线后被改过。忘记密码时不要反复试（连续 5 次
+> 失败会锁 15 分钟），直接改库：
+> ```bash
+> # 生成 BCrypt hash（本地跑，$2a$ 开头，10 轮）
+> htpasswd -bnBC 10 "" '新密码' | tr -d ':\n' | sed 's/^\$2y/\$2a/'
+> # 写回（在 /opt/lune 下）
+> set -a; . ./.env; set +a
+> docker exec -i lune-mysql mysql -uroot -p"$DB_ROOT_PASSWORD" lune \
+>   -e "UPDATE user SET password='<上一步的hash>' WHERE username='admin'"
+> ```
+
+**首次迁移**：本地 `mysqldump` → 清理警告行 → 服务器 `mysql < dump.sql` 一次性导入。
+
+**增量迁移**（服务器没有源码目录，`deploy.sh` 用不了，手动执行）：
+```bash
+# 本地：把新增的迁移脚本传上去
+scp lune-server/lune-web/src/main/resources/sql/migration-*.sql \
+    ubuntu@111.231.14.63:/opt/lune/deploy-tmp/
+
+# 服务器：逐个执行（全部幂等，重复跑是空操作）
+cd /opt/lune && set -a && . ./.env && set +a
+for f in deploy-tmp/migration-*.sql; do
+  echo "== $f"
+  docker exec -i lune-mysql mysql --default-character-set=utf8mb4 \
+      -uroot -p"$DB_ROOT_PASSWORD" lune < "$f"
+done
+```
+
+> **`--default-character-set=utf8mb4` 不能省**，否则中文字段读出来是 `???`。
+> 顺带一个排查陷阱：想确认库里有没有乱码时，`WHERE v LIKE '%Ã%'` 会命中一堆正常数据 ——
+> `utf8mb4_0900_ai_ci` 是**重音不敏感**排序规则，`Ã` 会匹配 `a/A`。要判断真乱码得加
+> `COLLATE utf8mb4_bin`。
+
+### 素材库死指针
+
+生产的 `resource` 表曾有 16 条记录、但 upload 卷里只剩 1 个文件 —— 后台「选择图片」弹窗
+里是一排裂图，`site_logo` 也 404（浏览器标签页图标空白）。这类问题**取决于具体机器上文件
+存不存在**（生产缺、本地有），所以不能写进会被自动执行的 `migration-*.sql`，用专门的脚本：
+
+```bash
+cd /opt/lune
+bash prune-orphan-resources.sh            # 只体检，不改
+bash prune-orphan-resources.sh --apply    # 确认后执行
+```
 
 ---
 

@@ -9,7 +9,7 @@ Lune is a full-stack personal blog and lifestyle web application. Fully containe
 - **Database**: MySQL 8.0 + Redis 7 (Docker containers)
 - **Persistence**: MyBatis-Plus 3.5.7 (logic delete on User/Article/Essay/Record/WorkExperience/Project/Wish)
 - **Security**: Spring Security + JWT (jjwt 0.12.6) + BCrypt
-- **Fonts**: Google Fonts CDN (Noto Sans SC, Noto Serif SC, Fredoka, Comfortaa, Quicksand, Ma Shan Zheng, Zhi Mang Xing, Long Cang, Caveat)
+- **Fonts**: 拉丁字体自托管 (`public/assets/fonts/*.woff2` — Fredoka, Comfortaa, Quicksand, Caveat)；中文书法体 (Ma Shan Zheng, Zhi Mang Xing, Long Cang) 首屏渲染后经国内镜像 `fonts.loli.net` 延迟注入 (`utils/loadFonts.js`)。**不直连 Google Fonts**（大陆不可达 + 渲染阻塞）
 - **DevOps**: Docker Compose, Nginx reverse proxy, multi-stage Dockerfiles
 
 **Feature Modules**:
@@ -42,7 +42,7 @@ lune-server/                   # Maven parent POM
         └── controller/        # Public + admin REST controllers
 
 lune-ui/                       # Vue 3 frontend
-├── index.html                 # Google Fonts CDN
+├── index.html                 # 自托管字体 + loli.net 镜像 preconnect（无 Google Fonts）
 ├── vite.config.js             # Port 5173, proxy /api & /upload → localhost:8081
 ├── package.json               # vue 3.4, pinia 2, element-plus 2, three, axios
 └── src/
@@ -68,8 +68,10 @@ docker-compose.dev.yml         # Development: nginx + backend + frontend(Vite HM
 docker-compose.prod.yml        # Production: nginx(含前端) + backend + mysql + redis
 .env.template                  # 生产环境变量模板（提交Git）
 .env.local.template            # 本地开发环境变量模板（提交Git）
-deploy.sh                      # 服务器一键部署脚本
+docker-compose.server.yml      # 生产服务器上 /opt/lune/docker-compose.yml 的来源（无 build:，只用 docker load 的镜像）
+deploy.sh                      # 服务器一键部署脚本（需源码目录，故不适用于本项目的生产机）
 backup.sh                      # 数据库自动备份
+prune-orphan-resources.sh      # 素材库死指针体检/清理（依赖机器上文件是否存在，故不放进 migration）
 Makefile                       # 便捷命令集合
 ```
 
@@ -215,7 +217,11 @@ Default admin: `admin` / `admin123` (可配置 `ADMIN_DEFAULT_PASSWORD`)
 - SQL schema: `lune-server/lune-web/src/main/resources/sql/lune.sql`
 - Docker init: `docker/mysql/init/01-init.sql`
 - `DataInitializer.java` auto-creates admin user + categories + site configs + resume/wish seed data (幂等，空表才插)
-- Incremental migration: `sql/migration-20260728.sql`（新增 work_experience/project/wish/wish_like 表 + essay.media），deploy.sh 自动执行 `migration-*.sql`
+- Incremental migrations (`sql/migration-*.sql`，全部幂等，deploy.sh 自动执行)：
+  - `migration-20260728.sql` 新增 work_experience/project/wish/wish_like 表 + essay.media
+  - `migration-20260730.sql` visit_log 地区字段 + 移动端背景 key
+  - `migration-20260730b-media.sql` record/work_experience/project 媒体字段
+  - `migration-20260730c-localize-demo-media.sql` 演示数据里的 unsplash 外链 → 自托管 `/media/bg/*.webp`
 - `user.email` has `UNIQUE` constraint
 - New tables: `work_experience` (工作时间线), `project` (项目), `wish` + `wish_like` (许愿点赞), `essay.media` (朋友圈媒体)
 - Backup: `make backup` or `bash backup.sh --cron` (daily at 3am)
