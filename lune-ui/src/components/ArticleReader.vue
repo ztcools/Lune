@@ -835,19 +835,20 @@ onUnmounted(() => {
     background-image:
       repeating-linear-gradient(transparent, transparent 33px, #e8e0d0 33px, #e8e0d0 34px);
   }
-  /* 展开评论时文章卡缩小，给评论面板留空间 */
-  .reader-layout.has-comments .paper-sheet { max-height: 32vh; }
+  /* 展开评论时文章卡大幅缩小，给评论面板留足够空间 */
+  .reader-layout.has-comments .paper-sheet { max-height: 20vh; }
   .paper-holes { left: 12px; gap: 28px; top: 24px; }
   .paper-hole { width: 8px; height: 8px; }
   .paper-title { font-size: 20px; }
   .paper-content { font-size: 16px; line-height: 34px; }
   .paper-content :deep(p) { margin-bottom: 34px; }
 
-  /* Comment panel → below */
+  /* Comment panel → below，占更多高度 */
+  .comment-panel-col { width: 100%; max-height: 62vh; }
   .comment-panel {
     width: 100%;
     border-radius: 0 0 18px 18px;
-    max-height: 40vh;
+    max-height: 58vh;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
     margin-top: 4px;
   }

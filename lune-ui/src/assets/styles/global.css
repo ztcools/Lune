@@ -109,6 +109,9 @@ button { font-family: inherit; }
 .el-dialog { z-index: 9998 !important; }
 .el-popper { z-index: 9998 !important; }
 
+/* ===== Element 图片预览器尺寸限制 ===== */
+.el-image-viewer__img { max-width: 78vw !important; max-height: 78vh !important; }
+
 /* ===== Element 圆角统一（柔和夸张） ===== */
 .el-button { border-radius: 20px !important; font-weight: 600; }
 .el-input__wrapper { border-radius: 16px !important; }

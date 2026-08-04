@@ -115,11 +115,6 @@
             </el-table-column>
             <el-table-column prop="ip" label="IP" width="130" />
             <el-table-column prop="location" label="位置" min-width="120" show-overflow-tooltip />
-            <el-table-column prop="path" label="路径" min-width="160" show-overflow-tooltip>
-              <template #default="{row}">
-                <span class="path-text">{{ row.path }}</span>
-              </template>
-            </el-table-column>
           </el-table>
         </div>
       </el-col>

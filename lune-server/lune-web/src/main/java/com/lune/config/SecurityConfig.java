@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/wishes/**").authenticated()
                 .requestMatchers("/upload/**").permitAll()
                 .requestMatchers("/api/actuator/health").permitAll()
+                .requestMatchers("/api/visit/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
