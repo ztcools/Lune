@@ -800,7 +800,11 @@ onUnmounted(() => {
     /* 展开评论时文章区缩小，让评论面板可见 */
     transition: max-height 0.3s ease;
   }
-  .reader-layout.has-comments .reader-card { flex-shrink: 1; }
+  .reader-layout.has-comments .reader-card {
+    flex: 0 0 auto;
+    max-height: 28vh;
+    overflow: hidden;
+  }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
@@ -841,15 +845,28 @@ onUnmounted(() => {
   .paper-content { font-size: 16px; line-height: 34px; }
   .paper-content :deep(p) { margin-bottom: 34px; }
 
-  /* Comment panel → below，占更多高度 */
-  .comment-panel-col { width: 100%; max-height: 62vh; }
+  /* Comment panel → below，flex撑满剩余空间 */
+  .comment-panel-col {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 40vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
   .comment-panel {
     width: 100%;
+    flex: 1 1 auto;
     border-radius: 0 0 18px 18px;
-    max-height: 58vh;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
     margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    min-height: 30vh;
   }
+  /* 评论列表撑满，输入框固定在底部 */
+  .comment-panel .comment-list { flex: 1 1 auto; overflow-y: auto; }
+  .comment-panel .comment-input-bar { flex-shrink: 0; }
   .comment-panel-enter-from,
   .comment-panel-leave-to { opacity: 0; transform: translateY(20px); }
 }
