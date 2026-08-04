@@ -791,7 +791,14 @@ onUnmounted(() => {
 @media screen and (max-width: 900px) {
   /* 底部留出 MobileTabBar 胶囊高度（54px + 底间距 10px + 呼吸位 14px） */
   .reader-overlay { padding: 8px 6px 86px; align-items: flex-start; }
-  .reader-layout { flex-direction: column; height: auto; max-height: 97vh; max-width: 100%; gap: 0; }
+  /* 固定布局高度：padding 上下 94px，扣掉后 flex 百分比才生效 */
+  .reader-layout {
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    max-width: 100%;
+    gap: 0;
+    display: flex;
+  }
   .reader-layout.has-comments { justify-content: flex-start; gap: 0; }
 
   .reader-card {
@@ -800,9 +807,10 @@ onUnmounted(() => {
     /* 展开评论时文章区缩小，让评论面板可见 */
     transition: max-height 0.3s ease;
   }
+  /* 未展开评论：文章卡撑满 */
+  .reader-layout:not(.has-comments) .reader-card { flex: 1 1 auto; }
   .reader-layout.has-comments .reader-card {
-    flex: 0 0 auto;
-    max-height: 28vh;
+    flex: 0 0 35%;
     overflow: hidden;
   }
 
@@ -832,39 +840,38 @@ onUnmounted(() => {
     padding: 32px 18px 24px 28px;
     border-radius: 18px;
     max-height: 65vh;
+    overflow-y: auto;
     border-left: 1.5px solid rgba(210,70,50,0.2);
     font-size: 16px;
     background-image:
       repeating-linear-gradient(transparent, transparent 33px, #e8e0d0 33px, #e8e0d0 34px);
   }
-  /* 展开评论时文章卡大幅缩小，给评论面板留足够空间 */
-  .reader-layout.has-comments .paper-sheet { max-height: 20vh; }
+  /* 展开评论：纸卡不再单独设 max-height，由父级 flex-basis 控制 */
+  .reader-layout.has-comments .paper-sheet { max-height: 100%; }
   .paper-holes { left: 12px; gap: 28px; top: 24px; }
   .paper-hole { width: 8px; height: 8px; }
   .paper-title { font-size: 20px; }
   .paper-content { font-size: 16px; line-height: 34px; }
   .paper-content :deep(p) { margin-bottom: 34px; }
 
-  /* Comment panel → below，flex撑满剩余空间 */
+  /* Comment panel：固定占比 58%，内部列表滚动，不随内容撑大 */
   .comment-panel-col {
     width: 100%;
-    flex: 1 1 auto;
-    min-height: 40vh;
+    flex: 0 0 58%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .comment-panel {
+    width: 100%;
+    height: 100%;
+    border-radius: 0 0 18px 18px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
-  .comment-panel {
-    width: 100%;
-    flex: 1 1 auto;
-    border-radius: 0 0 18px 18px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-    margin-top: 4px;
-    display: flex;
-    flex-direction: column;
-    min-height: 30vh;
-  }
-  /* 评论列表撑满，输入框固定在底部 */
   .comment-panel .comment-list { flex: 1 1 auto; overflow-y: auto; }
   .comment-panel .comment-input-bar { flex-shrink: 0; }
   .comment-panel-enter-from,
