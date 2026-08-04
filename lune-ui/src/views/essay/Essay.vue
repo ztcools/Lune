@@ -46,6 +46,9 @@
                   :src="m.url" fit="cover" class="mgrid-img"
                   :preview-src-list="essay.imageList"
                   :initial-index="essay.imageList.indexOf(m.url)"
+                  preview-teleported
+                  :z-index="3000"
+                  hide-on-click-modal
                   lazy
                 />
                 <video v-else :src="m.url" controls class="mgrid-video" preload="metadata"></video>

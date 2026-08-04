@@ -47,14 +47,15 @@
                 <div v-for="(m, mi) in item.mediaList.slice(0, 3)" :key="mi" class="fgrid-item">
                   <el-image
                     v-if="m.type === 'image'" :src="m.url" fit="cover" class="fgrid-img"
-                    :preview-src-list="item.imageList" :initial-index="item.imageList.indexOf(m.url)" lazy />
+                    :preview-src-list="item.imageList" :initial-index="item.imageList.indexOf(m.url)"
+                    preview-teleported :z-index="3000" hide-on-click-modal lazy />
                   <video v-else :src="m.url" controls class="fgrid-video" preload="metadata"></video>
                 </div>
                 <div v-if="item.mediaList.length > 3" class="fgrid-more">+{{ item.mediaList.length - 3 }}</div>
               </div>
             </template>
             <el-image v-else-if="item.cover" :src="item.cover" fit="cover" class="feed-cover"
-              :preview-src-list="[item.cover]" lazy />
+              :preview-src-list="[item.cover]" preview-teleported :z-index="3000" hide-on-click-modal lazy />
           </div>
 
           <!-- 文本 -->

@@ -93,9 +93,9 @@
     'STKaiti', cursive;
   --handwriting-font: 'Long Cang', 'Caveat', 'Ma Shan Zheng', 'KaiTi',
     'STKaiti', cursive;
-  /* 文章正文：拉丁走 Georgia，中文走系统宋体（思源宋体 → 苹方宋 → 宋体） */
-  --article-font: 'Georgia', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC',
-    'SimSun', serif;
+  /* 文章正文：现代无衬线，流行活泼（Fredoka 个性 + 系统黑体） */
+  --article-font: 'Fredoka', 'Quicksand', 'PingFang SC', 'Microsoft YaHei',
+    'Noto Sans SC', sans-serif;
 
   /* ===== 断点（统一） =====
      mobile < 768px | tablet 768-1024px | desktop > 1024px */

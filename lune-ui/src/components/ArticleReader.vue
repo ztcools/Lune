@@ -789,14 +789,18 @@ onUnmounted(() => {
    Mobile Responsive
    ============================ */
 @media screen and (max-width: 900px) {
-  .reader-overlay { padding: 8px 6px; align-items: flex-start; }
+  /* 底部留出 MobileTabBar 胶囊高度（54px + 底间距 10px + 呼吸位 14px） */
+  .reader-overlay { padding: 8px 6px 86px; align-items: flex-start; }
   .reader-layout { flex-direction: column; height: auto; max-height: 97vh; max-width: 100%; gap: 0; }
   .reader-layout.has-comments { justify-content: flex-start; gap: 0; }
 
   .reader-card {
     max-width: 100% !important;
     border-radius: 18px;
+    /* 展开评论时文章区缩小，让评论面板可见 */
+    transition: max-height 0.3s ease;
   }
+  .reader-layout.has-comments .reader-card { flex-shrink: 1; }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
@@ -806,9 +810,9 @@ onUnmounted(() => {
     justify-content: center;
     margin-top: 8px;
     gap: 24px;
-    padding: 4px 0;
+    padding: 4px 0 12px;
   }
-  .side-actions-below { gap: 24px; margin-top: 4px; }
+  .side-actions-below { gap: 24px; margin-top: 4px; padding-bottom: 8px; }
   .side-line { width: 1px; height: 16px; background: rgba(0,0,0,0.15); }
   .side-btn {
     color: #666;
@@ -831,6 +835,8 @@ onUnmounted(() => {
     background-image:
       repeating-linear-gradient(transparent, transparent 33px, #e8e0d0 33px, #e8e0d0 34px);
   }
+  /* 展开评论时文章卡缩小，给评论面板留空间 */
+  .reader-layout.has-comments .paper-sheet { max-height: 32vh; }
   .paper-holes { left: 12px; gap: 28px; top: 24px; }
   .paper-hole { width: 8px; height: 8px; }
   .paper-title { font-size: 20px; }
@@ -841,7 +847,7 @@ onUnmounted(() => {
   .comment-panel {
     width: 100%;
     border-radius: 0 0 18px 18px;
-    max-height: 45vh;
+    max-height: 40vh;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
     margin-top: 4px;
   }

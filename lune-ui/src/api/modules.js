@@ -143,3 +143,8 @@ export const visitStatsApi = {
   topIps: (limit = 20) => request.get('/admin/visit-stats/top-ips', { params: { limit } }),
   recent: (limit = 50) => request.get('/admin/visit-stats/recent', { params: { limit } })
 }
+
+// 访问记录（访客每日 ping 一次，后台统计访客数）
+export const visitApi = {
+  ping: () => request.post('/visit/ping')
+}

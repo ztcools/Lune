@@ -76,6 +76,26 @@ export const useAppStore = defineStore('app', {
       } catch (e) { console.error('Failed to fetch site config') }
     },
 
+    /** 每日首次访问 ping 一次，供后台统计独立访客 */
+    async pingVisit() {
+      try {
+        const today = new Date().toISOString().slice(0, 10)
+        const key = 'visit_ping_' + today
+        if (localStorage.getItem(key)) return
+        const { visitApi } = await import('../api/modules')
+        await visitApi.ping()
+        localStorage.setItem(key, '1')
+        // 清理过期 key（保留今天 + 昨天，防止时钟偏差导致漏记）
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i)
+          if (k && k.startsWith('visit_ping_') && k !== key && k !== 'visit_ping_' + yesterday) {
+            localStorage.removeItem(k)
+          }
+        }
+      } catch (e) { /* ping 失败静默，不影响用户体验 */ }
+    },
+
     /** 解析 JSON 数组字符串为数组 */
     parseJsonArray(val) {
       if (!val || val === '[]') return []

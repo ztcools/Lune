@@ -184,6 +184,7 @@ async function handleLogout() {
 onMounted(() => {
   appStore.initDarkMode()
   appStore.fetchConfig()
+  appStore.pingVisit()
   window.addEventListener('scroll', onScrollPage)
   document.addEventListener('click', handleClickOutside)
   // 移动端断点（768px）改由 store 的 matchMedia 统一维护，见 App.vue

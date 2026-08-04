@@ -16,12 +16,13 @@ import java.time.LocalTime;
 /**
  * 访问日志保留期清理。
  *
- * <p>visit_log 是只增不减的表：每个公共 API 请求都会写一行（同 IP 同路径 10 秒去重）。
- * 没有清理机制的话，磁盘和查询耗时都会无上限地涨下去。默认保留 90 天，
- * 足够支撑「最近 90 天趋势」这个最大查询窗口。
+ * <p>visit_log 每天每个独立 IP 写一行（前端每日 ping 一次，Redis 去重）。
+ * 默认保留 90 天，足够支撑「最近 90 天趋势」这个最大查询窗口。
  *
  * <p>分批删除而不是一条 DELETE 删完：一次性删掉几十万行会长时间持有行锁、
  * 并让 binlog 瞬间膨胀，在 2C4G 的机器上足以拖慢整站。
+ *
+ * <p>清理完成后执行 OPTIMIZE TABLE 回收磁盘空间。
  */
 @Component
 public class VisitLogCleanupTask {
@@ -57,6 +58,13 @@ public class VisitLogCleanupTask {
         }
         if (deletedTotal > 0) {
             log.info("[VisitLog] 清理 {} 之前的访问日志，共 {} 行", cutoff.toLocalDate(), deletedTotal);
+            // 大批量删除后回收表空间
+            try {
+                visitLogMapper.optimize();
+                log.info("[VisitLog] OPTIMIZE TABLE 完成");
+            } catch (Exception e) {
+                log.warn("[VisitLog] OPTIMIZE TABLE 失败：{}", e.getMessage());
+            }
         }
     }
 }
