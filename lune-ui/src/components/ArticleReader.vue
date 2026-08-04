@@ -820,8 +820,6 @@ onUnmounted(() => {
     border-color: rgba(0,0,0,0.08);
   }
   .side-btn:hover { background: rgba(0,0,0,0.08); }
-  .comment-panel-col { width: 100%; }
-
   /* Connector hidden on mobile */
   .comment-connector { display: none; }
 
