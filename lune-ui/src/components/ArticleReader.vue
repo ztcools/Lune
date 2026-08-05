@@ -428,11 +428,12 @@ onUnmounted(() => {
     flex-direction: column; height: calc(100vh - 100px);
     max-width: 100%; gap: 0; display: flex;
   }
-  .reader-layout.has-comments { justify-content: flex-start; gap: 0; }
+  /* 评论打开时布局高度收拢到文章卡大小，让底部弹出层紧接着 */
+  .reader-layout.has-comments { height: auto; flex: 0 0 auto; }
 
   .reader-card { max-width: 100% !important; border-radius: 18px; transition: flex 0.3s ease; }
   .reader-layout:not(.has-comments) .reader-card { flex: 1 1 auto; }
-  .reader-layout.has-comments .reader-card { flex: 0 0 35%; overflow: hidden; }
+  .reader-layout.has-comments .reader-card { flex: 0 0 auto; max-height: 28vh; overflow: hidden; }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
