@@ -76,15 +76,17 @@ export const useAppStore = defineStore('app', {
       } catch (e) { console.error('Failed to fetch site config') }
     },
 
-    /** 每日首次访问 ping 一次，供后台统计独立访客 */
+    /** 每日首次访问 ping 一次，供后台统计独立访客。
+     *  先写 localStorage 再发请求（乐观去重），避免并发调用时重复 ping。 */
     async pingVisit() {
       try {
         const today = new Date().toISOString().slice(0, 10)
         const key = 'visit_ping_' + today
         if (localStorage.getItem(key)) return
+        // 乐观标记：先把坑占住，防止同页面多次调用穿透到后端
+        localStorage.setItem(key, '1')
         const { visitApi } = await import('../api/modules')
         await visitApi.ping()
-        localStorage.setItem(key, '1')
         // 清理过期 key（保留今天 + 昨天，防止时钟偏差导致漏记）
         const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
         for (let i = 0; i < localStorage.length; i++) {

@@ -38,8 +38,8 @@
             </div>
           </div>
 
-          <!-- Side actions: beside card when no comments -->
-          <div v-if="!showComments" class="side-actions">
+          <!-- Side actions: beside card when no comments (desktop) or comments closed (mobile) -->
+          <div v-if="!showComments || !isMobile" class="side-actions">
             <div class="side-line" />
             <button class="side-btn" @click.stop="toggleLike" :class="{ liked: isLiked }">
               <svg viewBox="0 0 24 24" width="22" height="22" class="side-icon">
@@ -58,14 +58,14 @@
             <div class="side-line" />
           </div>
 
-          <!-- ============ Comments open: connector + panel ============ -->
-          <div v-if="showComments" class="comment-connector">
+          <!-- ============ Desktop: connector + inline comment panel ============ -->
+          <div v-if="showComments && !isMobile" class="comment-connector">
             <div class="connector-dot connector-dot-top" />
             <div class="connector-line" />
             <div class="connector-dot connector-dot-bot" />
           </div>
 
-          <div v-if="showComments" class="comment-panel-col">
+          <div v-if="showComments && !isMobile" class="comment-panel-col">
             <Transition name="comment-panel">
               <div v-if="showComments" class="comment-panel">
                 <div class="comment-panel-header">
@@ -145,9 +145,10 @@
               </div>
             </div>
           </Transition>
+          </div>
 
-          <!-- Side actions below comment panel -->
-          <div class="side-actions side-actions-below">
+          <!-- Side actions below comment panel (desktop) or below article (mobile, hidden when comments open) -->
+          <div v-if="!showComments || !isMobile" class="side-actions side-actions-below">
             <div class="side-line" />
             <button class="side-btn" @click.stop="toggleLike" :class="{ liked: isLiked }">
               <svg viewBox="0 0 24 24" width="22" height="22" class="side-icon">
@@ -167,9 +168,99 @@
           </div>
         </div>
       </div>
-    </div>
   </Transition>
   </Teleport>
+
+  <!-- ============ Mobile: TikTok-style bottom sheet comment panel ============ -->
+  <Teleport to="body">
+    <Transition name="comment-sheet">
+      <div
+        v-if="visible && showComments && isMobile"
+        class="comment-sheet-mask"
+        @click.self="showComments = false"
+      >
+        <div class="comment-sheet-panel">
+          <div class="comment-sheet-handle" />
+          <div class="comment-panel-header">
+            <h3>评论 ({{ commentTotal }})</h3>
+            <button class="comment-panel-close" @click="showComments = false">&times;</button>
+          </div>
+
+          <!-- Comment list -->
+          <div class="comment-list" ref="commentListRef">
+            <div v-if="commentLoading" class="myCenter" style="padding:40px">
+              <el-icon class="is-loading" :size="24"><Loading /></el-icon>
+            </div>
+
+            <div v-else-if="comments.length === 0" style="text-align:center;padding:40px;color:#999">
+              暂无评论，来说点什么吧
+            </div>
+
+            <div v-else v-for="item in comments" :key="item.id" class="comment-item">
+              <el-avatar :size="36" :src="item.avatar" class="comment-avatar" @click.stop="showMiniProfile(item, $event)">
+                {{ (item.nickname || item.username || '匿').charAt(0) }}
+              </el-avatar>
+              <div class="comment-body">
+                <div class="comment-top">
+                  <span class="comment-nick">{{ item.nickname || item.username || '匿名' }}</span>
+                  <span class="comment-time">{{ timeAgo(item.createTime) }}</span>
+                </div>
+                <div class="comment-text">{{ item.content }}</div>
+                <div class="comment-actions-row">
+                  <button class="c-action" @click="startReply(item)">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" fill="currentColor"/></svg>
+                    回复
+                  </button>
+                  <button class="c-action" @click="likeComment(item)">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/></svg>
+                    {{ item._likes || 0 }}
+                  </button>
+                </div>
+
+                <!-- Replies -->
+                <div v-if="item.children && item.children.length" class="replies-wrap">
+                  <div v-for="reply in item.children" :key="reply.id" class="reply-item">
+                    <span class="reply-nick">{{ reply.nickname || reply.username || '匿名' }}</span>
+                    <span v-if="reply.replyToUsername" class="reply-to"> 回复 @{{ reply.replyToUsername }}</span>
+                    <span class="reply-colon">：</span>
+                    <span class="reply-text">{{ reply.content }}</span>
+                    <span class="reply-time-inline">{{ timeAgo(reply.createTime) }}</span>
+                    <button class="reply-reply-btn" @click="startReply(item, reply)">回复</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comment input bar -->
+          <div class="comment-input-bar">
+            <el-input
+              v-model="commentText"
+              :placeholder="replyTarget ? '回复 @' + replyTarget.username + '...' : '说点什么...'"
+              size="large"
+              class="comment-input"
+              @keyup.enter="submitComment"
+            >
+              <template #suffix>
+                <el-button
+                  type="primary"
+                  :disabled="!commentText.trim()"
+                  :loading="submitting"
+                  @click="submitComment"
+                  size="small"
+                  round
+                >
+                  发送
+                </el-button>
+              </template>
+            </el-input>
+            <span v-if="replyTarget" class="reply-cancel" @click="cancelReply">取消回复</span>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
   <MiniProfileCard
     :userId="miniProfile.userId"
     :position="miniProfile.position"
@@ -179,7 +270,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, nextTick, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { Loading, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { requireLogin } from '../composables/useAuth'
@@ -218,6 +309,10 @@ const commentText = ref('')
 const submitting = ref(false)
 const replyTarget = ref(null)
 const commentListRef = ref(null)
+
+// 移动端检测（与 CSS 媒体查询 max-width:900px 保持一致）
+const isMobile = ref(false)
+let mobileMql = null
 
 const miniProfile = reactive({ show: false, userId: null, position: { x: 0, y: 0 } })
 function showMiniProfile(item, event) {
@@ -368,9 +463,18 @@ watch(() => props.articleId, async (id) => {
   }
 }, { immediate: true })
 
+onMounted(() => {
+  mobileMql = window.matchMedia('(max-width: 900px)')
+  isMobile.value = mobileMql.matches
+  mobileMql.addEventListener('change', (e) => { isMobile.value = e.matches })
+})
+
 onUnmounted(() => {
   document.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
+  if (mobileMql) {
+    mobileMql.removeEventListener('change', () => {})
+  }
 })
 </script>
 
@@ -799,24 +903,16 @@ onUnmounted(() => {
     gap: 0;
     display: flex;
   }
-  .reader-layout.has-comments { justify-content: flex-start; gap: 0; }
 
   .reader-card {
     max-width: 100% !important;
     border-radius: 18px;
-    /* 展开评论时文章区缩小，让评论面板可见 */
-    transition: max-height 0.3s ease;
-  }
-  /* 未展开评论：文章卡撑满 */
-  .reader-layout:not(.has-comments) .reader-card { flex: 1 1 auto; }
-  .reader-layout.has-comments .reader-card {
-    flex: 0 0 35%;
-    overflow: hidden;
+    flex: 1 1 auto;
   }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
-  /* Side actions → horizontal row */
+  /* Side actions → horizontal row; hidden via v-if when comments open on mobile */
   .side-actions {
     flex-direction: row;
     justify-content: center;
@@ -832,49 +928,101 @@ onUnmounted(() => {
     border-color: rgba(0,0,0,0.08);
   }
   .side-btn:hover { background: rgba(0,0,0,0.08); }
-  /* Connector hidden on mobile */
-  .comment-connector { display: none; }
 
   /* Paper */
   .paper-sheet {
     padding: 32px 18px 24px 28px;
     border-radius: 18px;
-    max-height: 65vh;
+    max-height: 100%;
     overflow-y: auto;
     border-left: 1.5px solid rgba(210,70,50,0.2);
     font-size: 16px;
     background-image:
       repeating-linear-gradient(transparent, transparent 33px, #e8e0d0 33px, #e8e0d0 34px);
   }
-  /* 展开评论：纸卡不再单独设 max-height，由父级 flex-basis 控制 */
-  .reader-layout.has-comments .paper-sheet { max-height: 100%; }
   .paper-holes { left: 12px; gap: 28px; top: 24px; }
   .paper-hole { width: 8px; height: 8px; }
   .paper-title { font-size: 20px; }
   .paper-content { font-size: 16px; line-height: 34px; }
   .paper-content :deep(p) { margin-bottom: 34px; }
 
-  /* Comment panel：固定占比 58%，内部列表滚动，不随内容撑大 */
-  .comment-panel-col {
-    width: 100%;
-    flex: 0 0 58%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    margin-top: 4px;
+  /* Desktop inline comment panel hidden on mobile */
+  .comment-panel-col { display: none; }
+  .comment-connector { display: none; }
+}
+
+/* ============================
+   Mobile Bottom Sheet (TikTok-style)
+   ============================ */
+.comment-sheet-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.comment-sheet-panel {
+  width: 100%;
+  max-height: 70vh;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.15);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.comment-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #d1d1d6;
+  border-radius: 2px;
+  margin: 10px auto 6px;
+  flex-shrink: 0;
+}
+.comment-sheet-panel .comment-panel-header {
+  padding: 12px 20px 14px;
+}
+.comment-sheet-panel .comment-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 16px;
+  max-height: calc(70vh - 140px); /* panel max-height minus header + input */
+}
+.comment-sheet-panel .comment-input-bar {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+/* Bottom sheet transitions */
+.comment-sheet-enter-active,
+.comment-sheet-leave-active {
+  transition: opacity 0.3s ease;
+}
+.comment-sheet-enter-active .comment-sheet-panel,
+.comment-sheet-leave-active .comment-sheet-panel {
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.comment-sheet-enter-from,
+.comment-sheet-leave-to {
+  opacity: 0;
+}
+.comment-sheet-enter-from .comment-sheet-panel,
+.comment-sheet-leave-to .comment-sheet-panel {
+  transform: translateY(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comment-sheet-enter-active,
+  .comment-sheet-leave-active,
+  .comment-sheet-enter-active .comment-sheet-panel,
+  .comment-sheet-leave-active .comment-sheet-panel {
+    transition: none;
   }
-  .comment-panel {
-    width: 100%;
-    height: 100%;
-    border-radius: 0 0 18px 18px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .comment-panel .comment-list { flex: 1 1 auto; overflow-y: auto; }
-  .comment-panel .comment-input-bar { flex-shrink: 0; }
-  .comment-panel-enter-from,
-  .comment-panel-leave-to { opacity: 0; transform: translateY(20px); }
 }
 </style>
