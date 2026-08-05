@@ -76,25 +76,18 @@ export const useAppStore = defineStore('app', {
       } catch (e) { console.error('Failed to fetch site config') }
     },
 
-    /** 每日首次访问 ping 一次，供后台统计独立访客。
-     *  先写 localStorage 再发请求（乐观去重），避免并发调用时重复 ping。 */
+    /** 按会话去重：距上次 ping 超过 30 分钟才发新的。
+     *  每次 ping 都刷新后端 Redis 的会话 TTL，活跃浏览保持同一个会话。 */
     async pingVisit() {
       try {
-        const today = new Date().toISOString().slice(0, 10)
-        const key = 'visit_ping_' + today
-        if (localStorage.getItem(key)) return
-        // 乐观标记：先把坑占住，防止同页面多次调用穿透到后端
-        localStorage.setItem(key, '1')
+        const COOLDOWN = 30 * 60 * 1000 // 30 分钟
+        const lastTs = localStorage.getItem('visit_last_ping')
+        const now = Date.now()
+        if (lastTs && now - parseInt(lastTs, 10) < COOLDOWN) return
+        // 乐观标记
+        localStorage.setItem('visit_last_ping', String(now))
         const { visitApi } = await import('../api/modules')
         await visitApi.ping()
-        // 清理过期 key（保留今天 + 昨天，防止时钟偏差导致漏记）
-        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i)
-          if (k && k.startsWith('visit_ping_') && k !== key && k !== 'visit_ping_' + yesterday) {
-            localStorage.removeItem(k)
-          }
-        }
       } catch (e) { /* ping 失败静默，不影响用户体验 */ }
     },
 

@@ -907,7 +907,12 @@ onUnmounted(() => {
   .reader-card {
     max-width: 100% !important;
     border-radius: 18px;
-    flex: 1 1 auto;
+    transition: flex 0.3s ease;
+  }
+  .reader-layout:not(.has-comments) .reader-card { flex: 1 1 auto; }
+  .reader-layout.has-comments .reader-card {
+    flex: 0 0 35%;
+    overflow: hidden;
   }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
@@ -933,7 +938,7 @@ onUnmounted(() => {
   .paper-sheet {
     padding: 32px 18px 24px 28px;
     border-radius: 18px;
-    max-height: 100%;
+    max-height: 65vh;
     overflow-y: auto;
     border-left: 1.5px solid rgba(210,70,50,0.2);
     font-size: 16px;
@@ -946,6 +951,9 @@ onUnmounted(() => {
   .paper-content { font-size: 16px; line-height: 34px; }
   .paper-content :deep(p) { margin-bottom: 34px; }
 
+  /* 展开评论：纸卡高度由父级 flex-basis 控制 */
+  .reader-layout.has-comments .paper-sheet { max-height: 100%; }
+
   /* Desktop inline comment panel hidden on mobile */
   .comment-panel-col { display: none; }
   .comment-connector { display: none; }
@@ -957,12 +965,10 @@ onUnmounted(() => {
 .comment-sheet-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
   z-index: 2000;
   display: flex;
   align-items: flex-end;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  /* 透明遮罩：文章区域不被模糊，仅提供点击关闭区域 */
 }
 .comment-sheet-panel {
   width: 100%;
