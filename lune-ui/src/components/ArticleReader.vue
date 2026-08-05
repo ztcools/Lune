@@ -423,17 +423,17 @@ onUnmounted(() => {
    Mobile Responsive (≤900px)
    ============================ */
 @media screen and (max-width: 900px) {
-  .reader-overlay { padding: 8px 6px 86px; align-items: flex-start; }
+  /* 盖过 TabBar（z-index:1000）让导航栏融入模糊背景 */
+  .reader-overlay { z-index: 1001; padding: 8px 6px 0; align-items: flex-start; }
   .reader-layout {
-    flex-direction: column; height: calc(100vh - 100px);
+    flex-direction: column; height: calc(100vh - 8px);
     max-width: 100%; gap: 0; display: flex;
   }
-  /* 评论打开时布局高度收拢到文章卡大小，让底部弹出层紧接着 */
-  .reader-layout.has-comments { height: auto; flex: 0 0 auto; }
+  .reader-layout.has-comments { height: auto; }
 
-  .reader-card { max-width: 100% !important; border-radius: 18px; transition: flex 0.3s ease; }
+  .reader-card { max-width: 100% !important; border-radius: 18px; }
   .reader-layout:not(.has-comments) .reader-card { flex: 1 1 auto; }
-  .reader-layout.has-comments .reader-card { flex: 0 0 auto; max-height: 28vh; overflow: hidden; }
+  .reader-layout.has-comments .reader-card { flex: 0 0 50%; overflow: hidden; }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
@@ -445,7 +445,6 @@ onUnmounted(() => {
   .side-actions-mobile :deep(.side-btn) {
     color: #666; background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08);
   }
-  .side-actions-mobile :deep(.side-btn:hover) { background: rgba(0,0,0,0.08); }
 
   .paper-sheet {
     padding: 32px 18px 24px 28px; border-radius: 18px;
@@ -473,7 +472,7 @@ onUnmounted(() => {
   display: flex; align-items: flex-end;
 }
 .comment-sheet-panel {
-  width: 100%; max-height: 70vh; background: #fff;
+  width: 100%; height: 50vh; background: #fff;
   border-radius: 20px 20px 0 0;
   display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
@@ -481,7 +480,7 @@ onUnmounted(() => {
 }
 .comment-sheet-handle { width: 40px; height: 4px; background: #d1d1d6; border-radius: 2px; margin: 10px auto 6px; flex-shrink: 0; }
 .comment-sheet-panel :deep(.comment-panel-header) { padding: 12px 20px 14px; }
-.comment-sheet-panel :deep(.comment-list) { flex: 1 1 auto; overflow-y: auto; padding: 0 16px; max-height: calc(70vh - 140px); }
+.comment-sheet-panel :deep(.comment-list) { flex: 1 1 auto; overflow-y: auto; padding: 0 16px; }
 .comment-sheet-panel :deep(.comment-input-bar) { flex-shrink: 0; padding: 10px 16px; }
 
 .comment-sheet-enter-active, .comment-sheet-leave-active { transition: opacity 0.3s ease; }
