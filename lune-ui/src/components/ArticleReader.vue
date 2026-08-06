@@ -65,25 +65,21 @@
             <ActionButtons :liked="isLiked" :like-count="likeCount" :comment-total="commentTotal"
               @toggle-like="toggleLike" @toggle-comments="toggleComments" />
           </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
 
-  <!-- ============ Mobile: TikTok-style bottom sheet ============ -->
-  <Teleport to="body">
-    <Transition name="comment-sheet">
-      <div v-if="visible && showComments && isMobile" class="comment-sheet-mask" @click.self="showComments = false">
-        <div class="comment-sheet-panel">
-          <div class="comment-sheet-handle" />
-          <CommentSection
-            :items="comments" :loading="commentLoading" :total="commentTotal"
-            :input-text="commentText" :reply-target="replyTarget" :submitting="submitting"
-            @close="showComments = false" @show-mini="showMiniProfile"
-            @start-reply="startReply" @like-comment="likeComment"
-            @submit="submitComment" @cancel-reply="cancelReply"
-            @update:input-text="commentText = $event"
-          />
+          <!-- ============ Mobile: inline comment panel (connected below article) ============ -->
+          <Transition name="comment-sheet">
+            <div v-if="showComments && isMobile" class="comment-panel-mobile">
+              <div class="comment-sheet-handle" />
+              <CommentSection
+                :items="comments" :loading="commentLoading" :total="commentTotal"
+                :input-text="commentText" :reply-target="replyTarget" :submitting="submitting"
+                @close="showComments = false" @show-mini="showMiniProfile"
+                @start-reply="startReply" @like-comment="likeComment"
+                @submit="submitComment" @cancel-reply="cancelReply"
+                @update:input-text="commentText = $event"
+              />
+            </div>
+          </Transition>
         </div>
       </div>
     </Transition>
@@ -423,42 +419,48 @@ onUnmounted(() => {
    Mobile Responsive (≤900px)
    ============================ */
 @media screen and (max-width: 900px) {
-  /* overlay 盖过 TabBar(z-index:1000) */
-  .reader-overlay { z-index: 1001; padding: 0; }
+  /* overlay 盖过 TabBar(z-index:1000)，取消居中让内容贴顶布局 */
+  .reader-overlay { z-index: 1001; padding: 0; align-items: flex-start; }
 
   .reader-layout {
-    flex-direction: column; max-width: 100%; gap: 0; display: flex;
+    flex-direction: column; max-width: 100%; gap: 0; display: flex; width: 100%;
   }
-  /* 仅文章：上下均等留白，margin:auto 居中 */
-  .reader-layout:not(.has-comments) { height: auto; max-height: 85vh; margin: auto; padding: 24px 12px; width: 100%; }
-  /* 评论展开：顶部对齐无内边距，下方留给弹出层 */
-  .reader-layout.has-comments { height: 40vh; margin: 0; }
 
-  .reader-card {
-    max-width: 100% !important; border-radius: 18px;
-    width: 100%;
+  /* ── 仅文章模式：卡片偏上居中，下方按钮 ── */
+  .reader-layout:not(.has-comments) {
+    height: auto; max-height: 92vh; padding: 10vh 12px 0; overflow: visible;
   }
-  .reader-layout:not(.has-comments) .reader-card { flex: 0 1 auto; max-height: 70vh; }
-  .reader-layout.has-comments .reader-card { flex: 1 1 auto; overflow: hidden; }
+  .reader-layout:not(.has-comments) .reader-card { flex: 0 1 auto; }
 
+  /* ── 评论展开模式：文章贴顶 40vh + 评论 60vh 紧接 ── */
+  .reader-layout.has-comments {
+    height: 100vh; padding: 0 12px; overflow: hidden;
+  }
+  .reader-layout.has-comments .reader-card {
+    flex: 0 0 auto; max-height: 40vh; overflow: hidden;
+  }
+
+  .reader-card { max-width: 100% !important; border-radius: 18px; width: 100%; }
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
+  /* ── 移动端按钮栏：文章下方由分隔短线连接 ── */
   .side-actions-mobile {
     display: flex; flex-direction: row; justify-content: center;
-    gap: 24px; padding: 8px 0 4px; flex-shrink: 0;
+    gap: 24px; padding: 12px 0 4px; flex-shrink: 0;
   }
   .side-actions-mobile :deep(.side-line) { width: 1px; height: 16px; background: rgba(0,0,0,0.15); }
   .side-actions-mobile :deep(.side-btn) {
     color: #666; background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08);
   }
 
+  /* ── 纸卡 ── */
   .paper-sheet {
     padding: 28px 16px 20px 24px; border-radius: 18px;
     overflow-y: auto;
     border-left: 1.5px solid rgba(210,70,50,0.2); font-size: 16px;
     background-image: repeating-linear-gradient(transparent, transparent 33px, #e8e0d0 33px, #e8e0d0 34px);
   }
-  .reader-layout:not(.has-comments) .paper-sheet { max-height: 58vh; }
+  .reader-layout:not(.has-comments) .paper-sheet { max-height: 62vh; }
   .reader-layout.has-comments .paper-sheet { max-height: 100%; }
   .paper-holes { left: 10px; gap: 28px; top: 22px; }
   .paper-hole { width: 8px; height: 8px; }
@@ -472,30 +474,26 @@ onUnmounted(() => {
 }
 
 /* ============================
-   Mobile Bottom Sheet
+   Mobile Inline Comment Panel
    ============================ */
-.comment-sheet-mask {
-  position: fixed; inset: 0; z-index: 2000;
-  display: flex; align-items: flex-end;
-}
-.comment-sheet-panel {
-  width: 100%; height: 60vh; background: #fff;
-  border-radius: 20px 20px 0 0;
+.comment-panel-mobile {
+  flex: 0 0 60vh; width: 100%;
+  background: #fff; border-radius: 20px 20px 0 0;
   display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+.comment-panel-mobile :deep(.comment-panel-header) { padding: 12px 20px 14px; }
+.comment-panel-mobile :deep(.comment-list) { flex: 1 1 auto; overflow-y: auto; padding: 0 16px; }
+.comment-panel-mobile :deep(.comment-input-bar) { flex-shrink: 0; padding: 10px 16px; }
 .comment-sheet-handle { width: 40px; height: 4px; background: #d1d1d6; border-radius: 2px; margin: 10px auto 6px; flex-shrink: 0; }
-.comment-sheet-panel :deep(.comment-panel-header) { padding: 12px 20px 14px; }
-.comment-sheet-panel :deep(.comment-list) { flex: 1 1 auto; overflow-y: auto; padding: 0 16px; }
-.comment-sheet-panel :deep(.comment-input-bar) { flex-shrink: 0; padding: 10px 16px; }
 
-.comment-sheet-enter-active, .comment-sheet-leave-active { transition: opacity 0.3s ease; }
-.comment-sheet-enter-active .comment-sheet-panel, .comment-sheet-leave-active .comment-sheet-panel { transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); }
-.comment-sheet-enter-from, .comment-sheet-leave-to { opacity: 0; }
-.comment-sheet-enter-from .comment-sheet-panel, .comment-sheet-leave-to .comment-sheet-panel { transform: translateY(100%); }
+/* Slide-up transition */
+.comment-sheet-enter-active { transition: all 0.35s cubic-bezier(0.32,0.72,0,1); }
+.comment-sheet-leave-active { transition: all 0.25s cubic-bezier(0.55,0.06,0.68,0.19); }
+.comment-sheet-enter-from { opacity: 0; transform: translateY(100%); }
+.comment-sheet-leave-to { opacity: 0; transform: translateY(100%); }
 @media (prefers-reduced-motion: reduce) {
-  .comment-sheet-enter-active, .comment-sheet-leave-active,
-  .comment-sheet-enter-active .comment-sheet-panel, .comment-sheet-leave-active .comment-sheet-panel { transition: none; }
+  .comment-sheet-enter-active, .comment-sheet-leave-active { transition: none; }
 }
 </style>
