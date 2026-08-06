@@ -68,6 +68,11 @@ app:
   # 访问日志保留天数（覆盖「最近 90 天趋势」的最大查询窗口），0 表示不清理
   visit-log:
     retention-days: ${VISIT_LOG_RETENTION_DAYS:90}
+  # AI Agent 配置
+  agent:
+    api-key: ${AGENT_API_KEY:}
+    base-url: ${AGENT_BASE_URL:https://aigw.phigent.cn}
+    model: ${AGENT_MODEL:deepseek/deepseek-v4-flash}
 
 # Actuator health check for Docker
 management:

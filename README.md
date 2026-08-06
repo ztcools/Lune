@@ -13,7 +13,7 @@
 | 🏠 前台体验 | 🛠 后台管理 |
 |---|---|
 | [http://111.231.14.63](http://111.231.14.63) | [http://111.231.14.63/admin](http://111.231.14.63/admin) |
-| 直接访问即可 | 账号：`admin` ／ 密码：`admin123` |
+| 直接访问即可 | 账号：`admin` ／ 密码：`123123` |
 
 **📱 建议同时用 PC 和手机访问体验** — 已做移动端全面适配（底部 TabBar 导航 / 触摸优化 / 响应式布局 / PWA 离线缓存）
 
@@ -181,6 +181,14 @@
 - 📝 **日志轮转** — 容器日志 10MB × 3-5 份自动清理
 - 🖼 **WebP 图源** — 背景图统一 WebP，移动端另发竖裁版（约横版 30% 体积）
 
+### 🤖 AI Agent（Luna）
+- 💬 **自然语言管理** — 微信风格对话，一句话发文章/查数据/改配置
+- 🛠 **22 个工具函数** — 覆盖文章/随笔/记录/树洞/许愿池/网站配置/简历全 CRUD
+- 👁 **预览再发布** — Agent 创建草稿 → 首页同款卡片预览 → 一键发布
+- 🧠 **短期记忆** — Redis 储存当天对话，每天 00:00 自动清除
+- ⚡ **SSE 流式** — 打字机效果实时回显，无页面刷新
+- 🔌 **独立服务** — lune-agent (Spring Boot :8082)，高内聚低耦合
+
 ### 🏗 架构设计
 - 🔄 **存储抽象** — `StorageService` 接口，本地 / OSS 一键切换
 - 🗄 **软删除** — User/Article/Essay/Record/WorkExperience/Project/Wish
@@ -200,6 +208,7 @@
 | **数据库** | MySQL 8 · Redis |
 | **PWA** | vite-plugin-pwa · Workbox · Service Worker |
 | **运维** | Docker · Docker Compose · Nginx · 国内镜像加速 |
+| **AI Agent** | DeepSeek v4 Flash · Function Calling · SSE Streaming · Redis 记忆 |
 
 ---
 
@@ -232,6 +241,15 @@ Lune/
 │   │   ├── views/                # 页面组件
 │   │   └── assets/               # 样式、字体
 │   └── public/assets/            # 静态资源
+├── lune-agent/                   # AI Agent 独立服务
+│   ├── src/main/java/com/lune/agent/
+│   │   ├── pipeline/             # 核心流水线 (Orchestrator → LLM → Tools)
+│   │   ├── memory/               # Redis 短期记忆（每日 TTL）
+│   │   ├── client/               # LuneApiClient (调用 lune-web REST)
+│   │   ├── llm/                  # DeepSeek API 客户端
+│   │   └── controller/           # SSE 流式端点
+│   ├── Dockerfile
+│   └── README.md                 # Agent 架构文档
 ├── docker/                       # Docker 配置
 │   ├── backend/Dockerfile        # 后端多阶段构建
 │   ├── frontend/Dockerfile.dev   # 前端开发镜像
@@ -471,6 +489,11 @@ make prod         # 重新构建并启动
 | `MAIL_PASSWORD` | 邮箱授权码 | ❌ |
 | `NGINX_PORT` | Nginx 对外端口 | ❌（默认 80） |
 | `ADMIN_DEFAULT_PASSWORD` | 默认管理员初始密码 | ❌（默认 admin123） |
+| `AGENT_API_KEY` | AI Agent API Key | ❌（不配则 Agent 不可用） |
+| `AGENT_BASE_URL` | LLM API 网关地址 | ❌（默认 aigw.phigent.cn） |
+| `AGENT_MODEL` | 模型名称 | ❌（默认 deepseek/deepseek-v4-flash） |
+
+> 📘 Agent 详细架构文档见 [lune-agent/README.md](lune-agent/README.md)
 
 ---
 

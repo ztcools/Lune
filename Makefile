@@ -141,3 +141,17 @@ shell-redis: ## 进入 Redis Shell
 prune: ## 清理 Docker 垃圾
 	docker system prune -af
 	@echo "✅ 已清理"
+
+# ========== AI Agent ==========
+
+agent-build: ## 构建 Agent JAR
+	cd lune-agent && mvn clean package -DskipTests -q
+	@echo "✅ lune-agent/target/lune-agent.jar"
+
+agent-logs: ## 查看 Agent 日志（宿主机运行模式）
+	@tail -f /tmp/lune-agent.log 2>/dev/null || echo "Agent 未在宿主机运行（或日志不在 /tmp/lune-agent.log）"
+
+agent-start: ## 启动 Agent（宿主机运行模式）
+	cd lune-agent && mvn -q package -DskipTests && \
+	nohup java -jar target/lune-agent.jar --spring.profiles.active=local > /tmp/lune-agent.log 2>&1 &
+	@sleep 3 && curl -s http://localhost:8082/api/actuator/health

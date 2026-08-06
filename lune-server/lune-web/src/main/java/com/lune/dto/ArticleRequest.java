@@ -12,5 +12,6 @@ public class ArticleRequest {
     private String summary;
     private String cover;
     private Long categoryId;
+    private Integer status;
     private List<Long> tagIds;
 }

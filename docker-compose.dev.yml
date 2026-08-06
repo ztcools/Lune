@@ -16,11 +16,42 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      agent:
+        condition: service_healthy
       frontend:
         condition: service_started
     networks:
       - lune-network
     restart: unless-stopped
+
+  # ========== AI Agent 服务 ==========
+  agent:
+    build:
+      context: ./lune-agent
+      dockerfile: Dockerfile
+    container_name: lune-agent-dev
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - LUNE_API_URL=http://backend:8081
+      - AGENT_API_KEY=${AGENT_API_KEY:-}
+      - TZ=Asia/Shanghai
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - lune-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # ========== Spring Boot 后端 ==========
   backend:
@@ -53,6 +84,7 @@ services:
       - UPLOAD_PATH=/app/upload
       - TZ=Asia/Shanghai
       - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-admin123}
+      - AGENT_API_KEY=${AGENT_API_KEY:-}
       # 本地固定走磁盘：OSS / HSTS 是生产开关，dev 不透传（保持 application.yml 默认）
       - STORAGE_TYPE=local
     depends_on:

@@ -1,0 +1,13 @@
+# Docker Compose 开发环境覆盖
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+
+app:
+  lune:
+    base-url: ${LUNE_API_URL:http://backend:8081}
+
+logging:
+  level:
+    com.lune.agent: DEBUG

@@ -39,6 +39,7 @@ const routes = [
       { path: 'diaries', name: 'AdminDiaries', component: () => import('../admin/DiaryManage.vue') },
       { path: 'resume', name: 'AdminResume', component: () => import('../admin/ResumeManage.vue') },
       { path: 'wishes', name: 'AdminWishes', component: () => import('../admin/WishManage.vue') },
+      { path: 'agent', name: 'AdminAgent', component: () => import('../admin/AgentChat.vue') },
       { path: 'settings', name: 'AdminSettings', component: () => import('../admin/Settings.vue') }
     ]
   },

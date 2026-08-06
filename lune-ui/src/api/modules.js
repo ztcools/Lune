@@ -148,3 +148,21 @@ export const visitStatsApi = {
 export const visitApi = {
   ping: () => request.post('/visit/ping')
 }
+
+// AI Agent
+export const agentApi = {
+  chatStream: (message, signal) => {
+    const token = localStorage.getItem('token')
+    return fetch('/api/admin/agent/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ message }),
+      signal
+    })
+  },
+  getConfig: () => request.get('/admin/agent/config'),
+  saveConfig: (data) => request.put('/admin/agent/config', data),
+  clearHistory: () => request.delete('/admin/agent/history'),
+  getHistory: () => request.get('/admin/agent/history'),
+  setContext: (enabled) => request.put('/admin/agent/context', { params: { enabled } })
+}

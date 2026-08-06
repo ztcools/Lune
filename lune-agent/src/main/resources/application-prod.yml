@@ -1,0 +1,18 @@
+# 生产环境覆盖
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+
+app:
+  lune:
+    base-url: ${LUNE_API_URL:http://backend:8081}
+
+logging:
+  level:
+    com.lune.agent: WARN
+
+management:
+  endpoint:
+    health:
+      show-details: when-authorized

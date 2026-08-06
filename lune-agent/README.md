@@ -1,0 +1,108 @@
+# Lune Agent — AI 博客管理助手
+
+独立 Spring Boot 微服务，通过 DeepSeek Function Calling 实现自然语言网站管理。
+
+## Architecture
+
+```
+HTTP POST /api/admin/agent/chat
+        │
+        ▼
+┌───────────────────┐
+│  AgentController  │  提取 JWT token, userId
+└───────┬───────────┘
+        │
+        ▼
+┌───────────────────┐
+│ AgentOrchestrator │  核心流水线
+│                   │
+│  Step 1: Memory   │──► ChatMemory.load(userId)
+│  Step 2: Context  │──► System Prompt + History + User Msg
+│  Step 3: LLM Call │──► DeepSeek /v1/chat/completions (with tools)
+│  Step 4: Parse    │──► tool_calls? → Step 5 : text? → Step 6
+│  Step 5: Execute  │──► ToolExecutor.execute() → LuneApiClient → lune-web
+│  Step 6: Response │──► SSE stream (tool_call/tool_result/text/done)
+│  Step 7: Save     │──► ChatMemory.save(userId)
+└───────────────────┘
+```
+
+## Memory Mechanism
+
+```
+Redis Keys:
+  agent:chat:{userId}:{yyyy-MM-dd}  → JSON array (max 100 messages)
+  agent:context:{userId}            → "true"/"false"
+
+Lifecycle:
+  - Every message pushed to array
+  - TTL = seconds until midnight (auto-clear at 00:00)
+  - Context toggle via frontend "记忆" button
+  - Manual clear via "清空" button
+```
+
+## Tools (22 Function Calls)
+
+| Category | Tools |
+|----------|-------|
+| 文章 | create_article, publish_article, update_article, delete_article, list_articles |
+| 随笔 | create_essay, delete_essay, list_essays |
+| 记录 | create_record, delete_record, list_records |
+| 树洞 | list_treeholes, delete_treehole |
+| 许愿池 | list_wishes, manage_wish |
+| 网站配置 | get_site_config, update_site_config |
+| 分类 | list_categories |
+| 简历 | create_work_experience, delete_work_experience, create_project, delete_project |
+| 统计 | get_dashboard_stats |
+
+All tools execute via `LuneApiClient` → HTTP calls to `lune-web` admin API.
+
+## Configuration
+
+### Profiles
+
+| Profile | Redis Host | Lune API | Log Level |
+|---------|-----------|----------|-----------|
+| `local` | localhost | http://localhost:8081 | DEBUG |
+| `dev` | redis (Docker) | http://backend:8081 | DEBUG |
+| `prod` | redis (Docker) | http://backend:8081 | WARN |
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENT_PORT` | 8082 | Server port |
+| `AGENT_API_KEY` | - | DeepSeek API key (required) |
+| `AGENT_BASE_URL` | https://aigw.phigent.cn | API gateway |
+| `AGENT_MODEL` | deepseek/deepseek-v4-flash | Model name |
+| `REDIS_HOST` | localhost | Redis host |
+| `LUNE_API_URL` | http://localhost:8081 | lune-web base URL |
+
+### Local Development
+
+```bash
+cp src/main/resources/application-local.yml.template \
+   src/main/resources/application-local.yml
+# Edit application-local.yml with your API key
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+## Build & Deploy
+
+```bash
+# Build JAR
+mvn clean package -DskipTests
+
+# Run as host process (Docker Hub unreachable)
+java -jar target/lune-agent.jar --spring.profiles.active=local
+
+# Docker (requires Docker Hub access)
+docker build -t lune-agent:latest .
+docker compose up -d agent
+```
+
+## Dependencies
+
+- Spring Boot 3.3.5 (Web, Data Redis, Actuator)
+- Hutool 5.8.29 (JSON, utilities)
+- Java 17+
+- Redis (for chat memory)

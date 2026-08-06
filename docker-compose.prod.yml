@@ -64,6 +64,7 @@ services:
       - TZ=Asia/Shanghai
       # admin 账号首次创建时的初始密码（DataInitializer 只在空表时用一次）
       - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-admin123}
+      - AGENT_API_KEY=${AGENT_API_KEY:-}
       # ===== ICP 备案 / CDN 上线后要用的开关 =====
       # 这几个 key 在 application.yml 里是读的，但此前没从 .env 透传进容器 ——
       # 也就是说在 /opt/lune/.env 里改 STORAGE_TYPE=oss 或 HSTS_ENABLED=true
@@ -105,6 +106,47 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  # ========== AI Agent 服务 ==========
+  agent:
+    image: lune-agent:latest
+    container_name: lune-agent
+    ports:
+      - "127.0.0.1:8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - LUNE_API_URL=http://backend:8081
+      - AGENT_API_KEY=${AGENT_API_KEY:-}
+      - AGENT_BASE_URL=${AGENT_BASE_URL:-https://aigw.phigent.cn}
+      - AGENT_MODEL=${AGENT_MODEL:-deepseek/deepseek-v4-flash}
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Xms128m -Xmx256m -XX:+UseG1GC
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - lune-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ========== MySQL 8.0 ==========
   mysql:

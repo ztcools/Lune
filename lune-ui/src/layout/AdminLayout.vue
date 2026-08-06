@@ -46,11 +46,13 @@
         <el-menu-item index="/admin/diaries"><el-icon><Notebook /></el-icon><span>日记管理</span></el-menu-item>
         <el-menu-item index="/admin/resume"><el-icon><Suitcase /></el-icon><span>简历管理</span></el-menu-item>
         <el-menu-item index="/admin/wishes"><el-icon><MagicStick /></el-icon><span>许愿池</span></el-menu-item>
+        <el-menu-item index="/admin/agent"><el-icon><ChatDotRound /></el-icon><span>AI 助手</span></el-menu-item>
       </el-menu>
     </div>
     <div class="content-box" :style="{ left: collapsed ? '44px' : '130px' }">
       <div class="admin-content"><router-view /></div>
     </div>
+    <AgentChat />
   </div>
 </template>
 
@@ -58,6 +60,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import AgentChat from '../admin/AgentChat.vue'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()

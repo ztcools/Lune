@@ -78,6 +78,9 @@ public class ArticleServiceImpl implements ArticleService {
         article.setSummary(request.getSummary());
         article.setCover(request.getCover());
         article.setCategoryId(request.getCategoryId());
+        if (request.getStatus() != null) {
+            article.setStatus(request.getStatus());
+        }
         articleMapper.updateById(article);
         return article;
     }
