@@ -16,12 +16,11 @@ services:
     container_name: lune-nginx
     ports:
       - "80:80"
-      # ICP 备案下来后放开（步骤见 docs/DEPLOYMENT.md 第四章）
-      # - "443:443"
+      - "443:443"
     volumes:
       - upload_data:/var/www/upload:ro
-      # - /etc/letsencrypt:/etc/nginx/ssl:ro
-      # - ./certbot-webroot:/var/www/certbot
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./certbot-webroot:/var/www/certbot
     depends_on:
       backend:
         condition: service_healthy
@@ -67,6 +66,7 @@ services:
       - UPLOAD_PATH=/app/upload
       - TZ=Asia/Shanghai
       - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-admin123}
+      - AGENT_API_KEY=${AGENT_API_KEY:-}
       # ICP / CDN 上线后要用的开关（application.yml 读的就是这些 key，
       # 之前没透传，等于在 .env 里改了也不生效）
       - STORAGE_TYPE=${STORAGE_TYPE:-local}
@@ -104,6 +104,47 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  # ========== AI Agent 服务 ==========
+  agent:
+    image: lune-agent:latest
+    container_name: lune-agent
+    ports:
+      - "127.0.0.1:8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - LUNE_API_URL=http://backend:8081
+      - AGENT_API_KEY=${AGENT_API_KEY:-}
+      - AGENT_BASE_URL=${AGENT_BASE_URL:-https://aigw.phigent.cn}
+      - AGENT_MODEL=${AGENT_MODEL:-deepseek/deepseek-v4-flash}
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Xms128m -Xmx256m -XX:+UseG1GC
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - lune-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ========== MySQL 8.0 ==========
   mysql:

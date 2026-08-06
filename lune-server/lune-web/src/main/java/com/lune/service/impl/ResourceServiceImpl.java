@@ -117,8 +117,8 @@ public class ResourceServiceImpl implements ResourceService {
     public void deleteResource(Long id) {
         Resource resource = resourceMapper.selectById(id);
         if (resource != null) {
-            // 仅删除本地存储的文件（远程 URL / OSS 由对应实现处理）
-            if ("local".equals(resource.getStoreType())) {
+            // 本地存储：从磁盘删除；OSS：通过 COS SDK 删除
+            if ("local".equals(resource.getStoreType()) || "oss".equals(resource.getStoreType())) {
                 try {
                     storageService.delete(resource.getPath());
                 } catch (IOException e) {
