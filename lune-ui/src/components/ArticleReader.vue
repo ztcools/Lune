@@ -477,7 +477,7 @@ onUnmounted(() => {
    Mobile Inline Comment Panel
    ============================ */
 .comment-panel-mobile {
-  flex: 0 0 60vh; width: 100%;
+  flex: 1 1 auto; width: 100%;
   background: #fff; border-radius: 20px 20px 0 0;
   display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
