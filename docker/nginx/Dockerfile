@@ -36,9 +36,9 @@ COPY docker/nginx/lune-common.conf /etc/nginx/lune-common.conf
 # 从构建阶段复制前端产物
 COPY --from=frontend-build /build/dist/ /usr/share/nginx/html/
 
-# 健康检查
+# 健康检查（用域名 Host 头避免被 IP 拒绝策略拦截）
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD curl -f http://localhost:80/ || exit 1
+    CMD curl -f -H "Host: ztcools.com" http://127.0.0.1/ || exit 1
 
 EXPOSE 80
 

@@ -8,14 +8,16 @@
 
 <div align="center">
 
-### ✨ [http://111.231.14.63](http://111.231.14.63) ✨
+### ✨ [https://ztcools.com](https://ztcools.com) ✨
 
 | 🏠 前台体验 | 🛠 后台管理 |
 |---|---|
-| [http://111.231.14.63](http://111.231.14.63) | [http://111.231.14.63/admin](http://111.231.14.63/admin) |
+| [https://ztcools.com](https://ztcools.com) | [https://ztcools.com/admin](https://ztcools.com/admin) |
 | 直接访问即可 | 账号：`admin` ／ 密码：`123123` |
 
 **📱 建议同时用 PC 和手机访问体验** — 已做移动端全面适配（底部 TabBar 导航 / 触摸优化 / 响应式布局 / PWA 离线缓存）
+
+> 🔒 全站 HTTPS（TrustAsia DV 证书）· 静态资源 CDN 加速（`res.ztcools.com`）· 腾讯云 COS 对象存储
 
 </div>
 
@@ -274,7 +276,7 @@ Lune/
 >
 > 🌐 **当前生产环境部署报告（含服务器架构图 / 资源限制 / Phase 2-5 增量路线图）见 [docs/SERVER-DEPLOYMENT.md](docs/SERVER-DEPLOYMENT.md)**
 >
-> 演示站点已部署在腾讯云 2C4G 5M 服务器（http://111.231.14.63），资源受限环境下的最佳实践参考。
+> 演示站点已部署在腾讯云 2C4G 5M 服务器（https://ztcools.com），资源受限环境下的最佳实践参考。
 
 ### 方式一：Docker 部署（推荐）
 
@@ -331,10 +333,11 @@ make restart
 
 #### 首次登录
 
-- 地址：`http://你的服务器IP`
-- 后台：`http://你的服务器IP/admin/login`
+- 地址：`https://你的域名`
+- 后台：`https://你的域名/admin/login`
 - 默认管理员：`admin` / `admin123`
 - ⚠️ **首次登录后请立即修改密码！**
+- 🔒 **HTTPS 证书**已内置支持（将证书放到 `ssl/` 目录，docker-compose 挂载即可）
 
 #### 配置 SSL / HTTPS（ICP 备案后）
 
