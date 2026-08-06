@@ -423,23 +423,26 @@ onUnmounted(() => {
    Mobile Responsive (≤900px)
    ============================ */
 @media screen and (max-width: 900px) {
-  /* 盖过 TabBar（z-index:1000）让导航栏融入模糊背景 */
-  .reader-overlay { z-index: 1001; padding: 8px 6px 0; align-items: flex-start; }
+  /* TabBar 融入模糊背景，上下均等留白让文章卡居中 */
+  .reader-overlay { z-index: 1001; padding: 16px 6px; }
+
   .reader-layout {
-    flex-direction: column; height: calc(100vh - 8px);
-    max-width: 100%; gap: 0; display: flex;
+    flex-direction: column; max-width: 100%; gap: 0; display: flex;
+    /* 未展开评论：自然高度，由 overlay 的 flexbox 居中 */
   }
-  .reader-layout.has-comments { height: auto; }
+  .reader-layout:not(.has-comments) { height: auto; margin: auto; }
+  /* 展开评论：文章卡固定上半屏（顶部对齐），底部弹出层从下半屏滑入 */
+  .reader-layout.has-comments { height: 45vh; margin: 0 auto auto; }
 
   .reader-card { max-width: 100% !important; border-radius: 18px; }
-  .reader-layout:not(.has-comments) .reader-card { flex: 1 1 auto; }
-  .reader-layout.has-comments .reader-card { flex: 0 0 50%; overflow: hidden; }
+  .reader-layout:not(.has-comments) .reader-card { flex: 0 1 auto; }
+  .reader-layout.has-comments .reader-card { flex: 1 1 auto; overflow: hidden; }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
   .side-actions-mobile {
     display: flex; flex-direction: row; justify-content: center;
-    gap: 24px; padding: 4px 0 12px;
+    gap: 24px; padding: 4px 0 12px; flex-shrink: 0;
   }
   .side-actions-mobile :deep(.side-line) { width: 1px; height: 16px; background: rgba(0,0,0,0.15); }
   .side-actions-mobile :deep(.side-btn) {
@@ -448,7 +451,7 @@ onUnmounted(() => {
 
   .paper-sheet {
     padding: 32px 18px 24px 28px; border-radius: 18px;
-    max-height: 65vh; overflow-y: auto;
+    max-height: 62vh; overflow-y: auto;
     border-left: 1.5px solid rgba(210,70,50,0.2); font-size: 16px;
     background-image: repeating-linear-gradient(transparent, transparent 33px, #e8e0d0 33px, #e8e0d0 34px);
   }
@@ -472,7 +475,7 @@ onUnmounted(() => {
   display: flex; align-items: flex-end;
 }
 .comment-sheet-panel {
-  width: 100%; height: 50vh; background: #fff;
+  width: 100%; height: 55vh; background: #fff;
   border-radius: 20px 20px 0 0;
   display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
