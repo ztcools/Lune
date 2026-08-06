@@ -423,26 +423,29 @@ onUnmounted(() => {
    Mobile Responsive (≤900px)
    ============================ */
 @media screen and (max-width: 900px) {
-  /* TabBar 融入模糊背景，上下均等留白让文章卡居中 */
-  .reader-overlay { z-index: 1001; padding: 16px 6px; }
+  /* overlay 盖过 TabBar(z-index:1000) */
+  .reader-overlay { z-index: 1001; padding: 0; }
 
   .reader-layout {
     flex-direction: column; max-width: 100%; gap: 0; display: flex;
-    /* 未展开评论：自然高度，由 overlay 的 flexbox 居中 */
   }
-  .reader-layout:not(.has-comments) { height: auto; margin: auto; }
-  /* 展开评论：文章卡固定上半屏（顶部对齐），底部弹出层从下半屏滑入 */
-  .reader-layout.has-comments { height: 45vh; margin: 0 auto auto; }
+  /* 仅文章：上下均等留白，margin:auto 居中 */
+  .reader-layout:not(.has-comments) { height: auto; max-height: 85vh; margin: auto; padding: 24px 12px; width: 100%; }
+  /* 评论展开：顶部对齐无内边距，下方留给弹出层 */
+  .reader-layout.has-comments { height: 40vh; margin: 0; }
 
-  .reader-card { max-width: 100% !important; border-radius: 18px; }
-  .reader-layout:not(.has-comments) .reader-card { flex: 0 1 auto; }
+  .reader-card {
+    max-width: 100% !important; border-radius: 18px;
+    width: 100%;
+  }
+  .reader-layout:not(.has-comments) .reader-card { flex: 0 1 auto; max-height: 70vh; }
   .reader-layout.has-comments .reader-card { flex: 1 1 auto; overflow: hidden; }
 
   .reader-close { top: -6px; right: -6px; width: 32px; height: 32px; font-size: 18px; }
 
   .side-actions-mobile {
     display: flex; flex-direction: row; justify-content: center;
-    gap: 24px; padding: 4px 0 12px; flex-shrink: 0;
+    gap: 24px; padding: 8px 0 4px; flex-shrink: 0;
   }
   .side-actions-mobile :deep(.side-line) { width: 1px; height: 16px; background: rgba(0,0,0,0.15); }
   .side-actions-mobile :deep(.side-btn) {
@@ -450,13 +453,14 @@ onUnmounted(() => {
   }
 
   .paper-sheet {
-    padding: 32px 18px 24px 28px; border-radius: 18px;
-    max-height: 62vh; overflow-y: auto;
+    padding: 28px 16px 20px 24px; border-radius: 18px;
+    overflow-y: auto;
     border-left: 1.5px solid rgba(210,70,50,0.2); font-size: 16px;
     background-image: repeating-linear-gradient(transparent, transparent 33px, #e8e0d0 33px, #e8e0d0 34px);
   }
+  .reader-layout:not(.has-comments) .paper-sheet { max-height: 58vh; }
   .reader-layout.has-comments .paper-sheet { max-height: 100%; }
-  .paper-holes { left: 12px; gap: 28px; top: 24px; }
+  .paper-holes { left: 10px; gap: 28px; top: 22px; }
   .paper-hole { width: 8px; height: 8px; }
   .paper-title { font-size: 20px; }
   .paper-content { font-size: 16px; line-height: 34px; }
@@ -475,7 +479,7 @@ onUnmounted(() => {
   display: flex; align-items: flex-end;
 }
 .comment-sheet-panel {
-  width: 100%; height: 55vh; background: #fff;
+  width: 100%; height: 60vh; background: #fff;
   border-radius: 20px 20px 0 0;
   display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
