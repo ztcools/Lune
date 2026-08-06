@@ -434,7 +434,7 @@ onUnmounted(() => {
 
   /* ── 评论展开模式：文章贴顶 40vh + 评论 60vh 紧接 ── */
   .reader-layout.has-comments {
-    height: 100vh; padding: 0 12px; overflow: hidden;
+    height: 100vh; max-height: 100vh; padding: 0 12px; overflow: hidden;
   }
   .reader-layout.has-comments .reader-card {
     flex: 0 0 auto; max-height: 40vh; overflow: hidden;
