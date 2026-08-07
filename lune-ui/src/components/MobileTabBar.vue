@@ -1,10 +1,13 @@
 <template>
-  <nav v-if="!isLanding" class="mobile-tabbar" :class="{ hidden: !visible }">
+  <nav v-if="!isLanding" class="mobile-tabbar" :class="{ hidden: !visible }" aria-label="主导航">
     <div
       v-for="tab in mainTabs"
       :key="tab.path"
       class="tabbar-item"
       :class="{ active: isActive(tab.path) }"
+      role="button"
+      :aria-label="'前往' + tab.label"
+      :aria-current="isActive(tab.path) ? 'page' : undefined"
       @click="goTab(tab.path)"
       @touchstart.passive="onTouchStart"
     >
@@ -17,6 +20,8 @@
     <div
       class="tabbar-item"
       :class="{ active: isUserActive }"
+      role="button"
+      aria-label="打开用户菜单"
       @click="showUserSheet = true"
       @touchstart.passive="onTouchStart"
     >
@@ -91,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import LoginCard from './LoginCard.vue'
@@ -173,7 +178,6 @@ function onTouchStart() {
   // iOS 触摸反馈
 }
 
-import { onMounted, onUnmounted } from 'vue'
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
 })

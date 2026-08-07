@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,11 +22,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final TokenBlacklist tokenBlacklist;
 
-    public JwtAuthFilter(JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate) {
+    public JwtAuthFilter(JwtTokenProvider jwtTokenProvider, TokenBlacklist tokenBlacklist) {
         this.jwtTokenProvider = jwtTokenProvider;
-        this.redisTemplate = redisTemplate;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     @Override
@@ -35,15 +34,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = extractToken(request);
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            String blacklisted = null;
-            try {
-                blacklisted = redisTemplate.opsForValue().get("token:blacklist:" + token);
-            } catch (Exception e) {
-                log.warn("Redis 不可用，跳过 token 黑名单检查: {}", e.getMessage());
-            }
-            if (blacklisted == null) {
+            // 检查黑名单（Redis 优先，Caffeine 本地降级兜底）
+            if (!tokenBlacklist.isBlacklisted(token)) {
                 var claims = jwtTokenProvider.parseToken(token);
                 String role = claims.get("role", String.class);
+                if (role == null) role = "USER";
                 var authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
                 var auth = new UsernamePasswordAuthenticationToken(claims, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(auth);

@@ -252,6 +252,8 @@ import { useUserStore } from '../../stores/user'
 import { articleApi, categoryApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
 import { useReducedMotion } from '../../composables/useReducedMotion'
+import { formatDate } from '../../utils/date'
+import { safeJsonParse } from '../../utils/format'
 // PixelSnow 依赖 three.js（约 500KB），按需异步加载：仅 PC 端渲染时才会下载
 const PixelSnow = defineAsyncComponent(() => import('../../components/PixelSnow/PixelSnow.vue'))
 import ArticleReader from '../../components/ArticleReader.vue'
@@ -347,14 +349,6 @@ function onArticleCommented() {
   upd(filteredArticles.value)
 }
 
-function safeJsonParse(str, fallback) {
-  if (!str) return fallback
-  try { return JSON.parse(str) } catch (e) { return fallback }
-}
-function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('zh-CN')
-}
 function startTypewriter() {
   const text = fullPrinterText.value
   let i = 0, forward = true, pauseCount = 0

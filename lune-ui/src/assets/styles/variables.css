@@ -104,7 +104,7 @@
 [data-theme='dark'] {
   --background: #1a2419;
   --fontColor: #e4efe4;
-  --toolbarBackground: rgba(26, 36, 25, 0.85);
+  --toolbarBackground: rgba(26, 36, 25, 0.88);
   --toolbarFont: #e4efe4;
   --articleFontColor: #d4e4d4;
   --articleGreyFontColor: #b0c4b0;
@@ -112,4 +112,24 @@
   --borderHoverColor: #4a7046;
   --commentContent: #2a3a2a;
   --favoriteBg: #1e2a1e;
+  --greyFont: #7a947a;
+  --maxGreyFont: #8a9e8a;
+  --white: #e8f0e8;
+  --whiteMask: rgba(0, 0, 0, 0.3);
+  --maxWhiteMask: rgba(0, 0, 0, 0.5);
+  --maxMaxWhiteMask: rgba(0, 0, 0, 0.7);
+  --miniWhiteMask: rgba(0, 0, 0, 0.15);
+  --translucent: rgba(0, 0, 0, 0.6);
+  --mask: rgba(0, 0, 0, 0.4);
+  --card-glass: rgba(30, 46, 30, 0.78);
+  --card-glass-dark: rgba(0, 0, 0, 0.4);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --card-shadow-hover: 0 18px 48px rgba(0, 0, 0, 0.4);
+  --card-border: 1px solid rgba(129, 199, 132, 0.15);
+  --input-bg: rgba(30, 46, 30, 0.7);
+  --input-focus-shadow: 0 0 0 4px rgba(129, 199, 132, 0.12);
+  --nature-green-pale: #1e3620;
+  --nature-green-dark: #81c784;
+  --miniMask: rgba(0, 0, 0, 0.25);
+  --maxMask: rgba(0, 0, 0, 0.8);
 }

@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
     private Long getCurrentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof Claims claims)) {
-            throw new BusinessException("未登录");
+            throw new BusinessException(401, "未登录");
         }
         return claims.get("userId", Long.class);
     }
@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
         var user = userMapper.selectById(userId);
         // 非站长一律按「不存在」处理，避免以是否报错来判定 id 是否被占用
         if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(404, "用户不存在");
         }
         user.setPassword(null);
         user.setRole(null);
@@ -67,7 +67,7 @@ public class UserServiceImpl implements UserService {
     public User getCurrentUser() {
         Long userId = getCurrentUserId();
         var user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
+        if (user == null) throw new BusinessException(404, "用户不存在");
         user.setPassword(null);
         return user;
     }
@@ -76,7 +76,7 @@ public class UserServiceImpl implements UserService {
     public User updateProfile(UpdateProfileRequest req) {
         Long userId = getCurrentUserId();
         var user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
+        if (user == null) throw new BusinessException(404, "用户不存在");
         if (req.getNickname() != null) user.setNickname(req.getNickname());
         if (req.getAvatar() != null) user.setAvatar(req.getAvatar());
         if (req.getGender() != null) user.setGender(req.getGender());
@@ -91,7 +91,7 @@ public class UserServiceImpl implements UserService {
     public void changePassword(ChangePasswordRequest req) {
         Long userId = getCurrentUserId();
         var user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
+        if (user == null) throw new BusinessException(404, "用户不存在");
         if (!passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
             throw new BusinessException("旧密码错误");
         }
@@ -103,7 +103,7 @@ public class UserServiceImpl implements UserService {
     public void sendDeleteCode() {
         Long userId = getCurrentUserId();
         var user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
+        if (user == null) throw new BusinessException(404, "用户不存在");
         if ("ADMIN".equals(user.getRole())) throw new BusinessException("管理员不能注销账号");
         emailService.sendVerificationCode(user.getEmail());
     }
@@ -112,7 +112,7 @@ public class UserServiceImpl implements UserService {
     public void deleteAccount(String code) {
         Long userId = getCurrentUserId();
         var user = userMapper.selectById(userId);
-        if (user == null) throw new BusinessException("用户不存在");
+        if (user == null) throw new BusinessException(404, "用户不存在");
         if ("ADMIN".equals(user.getRole())) throw new BusinessException("管理员不能注销账号");
         if (!emailService.verifyCode(user.getEmail(), code)) {
             throw new BusinessException("验证码错误或已过期");
@@ -133,7 +133,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUser(Long id, User user) {
         var exist = userMapper.selectById(id);
-        if (exist == null) throw new BusinessException("用户不存在");
+        if (exist == null) throw new BusinessException(404, "用户不存在");
         exist.setNickname(user.getNickname());
         exist.setEmail(user.getEmail());
         exist.setAvatar(user.getAvatar());
@@ -162,7 +162,7 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("角色只能是 ADMIN 或 USER");
         }
         var user = userMapper.selectById(id);
-        if (user == null) throw new BusinessException("用户不存在");
+        if (user == null) throw new BusinessException(404, "用户不存在");
 
         boolean wasAdmin = "ADMIN".equalsIgnoreCase(user.getRole());
         if (wasAdmin && "USER".equals(normalized)) {

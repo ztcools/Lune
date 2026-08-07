@@ -80,6 +80,7 @@ import { ref, onMounted } from 'vue'
 import { treeHoleApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
+import { formatDate } from '../../utils/date'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
 
@@ -189,15 +190,6 @@ async function handleDelete(id) {
     closeDanmakuCard()
     await fetchDanmaku()
   } catch (e) { /* cancelled */ }
-}
-
-function formatDate(d) {
-  if (!d) return ''
-  const date = new Date(d)
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
 }
 </script>
 

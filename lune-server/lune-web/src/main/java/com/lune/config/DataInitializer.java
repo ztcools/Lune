@@ -14,10 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -30,27 +32,35 @@ public class DataInitializer implements CommandLineRunner {
     private final WorkExperienceMapper workExperienceMapper;
     private final ProjectMapper projectMapper;
     private final PasswordEncoder passwordEncoder;
+    private final Environment environment; // 用于判断当前 profile
 
     @Value("${app.admin.default-password:admin123}")
     private String defaultAdminPassword;
 
     public DataInitializer(UserMapper userMapper, CategoryMapper categoryMapper,
                            SiteConfigMapper siteConfigMapper, WorkExperienceMapper workExperienceMapper,
-                           ProjectMapper projectMapper, PasswordEncoder passwordEncoder) {
+                           ProjectMapper projectMapper, PasswordEncoder passwordEncoder,
+                           Environment environment) {
         this.userMapper = userMapper;
         this.categoryMapper = categoryMapper;
         this.siteConfigMapper = siteConfigMapper;
         this.workExperienceMapper = workExperienceMapper;
         this.projectMapper = projectMapper;
         this.passwordEncoder = passwordEncoder;
+        this.environment = environment;
     }
 
     @Override
     public void run(String... args) {
+        // 生产环境密码未通过环境变量设置时告警
+        if (defaultAdminPassword == null || defaultAdminPassword.isBlank()) {
+            log.warn("ADMIN_DEFAULT_PASSWORD 未设置，将无法创建默认管理员——请通过环境变量设置");
+        }
         if (userMapper.selectCount(null) == 0) {
             var admin = new User();
             admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode(defaultAdminPassword));
+            admin.setPassword(passwordEncoder.encode(
+                defaultAdminPassword != null && !defaultAdminPassword.isBlank() ? defaultAdminPassword : "admin123"));
             admin.setNickname("Lune");
             admin.setRole("ADMIN");
             admin.setStatus(1);
@@ -107,7 +117,10 @@ public class DataInitializer implements CommandLineRunner {
             seedConfig(c[0], c[1], c[2], c[3]);
         }
         seedMobileBgConfigs(configs);
-        seedResume();
+        // 演示数据（工作经历、项目）仅开发环境填充，避免污染生产数据库
+        if (isDevProfile()) {
+            seedResume();
+        }
     }
 
     /**
@@ -125,6 +138,12 @@ public class DataInitializer implements CommandLineRunner {
             if (!c[0].endsWith("_bg")) continue;
             seedConfig(c[0] + "_mobile", "[]", c[2], c[3].replace("背景图", "背景图（移动端竖屏）"));
         }
+    }
+
+    /** 演示数据仅在 dev 环境下执行 */
+    private boolean isDevProfile() {
+        return environment != null
+                && Arrays.asList(environment.getActiveProfiles()).contains("dev");
     }
 
     /** 幂等插入：仅当该 key 不存在时写入，不覆盖站长改过的值 */

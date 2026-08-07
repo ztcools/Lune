@@ -1,9 +1,12 @@
 package com.lune.agent.controller;
 
+import com.lune.agent.common.AgentException;
 import com.lune.agent.config.AgentConfig;
 import com.lune.agent.dto.ChatRequest;
 import com.lune.agent.memory.ChatMemory;
 import com.lune.agent.memory.UserPreference;
+import io.jsonwebtoken.Claims;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.lune.agent.pipeline.AgentOrchestrator;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -28,27 +31,35 @@ public class AgentController {
         this.preferences = preferences;
     }
 
-    private Long resolveUserId(@RequestHeader(value = "X-User-Id", required = false) String uid) {
-        if (uid != null) try { return Long.parseLong(uid); } catch (NumberFormatException e) { /* fall through */ }
-        return 1L; // single-admin default
+    /**
+     * 从 JWT token（已由 JwtAuthFilter 注入 SecurityContext）提取 userId。
+     * 不再依赖请求头或硬编码 fallback。
+     */
+    private Long resolveUserId() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Claims claims) {
+            Long userId = claims.get("userId", Long.class);
+            if (userId != null) return userId;
+        }
+        throw new AgentException("无法识别用户身份，请重新登录");
     }
 
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chat(@RequestBody ChatRequest req,
-                           @RequestHeader("Authorization") String auth,
-                           @RequestHeader(value = "X-User-Id", required = false) String uid) {
-        return orchestrator.run(resolveUserId(uid), req.getMessage(), extractToken(auth));
+                           @RequestHeader("Authorization") String auth) {
+        return orchestrator.run(resolveUserId(), req.getMessage(), extractToken(auth));
     }
 
     @GetMapping("/config")
     public Map<String, Object> getConfig() {
         var k = config.getApiKey();
-        var masked = (k != null && k.length() > 8) ? k.substring(0, 4) + "****" + k.substring(k.length() - 4) : k;
+        // 仅暴露后 4 位，前缀替换为固定值，防止密钥猜测
+        var masked = (k != null && k.length() > 4) ? "sk-****" + k.substring(k.length() - 4) : (k != null ? "****" : "");
         return Map.of("code", 200, "data", Map.of(
                 "provider", config.getProvider(),
                 "baseUrl", config.getBaseUrl(),
                 "model", config.getModel(),
-                "apiKey", masked != null ? masked : ""
+                "apiKey", masked
         ));
     }
 
@@ -61,14 +72,19 @@ public class AgentController {
     }
 
     @DeleteMapping("/history")
-    public Map<String, Object> clearHistory() {
-        memory.clear(1L);
+    public Map<String, Object> clearHistory(@RequestParam(defaultValue = "default") String sessionId) {
+        memory.clear(1L, sessionId);
         return Map.of("code", 200, "message", "success");
     }
 
     @GetMapping("/history")
-    public Map<String, Object> getHistory() {
-        return Map.of("code", 200, "data", memory.load(1L));
+    public Map<String, Object> getHistory(@RequestParam(defaultValue = "default") String sessionId) {
+        return Map.of("code", 200, "data", memory.load(1L, sessionId));
+    }
+
+    @GetMapping("/sessions")
+    public Map<String, Object> listSessions() {
+        return Map.of("code", 200, "data", memory.listSessions(1L));
     }
 
     @PutMapping("/context")
@@ -78,15 +94,14 @@ public class AgentController {
     }
 
     @GetMapping("/preferences")
-    public Map<String, Object> getPreferences(@RequestHeader(value = "X-User-Id", required = false) String uid) {
-        var prefs = preferences.getAll(resolveUserId(uid));
+    public Map<String, Object> getPreferences() {
+        var prefs = preferences.getAll(resolveUserId());
         return Map.of("code", 200, "data", prefs);
     }
 
     @PutMapping("/preferences")
-    public Map<String, Object> savePreferences(@RequestBody Map<String, String> body,
-                                                @RequestHeader(value = "X-User-Id", required = false) String uid) {
-        preferences.setAll(resolveUserId(uid), body);
+    public Map<String, Object> savePreferences(@RequestBody Map<String, String> body) {
+        preferences.setAll(resolveUserId(), body);
         return Map.of("code", 200, "message", "success");
     }
 

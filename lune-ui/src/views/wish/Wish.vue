@@ -106,6 +106,7 @@ import { wishApi, commentApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
 import { requireLogin } from '../../composables/useAuth'
+import { formatRelative } from '../../utils/date'
 import { ElMessage } from 'element-plus'
 import PageBg from '../../components/PageBg.vue'
 
@@ -194,17 +195,6 @@ async function submitComment(w) {
     commentText.value = ''
     fetchComments(w.id)
   } catch (e) { ElMessage.error('评论失败') }
-}
-
-function formatRelative(d) {
-  if (!d) return ''
-  const diff = Date.now() - new Date(d).getTime()
-  const s = Math.floor(diff / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), days = Math.floor(h / 24)
-  if (s < 60) return '刚刚'
-  if (m < 60) return `${m}分钟前`
-  if (h < 24) return `${h}小时前`
-  if (days < 30) return `${days}天前`
-  return `${Math.floor(days / 30)}个月前`
 }
 </script>
 

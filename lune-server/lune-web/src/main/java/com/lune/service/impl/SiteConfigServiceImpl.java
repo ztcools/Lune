@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lune.entity.SiteConfig;
 import com.lune.mapper.SiteConfigMapper;
 import com.lune.service.SiteConfigService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -20,6 +22,7 @@ public class SiteConfigServiceImpl implements SiteConfigService {
     }
 
     @Override
+    @Cacheable(value = "siteConfig", key = "'public'")
     public Map<String, String> getPublicConfigs() {
         var configs = siteConfigMapper.selectList(
             new LambdaQueryWrapper<SiteConfig>().eq(SiteConfig::getConfigType, "public")
@@ -37,8 +40,9 @@ public class SiteConfigServiceImpl implements SiteConfigService {
     }
 
     @Override
+    @CacheEvict(value = "siteConfig", key = "'public'")
     public SiteConfig saveOrUpdate(SiteConfig config) {
-        var exist = siteConfigMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SiteConfig>()
+        var exist = siteConfigMapper.selectOne(new LambdaQueryWrapper<SiteConfig>()
                 .eq(SiteConfig::getConfigKey, config.getConfigKey()));
         if (exist != null) {
             exist.setConfigValue(config.getConfigValue());
@@ -51,6 +55,7 @@ public class SiteConfigServiceImpl implements SiteConfigService {
     }
 
     @Override
+    @CacheEvict(value = "siteConfig", key = "'public'")
     public void deleteConfig(Long id) {
         siteConfigMapper.deleteById(id);
     }

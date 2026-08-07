@@ -35,7 +35,7 @@ public class EssayServiceImpl implements EssayService {
     @Override
     public Essay getEssayById(Long id) {
         var essay = essayMapper.selectById(id);
-        if (essay == null) throw new BusinessException("随笔不存在");
+        if (essay == null) throw new BusinessException(404, "随笔不存在");
         userInfoFiller.fillOne(essay);
         return essay;
     }
@@ -52,7 +52,7 @@ public class EssayServiceImpl implements EssayService {
     @Override
     public Essay updateEssay(Long id, Essay essay) {
         var exist = essayMapper.selectById(id);
-        if (exist == null) throw new BusinessException("随笔不存在");
+        if (exist == null) throw new BusinessException(404, "随笔不存在");
         exist.setTitle(essay.getTitle());
         exist.setContent(essay.getContent());
         exist.setCover(essay.getCover());

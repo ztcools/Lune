@@ -103,7 +103,7 @@ public class WishServiceImpl implements WishService {
     @Override
     public Wish update(Long id, Wish wish) {
         var exist = wishMapper.selectById(id);
-        if (exist == null) throw new BusinessException("心愿不存在");
+        if (exist == null) throw new BusinessException(404, "心愿不存在");
         if (wish.getTitle() != null) exist.setTitle(wish.getTitle());
         if (wish.getContent() != null) exist.setContent(wish.getContent());
         if (wish.getStatus() != null) exist.setStatus(wish.getStatus());
@@ -120,9 +120,9 @@ public class WishServiceImpl implements WishService {
     @Override
     @Transactional
     public long toggleLike(Long wishId, Long userId) {
-        if (userId == null) throw new BusinessException("请先登录");
+        if (userId == null) throw new BusinessException(401, "请先登录");
         var wish = wishMapper.selectById(wishId);
-        if (wish == null) throw new BusinessException("心愿不存在");
+        if (wish == null) throw new BusinessException(404, "心愿不存在");
         var existLike = wishLikeMapper.selectOne(new LambdaQueryWrapper<WishLike>()
                 .eq(WishLike::getWishId, wishId).eq(WishLike::getUserId, userId));
         if (existLike != null) {

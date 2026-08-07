@@ -143,6 +143,8 @@ import { usePageBackground } from '../../composables/usePageBackground'
 import { useUserStore } from '../../stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
+import { formatRelative } from '../../utils/date'
+import { parseMedia } from '../../utils/media'
 import MiniProfileCard from '../../components/MiniProfileCard.vue'
 import MediaEditor from '../../admin/MediaEditor.vue'
 import LuneImage from '../../components/LuneImage.vue'
@@ -177,17 +179,9 @@ function showMiniProfile(c, event) {
 
 onMounted(() => fetchEssays())
 
-function parseMedia(json) {
-  if (!json) return []
-  try {
-    let a = JSON.parse(json)
-    if (!Array.isArray(a)) return []
-    return a.map(m => {
-      if (typeof m === 'string') return { type: 'image', url: m }
-      if (m && m.url) return { type: m.type || 'image', url: m.url }
-      return null
-    }).filter(Boolean)
-  } catch { return [] }
+function processContent(text) {
+  if (!text) return ''
+  return text.replace(/\n{2,}/g, '<div style="height:10px"></div>').replace(/\n/g, '<br/>')
 }
 
 async function fetchEssays(reset = false) {
@@ -288,17 +282,6 @@ async function handleDelete(id) {
     await essayApi.delete(id)
     fetchEssays(true)
   } catch (e) { /* cancelled */ }
-}
-function formatRelative(d) {
-  if (!d) return ''
-  const diff = Date.now() - new Date(d).getTime()
-  const s = Math.floor(diff / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), days = Math.floor(h / 24)
-  if (s < 60) return '刚刚'
-  if (m < 60) return `${m}分钟前`
-  if (h < 24) return `${h}小时前`
-  if (days < 30) return `${days}天前`
-  if (days < 365) return `${Math.floor(days / 30)}个月前`
-  return `${Math.floor(days / 365)}年前`
 }
 </script>
 

@@ -5,19 +5,17 @@ import com.lune.common.BusinessException;
 import com.lune.common.PageResult;
 import com.lune.entity.Resource;
 import com.lune.mapper.ResourceMapper;
+import com.lune.security.SecurityUtils;
 import com.lune.service.ResourceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.UUID;
 
 @Service
@@ -34,7 +32,8 @@ public class ResourceServiceImpl implements ResourceService {
         this.storageService = storageService;
     }
 
-    private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of("jpg","jpeg","png","gif","svg","webp","bmp","ico","mp4","webm","mp3","wav","pdf","zip");
+    private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of(
+            "jpg","jpeg","png","gif","svg","webp","bmp","ico","mp4","webm","mp3","wav","pdf","zip");
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
     @Override
@@ -59,6 +58,7 @@ public class ResourceServiceImpl implements ResourceService {
             resource.setMimeType(file.getContentType());
             resource.setType(file.getContentType() != null && file.getContentType().startsWith("image/") ? "image" : "file");
             resource.setStoreType(storageService.storeType());
+            resource.setUserId(SecurityUtils.getCurrentUserId());
             resourceMapper.insert(resource);
             return resource;
         } catch (IOException e) {
@@ -72,34 +72,13 @@ public class ResourceServiceImpl implements ResourceService {
         return i >= 0 ? filename.substring(i + 1) : "bin";
     }
 
+    /**
+     * 引用外部 URL 资源（不再直接存储外部 URL）。
+     * 委托 {@link #uploadFromUrl(String)} 下载到本地/COS 统一管理。
+     */
     @Override
     public Resource importFromUrl(String url) {
-        String filename = url.substring(url.lastIndexOf('/') + 1);
-        int qi = filename.indexOf('?');
-        if (qi > 0) filename = filename.substring(0, qi);
-        if (filename.isEmpty()) filename = "imported_" + System.currentTimeMillis();
-
-        String ext = getExtension(filename);
-        if (ext.equals("bin") || ext.length() > 5) {
-            String lower = url.toLowerCase();
-            if (lower.contains(".jpg") || lower.contains(".jpeg")) ext = "jpg";
-            else if (lower.contains(".png")) ext = "png";
-            else if (lower.contains(".gif")) ext = "gif";
-            else if (lower.contains(".svg")) ext = "svg";
-            else if (lower.contains(".webp")) ext = "webp";
-            else ext = "jpg";
-        }
-
-        String storedPath = url;
-        Resource resource = new Resource();
-        resource.setFilename(filename);
-        resource.setPath(storedPath);
-        resource.setSize(0L);
-        resource.setMimeType("image/" + ext);
-        resource.setType("image");
-        resource.setStoreType("remote");
-        resourceMapper.insert(resource);
-        return resource;
+        return uploadFromUrl(url);
     }
 
     @Override
@@ -116,10 +95,15 @@ public class ResourceServiceImpl implements ResourceService {
     @Override
     public Resource uploadFromUrl(String url) {
         if (url == null || url.isBlank()) throw new BusinessException("URL不能为空");
+
+        // SSRF 防护：校验 URL 安全性
+        validateDownloadUrl(url);
+
         try {
             // 下载图片字节
             var client = java.net.http.HttpClient.newBuilder()
                     .connectTimeout(java.time.Duration.ofSeconds(15))
+                    .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
                     .build();
             var req = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(url))
@@ -204,6 +188,72 @@ public class ResourceServiceImpl implements ResourceService {
                 }
             }
             resourceMapper.deleteById(id);
+        }
+    }
+
+    // ── SSRF 防护 ──
+
+    /**
+     * 校验下载 URL 是否安全（防 SSRF）。
+     * 拒绝内网地址、回环地址、云元数据端点等。
+     */
+    static void validateDownloadUrl(String url) {
+        URI uri;
+        try {
+            uri = URI.create(url);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("URL 格式不合法");
+        }
+
+        String scheme = uri.getScheme();
+        if (scheme == null || (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme))) {
+            throw new BusinessException("仅支持 HTTP/HTTPS 协议的 URL");
+        }
+
+        String host = uri.getHost();
+        if (host == null || host.isBlank()) {
+            throw new BusinessException("URL 缺少主机名");
+        }
+
+        if (isInternalHost(host)) {
+            throw new BusinessException("不允许访问内部地址");
+        }
+    }
+
+    /**
+     * 判断 host 是否为内网/私有/回环地址。
+     * 覆盖 RFC 1918（10.x, 172.16-31.x, 192.168.x）、回环（127.x, ::1）、
+     * 链路本地（169.254.x）、云元数据端点。
+     */
+    static boolean isInternalHost(String host) {
+        // 直接拦截已知危险 hostname
+        String lower = host.toLowerCase();
+        if (lower.equals("localhost") || lower.equals("0.0.0.0")
+                || lower.equals("metadata.google.internal")) {
+            return true;
+        }
+
+        try {
+            InetAddress addr = InetAddress.getByName(host);
+            if (addr.isLoopbackAddress() || addr.isLinkLocalAddress() || addr.isSiteLocalAddress()) {
+                return true;
+            }
+            String ip = addr.getHostAddress();
+            // 云元数据端点（AWS / Azure / GCP / 阿里云等）
+            if (ip.equals("169.254.169.254") || ip.equals("100.100.100.200")) {
+                return true;
+            }
+            // Docker 内部网络
+            if (ip.startsWith("172.")) {
+                try {
+                    int secondOctet = Integer.parseInt(ip.split("\\.")[1]);
+                    if (secondOctet >= 16 && secondOctet <= 31) return true;
+                } catch (Exception ignored) {}
+            }
+            return false;
+        } catch (UnknownHostException e) {
+            // DNS 解析失败，拒绝下载（防止 DNS rebinding）
+            return true;
         }
     }
 }

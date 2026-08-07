@@ -32,7 +32,7 @@ public class UserController {
     }
 
     @PutMapping("/profile")
-    public Result<User> updateProfile(@RequestBody UpdateProfileRequest req) {
+    public Result<User> updateProfile(@Valid @RequestBody UpdateProfileRequest req) {
         return Result.success(userService.updateProfile(req));
     }
 

@@ -7,10 +7,10 @@ import java.util.List;
 public class PageResult<T> {
     private List<T> records;
     private long total;
-    private long page;
-    private long size;
+    private int page;
+    private int size;
 
-    public static <T> PageResult<T> of(List<T> records, long total, long page, long size) {
+    public static <T> PageResult<T> of(List<T> records, long total, int page, int size) {
         PageResult<T> result = new PageResult<>();
         result.setRecords(records);
         result.setTotal(total);

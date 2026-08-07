@@ -37,7 +37,7 @@ public class FamilyServiceImpl implements FamilyService {
     @Override
     public Family updateFamily(Long id, Family family) {
         var exist = familyMapper.selectById(id);
-        if (exist == null) throw new BusinessException("不存在");
+        if (exist == null) throw new BusinessException(404, "不存在");
         exist.setTitle(family.getTitle());
         exist.setContent(family.getContent());
         exist.setCover(family.getCover());

@@ -45,7 +45,7 @@ public class RecordServiceImpl implements RecordService {
     @Override
     public Record updateRecord(Long id, Record record) {
         var exist = recordMapper.selectById(id);
-        if (exist == null) throw new BusinessException("记录不存在");
+        if (exist == null) throw new BusinessException(404, "记录不存在");
         exist.setCategoryId(record.getCategoryId());
         exist.setTitle(record.getTitle());
         exist.setContent(record.getContent());

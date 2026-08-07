@@ -99,7 +99,7 @@
             <div class="note-text">{{ b.content }}</div>
             <div class="note-footer">
               <span class="note-name">{{ b.username || anonNick(b, i) }}</span>
-              <span class="note-time">{{ timeAgo(b.createTime) }}</span>
+              <span class="note-time">{{ formatRelative(b.createTime) }}</span>
             </div>
           </div>
         </div>
@@ -150,12 +150,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { familyApi, diaryApi, commentApi } from '../../api/modules'
 import { useUserStore } from '../../stores/user'
 import { ElMessage } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
 import { usePageBackground } from '../../composables/usePageBackground'
+import { useNow } from '../../composables/useNow'
+import { formatRelative, formatFullDate } from '../../utils/date'
 import LuneImage from '../../components/LuneImage.vue'
 import SakuraFall from '../../components/SakuraFall.vue'
 
@@ -174,12 +176,28 @@ const defaultMan = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http:
 const defaultWoman = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#f0a8c0" width="100" height="100"/><circle cx="50" cy="38" r="18" fill="#fff" opacity="0.9"/><path d="M28 65 Q50 55 72 65 L72 88 L28 88 Z" fill="#fff" opacity="0.9"/></svg>')
 
 const family = ref({})
-let timerInterval = null
-const timing = reactive({ year:0, month:0, day:0, hour:0, minute:0, second:0 })
-const countdownText = ref('')
+const now = useNow()
+const timing = computed(() => {
+  if (!family.value.timing) return { year: 0, month: 0, day: 0, hour: 0, minute: 0, second: 0 }
+  const start = new Date(family.value.timing).getTime()
+  const diff = Math.max(0, Math.floor((now.value - start) / 1000))
+  return {
+    second: diff % 60, minute: Math.floor(diff / 60) % 60,
+    hour: Math.floor(diff / 3600) % 24, day: Math.floor(diff / 86400),
+    month: Math.floor(diff / 86400 / 30), year: Math.floor(diff / 86400 / 365)
+  }
+})
 const togetherDays = computed(() => {
   if (!family.value.timing) return 0
-  return Math.max(0, Math.floor((Date.now() - new Date(family.value.timing).getTime()) / 86400000))
+  return Math.max(0, Math.floor((now.value - new Date(family.value.timing).getTime()) / 86400000))
+})
+const countdownText = computed(() => {
+  if (!family.value.countdownTime) return ''
+  const cd = new Date(family.value.countdownTime).getTime() - now.value
+  if (cd <= 0) return '已到来!'
+  const d = Math.floor(cd / 86400000), h = Math.floor((cd % 86400000) / 3600000)
+  const m = Math.floor((cd % 3600000) / 60000), s = Math.floor((cd % 60000) / 1000)
+  return `${d}天${h}时${m}分${s}秒`
 })
 
 const activeTab = ref('blessing')
@@ -272,38 +290,13 @@ onMounted(async () => {
   fetchBlessings()
   fetchDiaries()
 })
-onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
-
 async function fetchFamily() {
   try {
     const data = await familyApi.list()
     if (data && (Array.isArray(data) ? data.length > 0 : data.id)) {
       family.value = Array.isArray(data) ? data[0] : data
-      startTimer()
     }
   } catch (e) { /* silent */ }
-}
-
-function startTimer() {
-  if (timerInterval) clearInterval(timerInterval)
-  const tick = () => {
-    if (!family.value.timing) return
-    const start = new Date(family.value.timing).getTime()
-    const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
-    timing.second = diff % 60; timing.minute = Math.floor(diff/60) % 60
-    timing.hour = Math.floor(diff/3600) % 24; timing.day = Math.floor(diff/86400)
-    timing.month = Math.floor(timing.day / 30); timing.year = Math.floor(timing.day / 365)
-    if (family.value.countdownTime) {
-      const cd = new Date(family.value.countdownTime).getTime() - Date.now()
-      if (cd <= 0) countdownText.value = '已到来!'
-      else {
-        const d = Math.floor(cd/86400000), h = Math.floor((cd%86400000)/3600000)
-        const m = Math.floor((cd%3600000)/60000), s = Math.floor((cd%60000)/1000)
-        countdownText.value = `${d}天${h}时${m}分${s}秒`
-      }
-    }
-  }
-  tick(); timerInterval = setInterval(tick, 1000)
 }
 
 async function fetchBlessings() {
@@ -339,18 +332,6 @@ function nextPage() { if (currentPage.value < totalPages.value) currentPage.valu
 function firstDiaryImage(page) {
   if (!page?.images) return null
   try { const arr = JSON.parse(page.images); return arr[0] || null } catch { return null }
-}
-function timeAgo(d) {
-  if (!d) return ''
-  const diff = Date.now() - new Date(d).getTime()
-  if (diff < 6e4) return '刚刚'
-  if (diff < 36e5) return Math.floor(diff/6e4)+'分钟前'
-  if (diff < 864e5) return Math.floor(diff/36e5)+'小时前'
-  return Math.floor(diff/864e5)+'天前'
-}
-function formatFullDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' })
 }
 </script>
 

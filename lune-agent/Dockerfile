@@ -12,7 +12,11 @@ USER lune:lune
 ENV JAVA_OPTS="-Xms128m -Xmx256m \
   -XX:+UseContainerSupport \
   -XX:MaxRAMPercentage=50.0 \
-  -XX:+UseG1GC"
+  -XX:+UseG1GC \
+  -XX:+ExitOnOutOfMemoryError \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/tmp \
+  -Xlog:gc*:file=/tmp/gc.log:time,uptime:filecount=5,filesize=10M"
 
 EXPOSE 8082
 

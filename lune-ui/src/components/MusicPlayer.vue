@@ -10,7 +10,7 @@
         <span class="bar-name">{{ currentSong?.name || '暂无音乐' }}</span>
         <span class="bar-sub" v-if="hint">{{ hint }}</span>
       </div>
-      <button class="bar-play" @click.stop="toggleMusic" :title="musicPlaying ? '暂停' : '播放'">
+      <button class="bar-play" @click.stop="toggleMusic" :title="musicPlaying ? '暂停' : '播放'" :aria-label="musicPlaying ? '暂停音乐' : '播放音乐'">
         <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="15" height="15"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
         <svg v-else viewBox="0 0 24 24" width="15" height="15"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
       </button>
@@ -43,17 +43,17 @@
 
               <!-- 控制 -->
               <div class="music-controls">
-                <button class="music-ctl-btn" @click="prevSong" title="上一首">
+                <button class="music-ctl-btn" @click="prevSong" title="上一首" aria-label="上一首">
                   <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" fill="currentColor"/></svg>
                 </button>
                 <button class="music-play-btn" @click="toggleMusic">
                   <svg v-if="!musicPlaying" viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
                   <svg v-else viewBox="0 0 24 24" width="20" height="20"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/></svg>
                 </button>
-                <button class="music-ctl-btn" @click="nextSong" title="下一首">
+                <button class="music-ctl-btn" @click="nextSong" title="下一首" aria-label="下一首">
                   <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z" fill="currentColor"/></svg>
                 </button>
-                <div class="music-progress" @click="seekMusic">
+                <div class="music-progress" @click="seekMusic" role="slider" :aria-valuenow="musicProgress" aria-valuemin="0" aria-valuemax="100" aria-label="播放进度">
                   <div class="music-progress-fill" :style="{ width: musicProgress + '%' }" />
                 </div>
               </div>

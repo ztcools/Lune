@@ -60,6 +60,10 @@ app:
   security:
     # HSTS 仅在 HTTPS 生产环境开启（本地 HTTP 必须保持 false）
     hsts-enabled: ${HSTS_ENABLED:false}
+  # CORS 跨域：生产通过环境变量 CORS_ALLOWED_ORIGINS 设为实际域名
+  # 开发环境默认 localhost:5173(Vite)+localhost:8080(Nginx)
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
   # GeoLite2 离线库路径（docker-compose 以只读挂载提供 /app/geoip）
   # 不打进 jar：66MB 会让镜像和每次 docker save 传输都白白变大，且该库需按月更新
   # 文件缺失时后端仅告警降级（只记 IP、不记地区），不影响启动

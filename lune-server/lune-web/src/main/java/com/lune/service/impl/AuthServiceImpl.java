@@ -7,6 +7,7 @@ import com.lune.dto.*;
 import com.lune.entity.User;
 import com.lune.mapper.UserMapper;
 import com.lune.security.JwtTokenProvider;
+import com.lune.security.TokenBlacklist;
 import com.lune.service.AuthService;
 import com.lune.service.EmailService;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDate;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,17 +34,20 @@ public class AuthServiceImpl implements AuthService {
     private final RedisTemplate<String, String> redisTemplate;
     private final EmailService emailService;
     private final com.lune.security.LoginAttemptService loginAttemptService;
+    private final TokenBlacklist tokenBlacklist;
 
     public AuthServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder,
                            JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate,
                            EmailService emailService,
-                           com.lune.security.LoginAttemptService loginAttemptService) {
+                           com.lune.security.LoginAttemptService loginAttemptService,
+                           TokenBlacklist tokenBlacklist) {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.redisTemplate = redisTemplate;
         this.emailService = emailService;
         this.loginAttemptService = loginAttemptService;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     @Override
@@ -131,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
         if (token != null) {
             long expiration = jwtTokenProvider.parseToken(token).getExpiration().getTime() - System.currentTimeMillis();
             if (expiration > 0) {
-                redisTemplate.opsForValue().set("token:blacklist:" + token, "1", expiration, TimeUnit.MILLISECONDS);
+                tokenBlacklist.blacklist(token, expiration);
             }
         }
         return Result.success();

@@ -44,7 +44,7 @@ public class ArticleServiceImpl implements ArticleService {
     public Article getArticleById(Long id) {
         var article = articleMapper.selectById(id);
         if (article == null || article.getStatus() != 1) {
-            throw new BusinessException("文章不存在");
+            throw new BusinessException(404, "文章不存在");
         }
         // 原子更新阅读数（避免并发丢失）
         var updateWrapper = new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Article>()

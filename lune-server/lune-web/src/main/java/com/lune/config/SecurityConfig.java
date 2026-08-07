@@ -49,7 +49,8 @@ public class SecurityConfig {
                     "/api/comments/**", "/api/essays/**", "/api/records/**", "/api/treeholes/**",
                     "/api/diaries/**", "/api/family/**", "/api/site-config/**",
                     "/api/resume/**", "/api/wishes/**").permitAll()
-                .requestMatchers(HttpMethod.PATCH, "/api/articles/**", "/api/comments/**").permitAll()
+                // PATCH /api/articles/{id}/like 和 /api/comments/{id}/like 需认证
+                // （此前 permitAll 允许任何人刷点赞数）
                 .requestMatchers(HttpMethod.POST, "/api/comments/**", "/api/treeholes/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/wishes/**").authenticated()
                 .requestMatchers("/upload/**").permitAll()
