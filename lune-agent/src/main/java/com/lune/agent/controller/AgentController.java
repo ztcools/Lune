@@ -5,7 +5,6 @@ import com.lune.agent.dto.ChatRequest;
 import com.lune.agent.memory.ChatMemory;
 import com.lune.agent.memory.UserPreference;
 import com.lune.agent.pipeline.AgentOrchestrator;
-import com.lune.agent.pipeline.ToolExecutor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -19,16 +18,13 @@ public class AgentController {
     private final AgentOrchestrator orchestrator;
     private final ChatMemory memory;
     private final AgentConfig config;
-    private final ToolExecutor toolExecutor;
     private final UserPreference preferences;
 
     public AgentController(AgentOrchestrator orchestrator, ChatMemory memory,
-                           AgentConfig config, ToolExecutor toolExecutor,
-                           UserPreference preferences) {
+                           AgentConfig config, UserPreference preferences) {
         this.orchestrator = orchestrator;
         this.memory = memory;
         this.config = config;
-        this.toolExecutor = toolExecutor;
         this.preferences = preferences;
     }
 
@@ -41,8 +37,7 @@ public class AgentController {
     public SseEmitter chat(@RequestBody ChatRequest req,
                            @RequestHeader("Authorization") String auth,
                            @RequestHeader(value = "X-User-Id", required = false) String uid) {
-        toolExecutor.setToken(extractToken(auth));
-        return orchestrator.run(resolveUserId(uid), req.getMessage());
+        return orchestrator.run(resolveUserId(uid), req.getMessage(), extractToken(auth));
     }
 
     @GetMapping("/config")

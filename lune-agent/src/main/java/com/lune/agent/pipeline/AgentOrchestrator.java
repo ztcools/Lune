@@ -44,7 +44,7 @@ public class AgentOrchestrator {
         this.config = config;
     }
 
-    public SseEmitter run(Long userId, String userMessage) {
+    public SseEmitter run(Long userId, String userMessage, String token) {
         if (resolveApiKey() == null) {
             return errorEmitter("请先配置 API Key。点击右上角齿轮图标进行配置。");
         }
@@ -52,7 +52,7 @@ public class AgentOrchestrator {
 
         new Thread(() -> {
             try {
-                orchestrate(emitter, userId, userMessage);
+                orchestrate(emitter, userId, userMessage, token);
             } catch (Exception e) {
                 log.error("Pipeline error user={}: {}", userId, e.getMessage(), e);
                 safeSend(emitter, event("error", "处理出错: " + e.getMessage()));
@@ -63,7 +63,7 @@ public class AgentOrchestrator {
         return emitter;
     }
 
-    private void orchestrate(SseEmitter emitter, Long userId, String rawMessage) {
+    private void orchestrate(SseEmitter emitter, Long userId, String rawMessage, String token) {
         // ── 快捷指令解析 ──
         var parsed = parsePrefix(rawMessage);
         String userMessage = parsed.message;
@@ -72,17 +72,19 @@ public class AgentOrchestrator {
         // ── 意图路由 ──
         AgentProfile profile;
         if (forcedProfile != null) {
-            // 如果强制路由后消息仍含其他领域关键词→多领域请求→通用Agent
-            var intentProfile = routeIntent(userMessage);
-            if (intentProfile.name().equals(forcedProfile.name()) || "general".equals(intentProfile.name())) {
+            // @前缀强制路由：仅当去除前缀后消息无其他领域关键词时生效
+            RouteResult routeResult = routeIntent(userMessage);
+            if (routeResult.matchType() == MatchType.NONE
+                    || routeResult.matchType() == MatchType.SINGLE && routeResult.profile().name().equals(forcedProfile.name())) {
                 profile = forcedProfile;
                 log.debug("Forced profile via prefix: {}", profile.name());
             } else {
+                // 多领域请求 → 通用Agent（全工具可用）
                 profile = GeneralProfile.create();
                 log.debug("Multi-domain detected after prefix → general");
             }
         } else {
-            profile = routeIntent(userMessage);
+            profile = routeIntent(userMessage).profile();
             log.debug("Intent routed to: {}", profile.name());
         }
 
@@ -112,7 +114,8 @@ public class AgentOrchestrator {
         }
 
         // ── Tool loop ──
-        for (int iter = 0; iter < config.getMaxToolIterations(); iter++) {
+        int iter;
+        for (iter = 0; iter < config.getMaxToolIterations(); iter++) {
             var result = llm.chat(messages, tools);
             if (result == null) {
                 safeSend(emitter, event("error", "LLM 调用失败"));
@@ -150,7 +153,7 @@ public class AgentOrchestrator {
 
                     safeSend(emitter, event("tool_call", Map.of("toolName", name, "toolCallId", callId, "args", args)));
 
-                    Map<String, Object> toolResult = toolExecutor.execute(name, args);
+                    Map<String, Object> toolResult = toolExecutor.execute(name, args, token);
 
                     safeSend(emitter, event("tool_result", buildToolResult(name, toolResult)));
 
@@ -178,6 +181,12 @@ public class AgentOrchestrator {
             break;
         }
 
+        // 达到最大工具迭代次数未产出文本 → 提示用户
+        if (iter >= config.getMaxToolIterations()) {
+            log.warn("Max tool iterations ({}) reached for user {}", config.getMaxToolIterations(), userId);
+            safeSend(emitter, event("error", "工具调用轮次已达上限（" + config.getMaxToolIterations() + "次），请简化你的请求后重试。"));
+        }
+
         if (memory.isContextEnabled(userId)) {
             memory.save(userId, history);
         }
@@ -186,6 +195,14 @@ public class AgentOrchestrator {
     }
 
     // ── Intent routing ──
+
+    /** 意图匹配类型 */
+    enum MatchType { SINGLE, MULTI, NONE }
+
+    /** 路由结果：profile + 匹配类型 */
+    record RouteResult(AgentProfile profile, MatchType matchType) {
+        static RouteResult of(AgentProfile p, MatchType t) { return new RouteResult(p, t); }
+    }
 
     /**
      * 解析 @文章/@随笔/@记录/@工作/@项目 前缀。
@@ -212,34 +229,31 @@ public class AgentOrchestrator {
 
     /**
      * 关键词意图路由（零 LLM 调用）。
+     * 返回带 MatchType 的结果：SINGLE(单领域) / MULTI(多领域→General) / NONE(无匹配→General)。
      */
-    static AgentProfile routeIntent(String msg) {
-        if (msg == null || msg.isBlank()) return GeneralProfile.create();
+    static RouteResult routeIntent(String msg) {
+        if (msg == null || msg.isBlank()) return RouteResult.of(GeneralProfile.create(), MatchType.NONE);
         var lower = msg.toLowerCase();
 
-        // 多领域请求 → 通用Agent（全工具可用）
-        int domains = 0;
-        if (containsAny(lower, "文章", "发文", "写一", "博客", "发布文章", "post")) domains++;
-        if (containsAny(lower, "随笔", "朋友圈", "动态", "心情", "浮生记")) domains++;
-        if (containsAny(lower, "记录", "收藏", "打卡", "看了", "读了", "光阴集")) domains++;
-        if (containsAny(lower, "工作", "实习", "经历", "履痕", "公司", "上班")) domains++;
-        if (containsAny(lower, "项目", "造物集", "开源", "github")) domains++;
-        if (domains >= 2) return GeneralProfile.create();
+        // 检测各领域关键词
+        boolean art = containsAny(lower, "文章", "发文", "写一", "博客", "发布文章", "post");
+        boolean essay = containsAny(lower, "随笔", "朋友圈", "动态", "心情", "浮生记");
+        boolean record = containsAny(lower, "记录", "收藏", "打卡", "看了", "读了", "光阴集");
+        boolean work = containsAny(lower, "工作", "实习", "经历", "履痕", "公司", "上班");
+        boolean project = containsAny(lower, "项目", "造物集", "开源", "github");
 
-        if (domains == 1) {
-            if (containsAny(lower, "文章", "发文", "写一", "博客", "发布文章", "post"))
-                return ArticleProfile.create();
-            if (containsAny(lower, "随笔", "朋友圈", "动态", "心情", "浮生记"))
-                return EssayProfile.create();
-            if (containsAny(lower, "记录", "收藏", "打卡", "看了", "读了", "光阴集"))
-                return RecordProfile.create();
-            if (containsAny(lower, "工作", "实习", "经历", "履痕", "公司", "上班"))
-                return WorkProfile.create();
-            if (containsAny(lower, "项目", "造物集", "开源", "github"))
-                return ProjectProfile.create();
-        }
+        int domains = (art ? 1 : 0) + (essay ? 1 : 0) + (record ? 1 : 0) + (work ? 1 : 0) + (project ? 1 : 0);
+        if (domains >= 2) return RouteResult.of(GeneralProfile.create(), MatchType.MULTI);
+        if (domains == 0) return RouteResult.of(GeneralProfile.create(), MatchType.NONE);
 
-        return GeneralProfile.create();
+        // 单领域命中
+        if (art) return RouteResult.of(ArticleProfile.create(), MatchType.SINGLE);
+        if (essay) return RouteResult.of(EssayProfile.create(), MatchType.SINGLE);
+        if (record) return RouteResult.of(RecordProfile.create(), MatchType.SINGLE);
+        if (work) return RouteResult.of(WorkProfile.create(), MatchType.SINGLE);
+        if (project) return RouteResult.of(ProjectProfile.create(), MatchType.SINGLE);
+
+        return RouteResult.of(GeneralProfile.create(), MatchType.NONE);
     }
 
     private static boolean containsAny(String text, String... keywords) {
