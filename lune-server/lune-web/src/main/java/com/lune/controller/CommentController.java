@@ -44,4 +44,10 @@ public class CommentController {
     public Result<Comment> create(@Valid @RequestBody CommentRequest request) {
         return Result.success(commentService.createComment(request));
     }
+
+    @PatchMapping("/{id}/like")
+    public Result<?> likeComment(@PathVariable Long id, @RequestParam(defaultValue = "1") int delta) {
+        commentService.likeComment(id, delta >= 0 ? 1 : -1);
+        return Result.success(null);
+    }
 }

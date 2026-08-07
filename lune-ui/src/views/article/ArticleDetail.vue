@@ -3,17 +3,13 @@
     <div v-if="article" class="article-page">
       <!-- Hero Banner -->
       <div class="article-head my-animation-slide-top">
-        <el-image
+        <LuneImage
           class="article-cover-image"
-          v-once
-          lazy
           :src="article.cover || article.articleCover || randomCover"
-          fit="cover"
-        >
-          <template #error>
-            <div class="article-cover-fallback"></div>
-          </template>
-        </el-image>
+          variant="cover"
+          lcp
+          alt=""
+        />
         <div class="article-cover-mask"></div>
 
         <!-- Article info overlay -->
@@ -271,6 +267,7 @@ import { usePageBackground } from '../../composables/usePageBackground'
 import { articleApi, commentApi } from '../../api/modules'
 import { useAppStore } from '../../stores/app'
 import { useUserStore } from '../../stores/user'
+import LuneImage from '../../components/LuneImage.vue'
 
 const route = useRoute()
 const appStore = useAppStore()

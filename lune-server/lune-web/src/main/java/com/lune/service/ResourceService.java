@@ -7,6 +7,10 @@ import org.springframework.web.multipart.MultipartFile;
 public interface ResourceService {
     Resource upload(MultipartFile file);
     Resource importFromUrl(String url);
+    /** 从外部URL下载图片后存COS（Agent专用） */
+    Resource uploadFromUrl(String url);
+    /** base64解码后走正常upload管道（粘贴上传） */
+    Resource uploadBase64(String base64Data, String filename);
     /**
      * 资源列表，可按 {@code type} 过滤（{@code null}/空 表示不过滤）。
      *

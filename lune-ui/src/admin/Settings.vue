@@ -36,7 +36,7 @@
         <div class="form-item">
           <label>网站 Logo (Favicon)</label>
           <div class="logo-row">
-            <el-image v-if="basic.site_logo" :src="basic.site_logo" class="logo-preview" fit="contain" />
+            <LuneImage v-if="basic.site_logo" :src="basic.site_logo" variant="thumb" alt="" class="logo-preview" />
             <el-button size="small" @click="openPicker('site_logo', false)">{{ basic.site_logo ? '更换' : '选择' }}</el-button>
             <el-button v-if="basic.site_logo" size="small" type="danger" plain @click="clearBasic('site_logo')">清除</el-button>
           </div>
@@ -125,7 +125,7 @@
             <div class="bg-grid" v-if="bgImages[curKey(bg)]?.length">
               <div v-for="(url, i) in bgImages[curKey(bg)]" :key="i" class="bg-img-card">
                 <div class="bg-img-wrap">
-                  <el-image :src="url" fit="cover" :preview-src-list="bgImages[curKey(bg)]" :initial-index="i" />
+                  <LuneImage :src="url" variant="content" alt="" />
                 </div>
                 <span class="bg-img-name">{{ getShortName(url) }}</span>
                 <el-button class="bg-img-del" circle size="small" :icon="Close" @click="removeBg(curKey(bg), i)" />
@@ -150,7 +150,7 @@
                   <div v-for="r in pickerList" :key="r.id" class="picker-item"
                     :class="{ selected: bgImages[curKey(bg)].includes(r.path) }"
                     @click="togglePickerItem(curKey(bg), r.path)">
-                    <el-image :src="r.path" fit="cover" />
+                    <LuneImage :src="r.path" variant="thumb" alt="" />
                     <span>{{ r.filename }}</span>
                   </div>
                 </div>
@@ -177,7 +177,7 @@
         <div v-for="r in pickerList" :key="r.id" class="picker-item"
           :class="{ selected: pickerSelected === r.path }"
           @click="pickerSelected = r.path">
-          <el-image :src="r.path" fit="cover" />
+          <LuneImage :src="r.path" variant="thumb" alt="" />
           <span>{{ r.filename }}</span>
         </div>
       </div>
@@ -195,6 +195,7 @@ import { ref, reactive, onMounted, watch, nextTick } from 'vue'
 import { siteConfigApi, resourceApi } from '../api/modules'
 import { ElMessage } from 'element-plus'
 import { Plus, Close, UploadFilled } from '@element-plus/icons-vue'
+import LuneImage from '../components/LuneImage.vue'
 
 // ====== 基础设置 ======
 const basic = reactive({})

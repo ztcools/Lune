@@ -1,20 +1,13 @@
 <template>
   <div class="media-grid">
-    <!-- 图片：preview-teleported 是关键。
-         没有它时 el-image 的大图查看器渲染在组件内部，而祖先 .detail-overlay 带
-         backdrop-filter，会给 position:fixed 的后代重新建立包含块，再叠上
-         .detail-card 的 overflow-y:auto —— 查看器就被裁在卡片里，等于点了没反应。 -->
-    <el-image
+    <!-- 图片 -->
+    <LuneImage
       v-for="(m, i) in images"
       :key="'i' + i"
       :src="m.url"
-      fit="cover"
+      variant="thumb"
       class="media-tile"
-      :preview-src-list="imageUrls"
-      :initial-index="i"
-      preview-teleported
-      :z-index="3000"
-      hide-on-click-modal
+      alt=""
     />
 
     <!-- 视频：格子里只显首帧（#t 让浏览器抓 0.1s 那一帧当封面），点击才进播放层 -->
@@ -32,6 +25,7 @@
  * 两种媒体尺寸也不一致，这里统一成同一套正方格子。
  */
 import { computed } from 'vue'
+import LuneImage from '../../components/LuneImage.vue'
 import LineIcon from '../../components/LineIcon.vue'
 
 const props = defineProps({

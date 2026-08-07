@@ -65,6 +65,6 @@ public class ChatMemory {
     }
 
     public boolean isContextEnabled(Long userId) {
-        try { return "true".equals(redis.opsForValue().get(KEY_CTX + userId)); } catch (Exception e) { return false; }
+        try { return "true".equals(redis.opsForValue().get(KEY_CTX + userId)); } catch (Exception e) { return true; }
     }
 }

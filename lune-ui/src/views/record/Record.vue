@@ -45,17 +45,14 @@
             <template v-if="item.mediaList.length">
               <div :class="'fgrid fgrid-' + Math.min(item.mediaList.length, 3)">
                 <div v-for="(m, mi) in item.mediaList.slice(0, 3)" :key="mi" class="fgrid-item">
-                  <el-image
-                    v-if="m.type === 'image'" :src="m.url" fit="cover" class="fgrid-img"
-                    :preview-src-list="item.imageList" :initial-index="item.imageList.indexOf(m.url)"
-                    preview-teleported :z-index="3000" hide-on-click-modal lazy />
+                  <LuneImage
+                    v-if="m.type === 'image'" :src="m.url" variant="content" class="fgrid-img" />
                   <video v-else :src="m.url" controls class="fgrid-video" preload="metadata"></video>
                 </div>
                 <div v-if="item.mediaList.length > 3" class="fgrid-more">+{{ item.mediaList.length - 3 }}</div>
               </div>
             </template>
-            <el-image v-else-if="item.cover" :src="item.cover" fit="cover" class="feed-cover"
-              :preview-src-list="[item.cover]" preview-teleported :z-index="3000" hide-on-click-modal lazy />
+            <LuneImage v-else-if="item.cover" :src="item.cover" variant="thumb" class="feed-cover" />
           </div>
 
           <!-- 文本 -->
@@ -97,6 +94,7 @@ import { recordApi, categoryApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
 import { useAppStore } from '../../stores/app'
 import PageBg from '../../components/PageBg.vue'
+import LuneImage from '../../components/LuneImage.vue'
 
 const appStore = useAppStore()
 
@@ -142,7 +140,16 @@ function processContent(text) {
 
 function parseMedia(mediaJson) {
   if (!mediaJson) return []
-  try { const arr = JSON.parse(mediaJson); return Array.isArray(arr) ? arr.filter(m => m.type && m.url) : [] } catch (e) { return [] }
+  try {
+    let a = JSON.parse(mediaJson)
+    if (!Array.isArray(a)) return []
+    return a.map(m => {
+      if (typeof m === 'string') return { type: 'image', url: m }
+      if (m && m.url) return { type: m.type || 'image', url: m.url }
+      return null
+    }).filter(Boolean)
+  } catch (e) { return [] }
+}
 }
 
 function switchCategory(catId) {

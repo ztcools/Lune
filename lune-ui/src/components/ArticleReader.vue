@@ -182,15 +182,20 @@ async function fetchComments() {
   finally { commentLoading.value = false }
 }
 
+const isLiking = ref(false)
 function toggleLike() {
-  if (!requireLogin()) return
+  if (!requireLogin() || isLiking.value) return
+  isLiking.value = true
   const delta = isLiked.value ? -1 : 1
   isLiked.value = !isLiked.value
   likeCount.value += delta
   const key = 'liked_' + props.articleId
   if (isLiked.value) localStorage.setItem(key, '1')
   else localStorage.removeItem(key)
-  request.patch(`/articles/${props.articleId}/like?delta=${delta}`).catch(() => {})
+  request.patch(`/articles/${props.articleId}/like?delta=${delta}`).catch(() => {
+    isLiked.value = !isLiked.value
+    likeCount.value -= delta
+  }).finally(() => { isLiking.value = false })
   emit('liked', { articleId: props.articleId, likeCount: likeCount.value })
 }
 
@@ -235,7 +240,26 @@ async function submitComment() {
   finally { submitting.value = false }
 }
 
-function likeComment(item) { item._likes = (item._likes || 0) + 1 }
+const isLikingComment = ref(false)
+function likeComment(item) {
+  if (isLikingComment.value) return
+  const key = 'comment_liked_' + item.id
+  const liked = localStorage.getItem(key)
+  const delta = liked ? -1 : 1
+  isLikingComment.value = true
+  if (liked) {
+    localStorage.removeItem(key)
+  } else {
+    localStorage.setItem(key, '1')
+  }
+  item._likes = Math.max(0, (item._likes || 0) + delta)
+  request.patch('/comments/' + item.id + '/like?delta=' + delta).catch(() => {
+    // 回滚
+    item._likes = Math.max(0, (item._likes || 0) - delta)
+    if (liked) localStorage.setItem(key, '1')
+    else localStorage.removeItem(key)
+  }).finally(() => { isLikingComment.value = false })
+}
 
 function onKeydown(e) { if (e.key === 'Escape') close() }
 
@@ -357,15 +381,15 @@ onUnmounted(() => {
 /* ============================
    Comment panel column (desktop)
    ============================ */
-.comment-panel-col { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+.comment-panel-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
 /* ============================
    Comment Panel wrapper (desktop inline)
    ============================ */
 .comment-panel {
-  width: 100%; flex: 1; min-width: 0;
+  width: 100%; flex: 1; min-width: 0; min-height: 0;
   background: #fff; border-radius: 28px;
-  display: flex; flex-direction: column; height: 100%;
+  display: flex; flex-direction: column;
   box-shadow: 0 4px 32px rgba(0,0,0,0.12); overflow: hidden;
   font-family: var(--globalFont);
 }

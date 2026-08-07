@@ -4,17 +4,14 @@
     <FloatPetals type="petal" :count="16" />
 
     <!-- 首页背景图片 -->
-    <el-image
+    <LuneImage
       style="animation: header-effect 2s"
       class="background-image-index"
-      lazy
       :src="coverImage"
-      fit="cover"
-    >
-      <template #error>
-        <div class="background-image-index-error" />
-      </template>
-    </el-image>
+      variant="hero"
+      lcp
+      alt=""
+    />
 
     <!-- 首页文字 -->
     <div class="signature-wall myCenter my-animation-hideToShow">
@@ -62,6 +59,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { useAppStore } from '../../stores/app'
 import { usePageBackground } from '../../composables/usePageBackground'
+import LuneImage from '../../components/LuneImage.vue'
 import FloatPetals from '../../components/effects/FloatPetals.vue'
 
 const appStore = useAppStore()

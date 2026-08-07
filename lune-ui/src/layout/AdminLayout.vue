@@ -52,7 +52,6 @@
     <div class="content-box" :style="{ left: collapsed ? '44px' : '130px' }">
       <div class="admin-content"><router-view /></div>
     </div>
-    <AgentChat />
   </div>
 </template>
 
@@ -60,7 +59,6 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import AgentChat from '../admin/AgentChat.vue'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -82,6 +80,6 @@ async function handleLogout() { await userStore.logout(); router.push('/admin/lo
 .sidebar-el-menu .el-menu-item:hover{background:#e0f0e0!important}
 .sidebar-el-menu .el-menu-item.is-active{background:linear-gradient(135deg,#66bb6a,#81c784)!important;color:#fff!important;border-radius:12px}
 .content-box{position:absolute;left:130px;right:0;top:70px;bottom:0;transition:left .3s ease-in-out;background:#f4f9f4}
-.admin-content{width:auto;height:100%;padding:30px;overflow-y:scroll}
+.admin-content{position:relative;width:auto;height:100%;padding:30px;overflow-y:scroll}
 @media screen and (max-width:768px){.admin-content{padding:14px}}
 </style>

@@ -67,7 +67,16 @@ public class LuneApiClient {
     private JSONObject parse(HttpResponse<String> resp) {
         if (resp.statusCode() != 200) return null;
         var body = JSONUtil.parseObj(resp.body());
-        return body.getInt("code") == 200 ? body.getJSONObject("data") : null;
+        if (body.getInt("code") != 200) return null;
+        // data 可能是 JSONObject（分页结果）或 JSONArray（列表结果）
+        var data = body.get("data");
+        if (data instanceof JSONObject obj) return obj;
+        if (data instanceof java.util.List) {
+            var wrapper = new JSONObject();
+            wrapper.set("records", data);
+            return wrapper;
+        }
+        return null;
     }
 
     public JSONObject createArticle(JSONObject a, String t) { return post("/api/admin/articles", a, t); }
@@ -91,7 +100,12 @@ public class LuneApiClient {
     public JSONObject saveSiteConfig(JSONObject c, String t) { return post("/api/admin/site-configs", c, t); }
     public JSONObject listCategories(String t) { return get("/api/admin/categories", t); }
     public JSONObject createWorkExperience(JSONObject w, String t) { return post("/api/admin/resume/work", w, t); }
+    public JSONObject updateWorkExperience(Long id, JSONObject w, String t) { return put("/api/admin/resume/work/" + id, w, t); }
     public void deleteWorkExperience(Long id, String t) { delete("/api/admin/resume/work/" + id, t); }
+    public JSONObject listWorkExperiences(String t) { return get("/api/admin/resume/work", t); }
     public JSONObject createProject(JSONObject p, String t) { return post("/api/admin/resume/project", p, t); }
+    public JSONObject updateProject(Long id, JSONObject p, String t) { return put("/api/admin/resume/project/" + id, p, t); }
     public void deleteProject(Long id, String t) { delete("/api/admin/resume/project/" + id, t); }
+    public JSONObject listProjects(String t) { return get("/api/admin/resume/project", t); }
+    public JSONObject uploadFromUrl(String url, String t) { return post("/api/admin/resources/upload-from-url", new JSONObject().set("url", url), t); }
 }

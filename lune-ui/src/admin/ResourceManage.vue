@@ -16,7 +16,7 @@
       <el-table-column prop="id" label="ID" width="55" align="center" />
       <el-table-column label="预览" width="140" align="center">
         <template #default="{ row }">
-          <el-image v-if="isImage(row)" :src="row.path" fit="cover" class="table-thumb" />
+          <LuneImage v-if="isImage(row)" :src="row.path" variant="thumb" alt="" />
           <el-icon v-else :size="36" color="#ccc"><Document /></el-icon>
         </template>
       </el-table-column>
@@ -70,7 +70,7 @@
       </div>
 
       <div class="img-preview-row" v-if="resPreview">
-        <el-image :src="resPreview" fit="cover" class="form-preview-img" />
+        <LuneImage :src="resPreview" variant="thumb" alt="" />
         <span class="preview-path">{{ resPreview }}</span>
       </div>
     </el-dialog>
@@ -82,6 +82,7 @@ import { ref, onMounted, watch } from 'vue'
 import { resourceApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled, Document } from '@element-plus/icons-vue'
+import LuneImage from '../components/LuneImage.vue'
 
 const resources = ref([])
 const page = ref(1)

@@ -21,31 +21,9 @@ public class ToolExecutor {
     private String token;
     public void setToken(String token) { this.token = token; }
 
+    /** @deprecated 使用 {@link ToolDefinitions#allDefinitions()}，保留以兼容 */
     public JSONArray getDefinitions() {
-        return JSONUtil.parseArray("""
-        [{"type":"function","function":{"name":"create_article","description":"创建文章草稿。需要标题+内容，可选摘要/分类/封面。建完告诉用户id。","parameters":{"type":"object","properties":{"title":{"type":"string"},"content":{"type":"string","description":"HTML格式"},"summary":{"type":"string"},"categoryId":{"type":"integer"},"cover":{"type":"string"}},"required":["title","content"]}}},
-        {"type":"function","function":{"name":"publish_article","description":"发布指定id的文章。必须传入title+content（从create_article结果中获取）。","parameters":{"type":"object","properties":{"id":{"type":"integer"},"title":{"type":"string"},"content":{"type":"string"}},"required":["id","title","content"]}}},
-        {"type":"function","function":{"name":"update_article","description":"更新文章","parameters":{"type":"object","properties":{"id":{"type":"integer"},"title":{"type":"string"},"content":{"type":"string"},"summary":{"type":"string"},"categoryId":{"type":"integer"},"cover":{"type":"string"}},"required":["id"]}}},
-        {"type":"function","function":{"name":"delete_article","description":"删除文章，先确认","parameters":{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}}},
-        {"type":"function","function":{"name":"list_articles","description":"查文章列表","parameters":{"type":"object","properties":{"page":{"type":"integer"},"size":{"type":"integer"}}}}},
-        {"type":"function","function":{"name":"create_essay","description":"创建随笔","parameters":{"type":"object","properties":{"title":{"type":"string"},"content":{"type":"string"},"mood":{"type":"string"},"weather":{"type":"string"},"location":{"type":"string"}},"required":["title","content"]}}},
-        {"type":"function","function":{"name":"delete_essay","description":"删除随笔","parameters":{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}}},
-        {"type":"function","function":{"name":"list_essays","description":"查随笔列表","parameters":{"type":"object","properties":{"page":{"type":"integer"},"size":{"type":"integer"}}}}},
-        {"type":"function","function":{"name":"create_record","description":"创建记录，必须给categoryId","parameters":{"type":"object","properties":{"title":{"type":"string"},"content":{"type":"string"},"categoryId":{"type":"integer"}},"required":["title","content","categoryId"]}}},
-        {"type":"function","function":{"name":"delete_record","description":"删除记录","parameters":{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}}},
-        {"type":"function","function":{"name":"list_records","description":"查记录列表","parameters":{"type":"object","properties":{"page":{"type":"integer"},"size":{"type":"integer"},"categoryId":{"type":"integer"}}}}},
-        {"type":"function","function":{"name":"list_treeholes","description":"查树洞列表","parameters":{"type":"object","properties":{"page":{"type":"integer"},"size":{"type":"integer"}}}}},
-        {"type":"function","function":{"name":"delete_treehole","description":"删树洞消息","parameters":{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}}},
-        {"type":"function","function":{"name":"list_wishes","description":"查许愿池","parameters":{"type":"object","properties":{"page":{"type":"integer"},"size":{"type":"integer"}}}}},
-        {"type":"function","function":{"name":"manage_wish","description":"管理许愿(删除)","parameters":{"type":"object","properties":{"id":{"type":"integer"},"action":{"type":"string","enum":["delete"]}},"required":["id","action"]}}},
-        {"type":"function","function":{"name":"get_site_config","description":"获取所有网站配置","parameters":{"type":"object","properties":{}}}},
-        {"type":"function","function":{"name":"update_site_config","description":"改网站配置(key如site_name/site_logo/beian_icp等)","parameters":{"type":"object","properties":{"configKey":{"type":"string"},"configValue":{"type":"string"}},"required":["configKey","configValue"]}}},
-        {"type":"function","function":{"name":"list_categories","description":"列出文章分类","parameters":{"type":"object","properties":{}}}},
-        {"type":"function","function":{"name":"create_work_experience","description":"创建简历工作经历","parameters":{"type":"object","properties":{"company":{"type":"string"},"position":{"type":"string"},"startDate":{"type":"string"},"endDate":{"type":"string"},"isCurrent":{"type":"boolean"},"description":{"type":"string"}},"required":["company","position","startDate"]}}},
-        {"type":"function","function":{"name":"delete_work_experience","description":"删工作经历","parameters":{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}}},
-        {"type":"function","function":{"name":"create_project","description":"创建简历项目","parameters":{"type":"object","properties":{"name":{"type":"string"},"summary":{"type":"string"},"description":{"type":"string"},"techStack":{"type":"array","items":{"type":"string"}},"role":{"type":"string"},"projectUrl":{"type":"string"}},"required":["name","summary"]}}},
-        {"type":"function","function":{"name":"delete_project","description":"删项目","parameters":{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}}},
-        {"type":"function","function":{"name":"get_dashboard_stats","description":"网站统计数据(文章/随笔/记录/树洞/许愿总数)","parameters":{"type":"object","properties":{}}}}]}""");
+        return ToolDefinitions.allDefinitions();
     }
 
     @SuppressWarnings("unchecked")
@@ -71,9 +49,14 @@ public class ToolExecutor {
                 case "update_site_config" -> updateSiteConfig(args);
                 case "list_categories" -> listCategories(args);
                 case "create_work_experience" -> createWorkExperience(args);
+                case "update_work_experience" -> updateWorkExperience(args);
                 case "delete_work_experience" -> deleteWorkExperience(args);
+                case "list_work_experiences" -> listWorkExperiences(args);
                 case "create_project" -> createProject(args);
+                case "update_project" -> updateProject(args);
                 case "delete_project" -> deleteProject(args);
+                case "list_projects" -> listProjects(args);
+                case "upload_image" -> uploadImage(args);
                 case "get_dashboard_stats" -> getDashboardStats(args);
                 default -> m("success", false, "message", "未知工具: " + name);
             };
@@ -121,9 +104,13 @@ public class ToolExecutor {
         body.set("cover", a.getOrDefault("cover", null));
         var r = api.createArticle(body, token);
         if (r == null) return m("success", false, "message", "创建失败");
-        // Set draft
-        api.updateArticle(r.getLong("id"), new JSONObject().set("status", 0), token);
-        return m("success", true, "message", "文章草稿已创建", "preview", preview(r));
+        // 后端 create 硬编码 status=1，需要更新为 0 设为草稿
+        var draft = new JSONObject();
+        draft.set("title", a.get("title"));
+        draft.set("content", a.get("content"));
+        draft.set("status", 0);
+        api.updateArticle(r.getLong("id"), draft, token);
+        return m("success", true, "message", "文章草稿已创建，说「发」即发布", "preview", preview(r));
     }
 
     private Map<String, Object> publishArticle(Map<String, Object> a) {
@@ -163,7 +150,24 @@ public class ToolExecutor {
     // ── Essay ──
 
     private Map<String, Object> createEssay(Map<String, Object> a) {
-        var body = map(a, "title", "content", "mood", "weather", "location");
+        var body = map(a, "content", "mood", "weather", "location", "media");
+        // Normalize media: ensure [{type:"image",url:"..."}] format
+        if (a.containsKey("media") && a.get("media") instanceof String s) {
+            try {
+                var arr = JSONUtil.parseArray(s);
+                var normalized = new cn.hutool.json.JSONArray();
+                for (int i = 0; i < arr.size(); i++) {
+                    var item = arr.get(i);
+                    if (item instanceof String url) {
+                        normalized.add(new JSONObject().set("type", "image").set("url", url));
+                    } else if (item instanceof JSONObject obj) {
+                        if (!obj.containsKey("type")) obj.set("type", "image");
+                        normalized.add(obj);
+                    }
+                }
+                body.set("media", normalized.toString());
+            } catch (Exception e) { /* keep as-is */ }
+        }
         body.set("status", 1);
         var r = api.createEssay(body, token);
         if (r != null) return m("success", true, "message", "随笔已创建", "preview", preview(r));
@@ -185,7 +189,7 @@ public class ToolExecutor {
     // ── Record ──
 
     private Map<String, Object> createRecord(Map<String, Object> a) {
-        var body = map(a, "title", "content", "categoryId");
+        var body = map(a, "content", "categoryId", "cover", "media");
         var r = api.createRecord(body, token);
         if (r != null) return m("success", true, "message", "记录已创建", "preview", preview(r));
         return m("success", false, "message", "创建失败");
@@ -268,8 +272,23 @@ public class ToolExecutor {
         return m("success", false, "message", "创建失败");
     }
 
+    private Map<String, Object> updateWorkExperience(Map<String, Object> a) {
+        long id = num(a, "id");
+        var body = map(a, "company", "position", "location", "description", "startDate", "endDate");
+        body.set("isCurrent", a.getOrDefault("isCurrent", false));
+        var r = api.updateWorkExperience(id, body, token);
+        if (r != null) return m("success", true, "message", "已更新", "preview", preview(r));
+        return m("success", false, "message", "更新失败");
+    }
+
     private Map<String, Object> deleteWorkExperience(Map<String, Object> a) {
         api.deleteWorkExperience(num(a, "id"), token); return m("success", true, "message", "已删除");
+    }
+
+    private Map<String, Object> listWorkExperiences(Map<String, Object> a) {
+        var r = api.listWorkExperiences(token);
+        if (r == null) return m("success", false, "message", "查询失败");
+        return m("success", true, "message", "检索成功", "experiences", r.get("records"));
     }
 
     // ── Project ──
@@ -283,8 +302,40 @@ public class ToolExecutor {
         return m("success", false, "message", "创建失败");
     }
 
+    private Map<String, Object> updateProject(Map<String, Object> a) {
+        long id = num(a, "id");
+        var body = map(a, "name", "summary", "description", "role", "projectUrl");
+        if (a.containsKey("techStack")) body.set("techStack", JSONUtil.toJsonStr(a.get("techStack")));
+        var r = api.updateProject(id, body, token);
+        if (r != null) return m("success", true, "message", "已更新", "preview", preview(r));
+        return m("success", false, "message", "更新失败");
+    }
+
     private Map<String, Object> deleteProject(Map<String, Object> a) {
         api.deleteProject(num(a, "id"), token); return m("success", true, "message", "已删除");
+    }
+
+    private Map<String, Object> listProjects(Map<String, Object> a) {
+        var r = api.listProjects(token);
+        if (r == null) return m("success", false, "message", "查询失败");
+        return m("success", true, "message", "检索成功", "projects", r.get("records"));
+    }
+
+    // ── Image Upload ──
+
+    private Map<String, Object> uploadImage(Map<String, Object> a) {
+        String url = (String) a.get("url");
+        if (url == null || url.isBlank()) return m("success", false, "message", "请提供图片URL");
+        // 本地已上传的文件（/upload/...），直接返回——无需重复上传
+        if (url.startsWith("/upload/") || url.startsWith("https://res.ztcools.com/")) {
+            var preview = new JSONObject();
+            preview.set("path", url);
+            return m("success", true, "message", "图片已就绪", "url", url, "preview", preview);
+        }
+        // 外部URL → 下载后存入COS
+        var r = api.uploadFromUrl(url, token);
+        if (r != null) return m("success", true, "message", "图片已上传", "url", r.get("path"), "preview", preview(r));
+        return m("success", false, "message", "上传失败");
     }
 
     // ── Dashboard ──

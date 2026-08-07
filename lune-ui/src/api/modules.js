@@ -164,5 +164,7 @@ export const agentApi = {
   saveConfig: (data) => request.put('/admin/agent/config', data),
   clearHistory: () => request.delete('/admin/agent/history'),
   getHistory: () => request.get('/admin/agent/history'),
-  setContext: (enabled) => request.put('/admin/agent/context', { params: { enabled } })
+  setContext: (enabled) => request.put('/admin/agent/context', null, { params: { enabled } }),
+  getPreferences: () => request.get('/admin/agent/preferences'),
+  savePreferences: (data) => request.put('/admin/agent/preferences', data)
 }

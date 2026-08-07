@@ -14,6 +14,6 @@ public class AgentConfig {
     private String apiKey;
     private int maxTokens = 4096;
     private double temperature = 0.7;
-    private int maxToolIterations = 5;
-    private int sseTimeoutSeconds = 300;
+    private int maxToolIterations = 8;
+    private int sseTimeoutSeconds = 600;
 }

@@ -24,4 +24,5 @@ public interface CommentService {
     Map<Long, Long> countByTarget(String type);
     Comment createComment(CommentRequest request);
     void deleteComment(Long id);
+    void likeComment(Long id, int delta);
 }

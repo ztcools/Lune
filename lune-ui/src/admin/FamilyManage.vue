@@ -7,13 +7,13 @@
       <el-table-column prop="title" label="标题" min-width="120" />
       <el-table-column label="封面" width="140" align="center">
         <template #default="{row}">
-          <el-image v-if="row.cover" :src="row.cover" fit="cover" class="table-thumb" />
+          <LuneImage v-if="row.cover" :src="row.cover" variant="thumb" alt="" />
           <span v-else class="no-image">暂无</span>
         </template>
       </el-table-column>
       <el-table-column label="背景" width="140" align="center">
         <template #default="{row}">
-          <el-image v-if="row.bgCover" :src="row.bgCover" fit="cover" class="table-thumb" />
+          <LuneImage v-if="row.bgCover" :src="row.bgCover" variant="thumb" alt="" />
           <span v-else class="no-image">暂无</span>
         </template>
       </el-table-column>
@@ -51,7 +51,7 @@
             </el-upload>
           </div>
           <div class="img-preview-row" v-if="fm.cover">
-            <el-image :src="fm.cover" fit="cover" class="form-preview-img" />
+            <LuneImage :src="fm.cover" variant="thumb" alt="" />
             <span class="preview-path">{{ fm.cover }}</span>
             <el-button link type="danger" size="small" @click="fm.cover=''">清除</el-button>
           </div>
@@ -75,7 +75,7 @@
             </el-upload>
           </div>
           <div class="img-preview-row" v-if="fm.bgCover">
-            <el-image :src="fm.bgCover" fit="cover" class="form-preview-img" />
+            <LuneImage :src="fm.bgCover" variant="thumb" alt="" />
             <span class="preview-path">{{ fm.bgCover }}</span>
             <el-button link type="danger" size="small" @click="fm.bgCover=''">清除</el-button>
           </div>
@@ -96,6 +96,7 @@ import { ref, onMounted } from 'vue'
 import { familyApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import LuneImage from '../components/LuneImage.vue'
 
 const items = ref([]); const dlg = ref(false); const edit = ref(null)
 const coverMethod = ref('upload'); const bgMethod = ref('upload')

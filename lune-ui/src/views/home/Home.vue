@@ -1,15 +1,13 @@
 <template>
   <div>
     <!-- Hero background image -->
-    <el-image
-      style="animation: header-effect 2s"
+    <LuneImage
       class="background-image-index"
-      lazy
       :src="bgImage"
-      fit="cover"
-    >
-      <div slot="error" class="image-slot background-image-index-error"></div>
-    </el-image>
+      variant="hero"
+      lcp
+      alt=""
+    />
 
     <!-- PixelSnow full-page overlay（移动端降级为轻量 CSS 雪花） -->
     <!-- 开了「减少动态效果」就整块不渲染：条件写在这里而不是组件内部，
@@ -102,9 +100,7 @@
               <div v-for="(article, index) in recommendArticles" :key="'rec' + index" @click="readerArticleId = article.id">
                 <div class="aside-post-detail">
                   <div class="aside-post-image">
-                    <el-image lazy class="my-el-image" :src="article.cover || ''" fit="cover">
-                      <div slot="error" class="image-slot"><div class="error-aside-image">{{ article.title }}</div></div>
-                    </el-image>
+                    <LuneImage class="my-el-image" :src="article.cover || ''" variant="thumb" alt="" />
                   </div>
                   <div class="aside-post-title">{{ article.title }}</div>
                 </div>
@@ -160,9 +156,7 @@
                     @click="readerArticleId = article.id"
                   >
                     <div class="article-cover-wrap">
-                      <el-image lazy class="article-cover-img" :src="article.cover || ''" fit="cover">
-                        <div slot="error" class="image-slot article-cover-error">{{ article.title }}</div>
-                      </el-image>
+                      <LuneImage class="article-cover-img" :src="article.cover || ''" variant="thumb" alt="" />
                     </div>
                     <div class="article-body">
                       <h3 class="article-title">{{ article.title }}</h3>
@@ -180,7 +174,24 @@
             </div>
           </div>
 
-          <!-- Filtered: flat grid -->
+            <!-- 未分类文章 -->
+            <div v-if="groupedArticles.__uncategorized__ && groupedArticles.__uncategorized__.length > 0">
+              <div class="sort-article-first">
+                <div><span style="color:#FF9800">●</span> 未分类</div>
+              </div>
+              <div class="article-grid">
+                <div v-for="a in groupedArticles.__uncategorized__" :key="a.id" class="article-card shadow-box" @click="readerArticleId = a.id">
+                  <div class="article-cover-wrap"><LuneImage class="article-cover-img" :src="a.cover || ''" variant="thumb" alt="" /></div>
+                  <div class="article-body">
+                    <h3 class="article-title">{{ a.title }}</h3>
+                    <p class="article-summary">{{ a.summary || (a.content || '').substring(0, 120) }}</p>
+                    <div class="article-meta"><span>📅 {{ formatDate(a.createTime) }}</span><span>👁 {{ a.viewCount || 0 }}</span><span>❤️ {{ a.likeCount || 0 }}</span><span>💬 {{ a._cc || 0 }}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <!-- Filtered -->
           <div v-show="indexType === 2">
             <!-- 筛选态必须有出口：进了分类视图没有「返回全部」就只能刷新页面 -->
             <div class="filter-bar">
@@ -198,9 +209,7 @@
                 @click="readerArticleId = article.id"
               >
                 <div class="article-cover-wrap">
-                  <el-image lazy class="article-cover-img" :src="article.cover || ''" fit="cover">
-                    <div slot="error" class="image-slot article-cover-error">{{ article.title }}</div>
-                  </el-image>
+                  <LuneImage class="article-cover-img" :src="article.cover || ''" variant="thumb" alt="" />
                 </div>
                 <div class="article-body">
                   <h3 class="article-title">{{ article.title }}</h3>
@@ -247,6 +256,7 @@ import { useReducedMotion } from '../../composables/useReducedMotion'
 const PixelSnow = defineAsyncComponent(() => import('../../components/PixelSnow/PixelSnow.vue'))
 import ArticleReader from '../../components/ArticleReader.vue'
 import PageBg from '../../components/PageBg.vue'
+import LuneImage from '../../components/LuneImage.vue'
 import MusicPlayer from '../../components/MusicPlayer.vue'
 import FloatPetals from '../../components/effects/FloatPetals.vue'
 
@@ -306,6 +316,10 @@ const groupedArticles = computed(() => {
     if (catId) {
       if (!groups[catId]) groups[catId] = []
       groups[catId].push(article)
+    } else {
+      const key = '__uncategorized__'
+      if (!groups[key]) groups[key] = []
+      groups[key].push(article)
     }
   }
   return groups

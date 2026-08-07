@@ -39,6 +39,21 @@ public class AdminResourceController {
         return Result.success(resourceService.importFromUrl(url));
     }
 
+    /** Agent 专用：从外部 URL 下载图片 → 转 MultipartFile → 走正常 upload 管道 → 存 COS */
+    @PostMapping("/upload-from-url")
+    public Result<Resource> uploadFromUrl(@RequestBody Map<String, String> body) {
+        String url = body.get("url");
+        return Result.success(resourceService.uploadFromUrl(url));
+    }
+
+    /** 粘贴上传：base64 → MultipartFile → 走正常 upload 管道 */
+    @PostMapping("/upload-base64")
+    public Result<Resource> uploadBase64(@RequestBody Map<String, String> body) {
+        String base64 = body.get("base64");
+        String filename = body.getOrDefault("filename", "clipboard.jpg");
+        return Result.success(resourceService.uploadBase64(base64, filename));
+    }
+
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         resourceService.deleteResource(id);

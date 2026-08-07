@@ -3,6 +3,7 @@ package com.lune.agent.controller;
 import com.lune.agent.config.AgentConfig;
 import com.lune.agent.dto.ChatRequest;
 import com.lune.agent.memory.ChatMemory;
+import com.lune.agent.memory.UserPreference;
 import com.lune.agent.pipeline.AgentOrchestrator;
 import com.lune.agent.pipeline.ToolExecutor;
 import org.springframework.http.MediaType;
@@ -19,13 +20,16 @@ public class AgentController {
     private final ChatMemory memory;
     private final AgentConfig config;
     private final ToolExecutor toolExecutor;
+    private final UserPreference preferences;
 
     public AgentController(AgentOrchestrator orchestrator, ChatMemory memory,
-                           AgentConfig config, ToolExecutor toolExecutor) {
+                           AgentConfig config, ToolExecutor toolExecutor,
+                           UserPreference preferences) {
         this.orchestrator = orchestrator;
         this.memory = memory;
         this.config = config;
         this.toolExecutor = toolExecutor;
+        this.preferences = preferences;
     }
 
     private Long resolveUserId(@RequestHeader(value = "X-User-Id", required = false) String uid) {
@@ -75,6 +79,19 @@ public class AgentController {
     @PutMapping("/context")
     public Map<String, Object> setContext(@RequestParam boolean enabled) {
         memory.setContextEnabled(1L, enabled);
+        return Map.of("code", 200, "message", "success");
+    }
+
+    @GetMapping("/preferences")
+    public Map<String, Object> getPreferences(@RequestHeader(value = "X-User-Id", required = false) String uid) {
+        var prefs = preferences.getAll(resolveUserId(uid));
+        return Map.of("code", 200, "data", prefs);
+    }
+
+    @PutMapping("/preferences")
+    public Map<String, Object> savePreferences(@RequestBody Map<String, String> body,
+                                                @RequestHeader(value = "X-User-Id", required = false) String uid) {
+        preferences.setAll(resolveUserId(uid), body);
         return Map.of("code", 200, "message", "success");
     }
 

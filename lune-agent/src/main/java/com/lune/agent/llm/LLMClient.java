@@ -19,7 +19,8 @@ public class LLMClient {
 
     private static final Logger log = LoggerFactory.getLogger(LLMClient.class);
     private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
+            .connectTimeout(Duration.ofSeconds(15))
+            .version(HttpClient.Version.HTTP_1_1)
             .build();
     private final AgentConfig config;
 
@@ -35,6 +36,7 @@ public class LLMClient {
         String apiKey = resolveApiKey();
         if (apiKey == null) return null;
 
+        var uri = config.getBaseUrl().replaceAll("/+$", "") + "/v1/chat/completions";
         try {
             var body = new JSONObject();
             body.set("model", config.getModel());
@@ -46,13 +48,16 @@ public class LLMClient {
                 body.set("tools", tools);
             }
 
-            var uri = config.getBaseUrl().replaceAll("/+$", "") + "/v1/chat/completions";
+            var bodyStr = body.toString();
+            log.debug("LLM request: {} msgs, {} tools, {} bytes → {}",
+                    messages.size(), tools != null ? tools.size() : 0, bodyStr.length(), uri);
+
             var req = HttpRequest.newBuilder()
                     .uri(URI.create(uri))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + apiKey)
                     .timeout(Duration.ofSeconds(120))
-                    .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+                    .POST(HttpRequest.BodyPublishers.ofString(bodyStr))
                     .build();
 
             var resp = http.send(req, HttpResponse.BodyHandlers.ofString());
@@ -63,7 +68,7 @@ public class LLMClient {
             }
             return JSONUtil.parseObj(resp.body());
         } catch (Exception e) {
-            log.error("LLM call failed: {}", e.getMessage());
+            log.error("LLM call failed: {} (uri={})", e.getMessage(), uri);
             return null;
         }
     }

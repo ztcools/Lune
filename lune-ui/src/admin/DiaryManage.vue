@@ -8,7 +8,7 @@
       <el-table-column prop="id" label="ID" width="55" align="center" />
       <el-table-column label="预览" width="100" align="center">
         <template #default="{ row }">
-          <el-image v-if="firstImage(row)" :src="firstImage(row)" fit="cover" class="table-thumb" />
+          <LuneImage v-if="firstImage(row)" :src="firstImage(row)" variant="thumb" alt="" />
           <span v-else style="color:#ccc">无图</span>
         </template>
       </el-table-column>
@@ -70,6 +70,7 @@
 import { ref, onMounted } from 'vue'
 import { diaryApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import LuneImage from '../components/LuneImage.vue'
 
 const list = ref([])
 const page = ref(1)

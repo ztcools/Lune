@@ -38,7 +38,7 @@
           <el-table-column prop="id" label="ID" width="55" align="center" />
           <el-table-column label="封面" width="110" align="center">
             <template #default="{ row }">
-              <el-image v-if="row.cover" :src="row.cover" fit="cover" class="table-thumb" />
+              <LuneImage v-if="row.cover" :src="row.cover" variant="thumb" alt="" />
               <span v-else class="no-image">无</span>
             </template>
           </el-table-column>
@@ -104,7 +104,7 @@
             </el-upload>
             <el-input v-model="projForm.cover" placeholder="或粘贴图片URL" style="flex:1;margin-left:10px" />
           </div>
-          <el-image v-if="projForm.cover" :src="projForm.cover" fit="cover" class="cover-preview" />
+          <LuneImage v-if="projForm.cover" :src="projForm.cover" variant="cover" alt="" class="cover-preview" />
         </el-form-item>
         <el-form-item label="展示媒体"><MediaEditor v-model="projForm.media" /></el-form-item>
         <el-form-item label="预览地址"><el-input v-model="projForm.projectUrl" maxlength="500" placeholder="https://…" /></el-form-item>
@@ -123,6 +123,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { resumeApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import LuneImage from '../components/LuneImage.vue'
 import MediaEditor from './MediaEditor.vue'
 
 const tab = ref('work')

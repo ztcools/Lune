@@ -14,18 +14,26 @@
  * 统一的内容区透明背景（QQ空间风）
  * - 背景图极淡固定，不干扰内容
  * - 叠加柔和的动态渐变光斑，避免空洞留白
+ * - 生产环境自动拼接万象CI参数（移动端用 bgMobile profile）
  * variant: green（默认）/ pink / blue / plain（无光斑，仅背景图）
  */
 import { computed } from 'vue'
+import { useAppStore } from '../stores/app'
+import { processImage } from '../utils/imageUrl'
 
 const props = defineProps({
-  image: { type: [String, Object], default: '' }, // 可为 ref 解包后的字符串
+  image: { type: [String, Object], default: '' },
   variant: { type: String, default: 'green' }
 })
 
+const appStore = useAppStore()
+
 const bgUrl = computed(() => {
   const v = props.image
-  return (v && typeof v === 'object' && 'value' in v) ? v.value : v
+  const raw = (v && typeof v === 'object' && 'value' in v) ? v.value : v
+  if (!raw) return ''
+  const profile = appStore.mobile ? 'bgMobile' : 'bgDesktop'
+  return processImage(raw, profile)
 })
 </script>
 

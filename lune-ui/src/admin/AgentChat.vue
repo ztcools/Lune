@@ -1,14 +1,20 @@
 <template>
-  <div class="agent-page">
+  <div class="agent-page" @dragover.prevent="dragOver = true" @dragleave.prevent="dragOver = false" @drop.prevent="onDrop">
+    <div v-if="dragOver" class="drop-overlay"><div class="drop-hint">松开以上传图片</div></div>
     <!-- Header -->
     <div class="agent-header">
       <div class="agent-header-left">
         <div class="agent-avatar">🤖</div>
         <span class="agent-name">Luna</span>
       </div>
-      <button class="agent-setting-btn" @click="showConfig = true" title="Agent 配置">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      </button>
+      <div class="agent-header-right">
+        <button class="agent-pref-btn" @click="showPref = true" title="偏好设置">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+        </button>
+        <button class="agent-setting-btn" @click="showConfig = true" title="Agent 配置">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+      </div>
     </div>
 
     <!-- Messages -->
@@ -49,24 +55,37 @@
 
     <!-- Input -->
     <div class="agent-input-area">
+      <AgentImageQueue :images="pendingImages" @remove="removeImage" />
       <div class="agent-toolbar">
-        <label class="toolbar-toggle" :class="{ active: contextEnabled }" @click="toggleContext">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          <span>记忆</span>
-        </label>
-        <button class="toolbar-btn" @click="clearHistory" title="清空对话">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-        </button>
+        <div class="toolbar-left">
+          <label class="upload-btn" title="上传图片">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            <input type="file" accept="image/*" multiple hidden @change="onFileSelect" />
+          </label>
+          <button v-for="s in shortcuts" :key="s.key"
+            :class="['shortcut-btn', { active: activeDomain === s.key }]"
+            @click="toggleDomain(s.key)" :title="s.title">{{ s.label }}</button>
+        </div>
+        <div class="toolbar-actions">
+          <label class="toolbar-toggle" :class="{ active: contextEnabled }" @click="toggleContext">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span>记忆</span>
+          </label>
+          <button class="toolbar-btn" @click="clearHistory" title="清空对话">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </button>
+        </div>
       </div>
       <div class="input-row">
         <textarea ref="inputRef" v-model="inputText" class="agent-input"
-          placeholder="输入消息..." rows="1"
+          :placeholder="placeholderText" rows="1"
           @keydown.enter.exact.prevent="handleSend"
           @input="autoResize"
         ></textarea>
-        <button class="send-btn" :class="{ active: inputText.trim() }"
-          @click="handleSend" :disabled="!inputText.trim() || loading">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        <button class="send-btn" :class="{ active: inputText.trim() && !loading, stop: loading }"
+          @click="loading ? cancelRequest() : handleSend()" :disabled="!inputText.trim() && !loading">
+          <svg v-if="loading" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
       </div>
     </div>
@@ -77,6 +96,21 @@
         <div v-if="showConfig" class="config-overlay" @click.self="showConfig = false">
           <div class="config-dialog">
             <AgentConfigDialog @close="showConfig = false" @saved="showConfig = false" />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Preferences Dialog -->
+    <Teleport to="body">
+      <Transition name="dialog">
+        <div v-if="showPref" class="config-overlay" @click.self="showPref = false">
+          <div class="config-dialog">
+            <div class="config-dialog-header">
+              <h3>写作偏好</h3>
+              <button class="config-close" @click="showPref = false">×</button>
+            </div>
+            <AgentPreferenceDialog />
           </div>
         </div>
       </Transition>
@@ -108,6 +142,8 @@ import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { agentApi, articleApi } from '../api/modules'
 import AgentConfigDialog from '../components/agent/AgentConfigDialog.vue'
+import AgentPreferenceDialog from '../components/agent/AgentPreferenceDialog.vue'
+import AgentImageQueue from '../components/agent/AgentImageQueue.vue'
 import ToolResultCard from '../components/agent/ToolResultCard.vue'
 
 let _kid = 0
@@ -117,6 +153,7 @@ const loading = ref(false)
 const streaming = ref(false)
 const contextEnabled = ref(true)
 const showConfig = ref(false)
+const showPref = ref(false)
 const previewArticle = ref(null)
 const msgContainer = ref(null)
 const inputRef = ref(null)
@@ -130,6 +167,93 @@ const visibleMessages = computed(() =>
     return true
   })
 )
+
+const shortcuts = [
+  { key: 'article', label: '@文章', title: '发文/更新文章', placeholder: '输入文章内容...' },
+  { key: 'essay', label: '@随笔', title: '发随笔/朋友圈', placeholder: '记录此刻的想法...' },
+  { key: 'record', label: '@记录', title: '新建记录', placeholder: '打卡/收藏/记录...' },
+  { key: 'work', label: '@工作', title: '添加工作经历', placeholder: '公司+职位+开始日期...' },
+  { key: 'project', label: '@项目', title: '添加项目经历', placeholder: '项目名+简介...' },
+]
+
+const activeDomain = ref(null)
+const pendingImages = ref([])
+const dragOver = ref(false)
+
+const placeholderText = computed(() => {
+  const s = shortcuts.find(s => s.key === activeDomain.value)
+  return s ? s.placeholder : '输入消息...'
+})
+
+function toggleDomain(key) {
+  activeDomain.value = activeDomain.value === key ? null : key
+  inputRef.value?.focus()
+}
+
+function removeImage(idx) {
+  pendingImages.value.splice(idx, 1)
+}
+
+/** 图片上传通用方法：blob → base64 → upload → queue */
+async function queueImage(blob, name) {
+  if (pendingImages.value.length >= 9) {
+    ElMessage.warning('最多上传9张图片')
+    return
+  }
+  if (blob.size > 50 * 1024 * 1024) { ElMessage.error('图片过大（最多50MB）'); return }
+  const tempUrl = URL.createObjectURL(blob)
+  const entry = { url: tempUrl, name, uploading: true }
+  pendingImages.value.push(entry)
+  const idx = pendingImages.value.length - 1
+
+  const reader = new FileReader()
+  reader.onload = async () => {
+    try {
+      const resp = await fetch('/api/admin/resources/upload-base64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+        body: JSON.stringify({ base64: reader.result, filename: name || ('img-' + Date.now() + '.jpg') })
+      })
+      const json = await resp.json()
+      if (json.code === 200 && json.data) {
+        pendingImages.value[idx] = { url: json.data.path, name: json.data.filename || name, uploading: false }
+      } else {
+        pendingImages.value.splice(idx, 1)
+        ElMessage.error('上传失败')
+      }
+    } catch (err) {
+      pendingImages.value.splice(idx, 1)
+      ElMessage.error('上传失败: ' + (err.message || ''))
+    }
+    URL.revokeObjectURL(tempUrl)
+  }
+  reader.readAsDataURL(blob)
+}
+
+function onFileSelect(e) {
+  const files = e.target.files
+  if (!files?.length) return
+  Array.from(files).forEach(f => queueImage(f, f.name))
+  e.target.value = ''
+}
+
+function onDrop(e) {
+  dragOver.value = false
+  const files = e.dataTransfer?.files
+  if (!files?.length) return
+  Array.from(files).filter(f => f.type.startsWith('image/')).forEach(f => queueImage(f, f.name))
+}
+
+async function handlePaste(e) {
+  const items = e.clipboardData?.items
+  if (!items) return
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault()
+      queueImage(item.getAsFile(), 'clipboard-' + Date.now() + '.jpg')
+    }
+  }
+}
 
 function autoResize() {
   const el = inputRef.value
@@ -159,9 +283,27 @@ function addMsg(msg) {
 }
 
 async function handleSend() {
-  const msg = inputText.value.trim()
-  if (!msg || loading.value) return
+  let msg = inputText.value.trim()
+  // 跳过仅空白+图片的情况
+  if (!msg && pendingImages.value.filter(i => !i.uploading).length === 0) return
+  if (loading.value) return
+
+  // @域名前缀
+  if (activeDomain.value) {
+    const s = shortcuts.find(s => s.key === activeDomain.value)
+    msg = (s ? s.label + ' ' : '') + msg
+  }
+
+  // 拼接图片到消息
+  const ready = pendingImages.value.filter(i => !i.uploading)
+  if (ready.length > 0) {
+    msg += '\n' + ready.map((img, idx) => '[图片' + (idx + 1) + '] ' + img.url).join('\n')
+  }
+
   inputText.value = ''
+  // 保留仍在上传中的图片，只清空已完成的
+  pendingImages.value = pendingImages.value.filter(i => i.uploading)
+  activeDomain.value = null
   if (inputRef.value) inputRef.value.style.height = 'auto'
 
   addMsg({ role: 'user', content: msg })
@@ -211,6 +353,17 @@ async function handleSend() {
     loading.value = false
     streaming.value = false
     abortController = null
+    scrollToBottom()
+  }
+}
+
+function cancelRequest() {
+  if (abortController) {
+    abortController.abort()
+    abortController = null
+    loading.value = false
+    streaming.value = false
+    addMsg({ role: 'assistant', content: '⏹ 已取消' })
     scrollToBottom()
   }
 }
@@ -290,6 +443,13 @@ async function toggleContext() {
 }
 
 async function clearHistory() {
+  // 先中止当前请求
+  if (abortController) {
+    abortController.abort()
+    abortController = null
+    loading.value = false
+    streaming.value = false
+  }
   try {
     await agentApi.clearHistory()
     messages.value = []
@@ -298,27 +458,38 @@ async function clearHistory() {
 }
 
 onMounted(async () => {
+  inputRef.value?.addEventListener('paste', handlePaste)
+  // Sync context state from server (true if missing key = default ON)
   try {
-    const history = await agentApi.getHistory()
-    if (history && history.length > 0) {
-      for (const m of history) m._k = ++_kid
-      messages.value = history
+    const res = await agentApi.getHistory()
+    // getHistory returns empty array when no history or server error — that's fine
+    if (Array.isArray(res) && res.length > 0) {
+      for (const m of res) m._k = ++_kid
+      messages.value = res
       await nextTick()
       scrollToBottom()
     }
-  } catch (e) { /* no history */ }
+    // Default memory ON — server returns null for new sessions
+    contextEnabled.value = true
+    await agentApi.setContext(true).catch(() => {})
+  } catch (e) {
+    console.warn('加载历史记录失败:', e)
+    contextEnabled.value = true // default ON even on error
+  }
   nextTick(() => inputRef.value?.focus())
 })
 
 onUnmounted(() => {
   if (abortController) abortController.abort()
+  inputRef.value?.removeEventListener('paste', handlePaste)
 })
 </script>
 
 <style scoped>
 .agent-page {
   display: flex; flex-direction: column;
-  height: calc(100vh - 130px); max-width: 860px; margin: 0 auto;
+  position: absolute; inset: 0;
+  max-width: 860px; margin: 0 auto;
   background: #fff; border-radius: 16px; overflow: hidden;
   box-shadow: 0 2px 20px rgba(0,0,0,.06);
 }
@@ -328,6 +499,14 @@ onUnmounted(() => {
   color: #fff; flex-shrink: 0;
 }
 .agent-header-left { display: flex; align-items: center; gap: 10px; }
+.agent-header-right { display: flex; align-items: center; gap: 6px; }
+.agent-pref-btn {
+  background: rgba(255,255,255,.15); border: none; color: #fff;
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .2s;
+}
+.agent-pref-btn:hover { background: rgba(255,255,255,.3); }
 .agent-avatar {
   width: 34px; height: 34px; border-radius: 10px;
   background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center;
@@ -343,7 +522,7 @@ onUnmounted(() => {
 .agent-setting-btn:hover { background: rgba(255,255,255,.3); }
 
 .agent-messages {
-  flex: 1; overflow-y: auto; padding: 16px 20px;
+  flex: 1; overflow-y: auto; padding: 16px 20px; min-height: 0;
   background: #f0f4f0; display: flex; flex-direction: column; gap: 10px;
 }
 .agent-messages::-webkit-scrollbar { width: 5px; }
@@ -395,7 +574,26 @@ onUnmounted(() => {
   flex-shrink: 0; background: #fff;
   border-top: 1px solid #e8efe8; padding: 10px 16px 14px;
 }
-.agent-toolbar { display: flex; gap: 8px; margin-bottom: 8px; padding: 0 2px; }
+.agent-toolbar { display: flex; gap: 8px; margin-bottom: 8px; padding: 0 2px; justify-content: space-between; align-items: center; }
+.toolbar-left { display: flex; gap: 4px; align-items: center; }
+.shortcut-btn {
+  padding: 4px 10px; border: 1px solid #dce4dc; border-radius: 14px;
+  background: #f5f8f5; color: #5a7a5a; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: var(--trendy-font); white-space: nowrap;
+}
+.shortcut-btn:hover { background: #e0efe0; border-color: #81c784; color: #2e5a2e; }
+.shortcut-btn.active {
+  background: var(--nature-green); color: #fff; border-color: var(--nature-green);
+  box-shadow: 0 2px 8px rgba(76,175,80,0.3);
+}
+.upload-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+  color: #999; transition: all .2s; margin-right: 2px;
+}
+.upload-btn:hover { color: #43a047; background: #f0faf0; }
+.upload-btn input { display: none; }
+.toolbar-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .toolbar-toggle {
   display: flex; align-items: center; gap: 4px;
   font-size: 12px; color: #999; cursor: pointer;
@@ -432,6 +630,8 @@ onUnmounted(() => {
 }
 .send-btn.active { background: linear-gradient(135deg, #66bb6a, #43a047); color: #fff; }
 .send-btn.active:hover { transform: scale(1.05); }
+.send-btn.stop { background: #e74c3c; color: #fff; cursor: pointer; }
+.send-btn.stop:hover { background: #c0392b; transform: scale(1.05); }
 
 .config-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.3);
@@ -440,9 +640,11 @@ onUnmounted(() => {
 }
 .config-dialog {
   background: #fff; border-radius: 16px;
-  width: 420px; max-width: 90vw;
-  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  width: 420px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15); padding: 20px;
 }
+.config-dialog-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.config-dialog-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #3a4a3a; }
 .dialog-enter-active, .dialog-leave-active { transition: opacity .2s; }
 .dialog-enter-from, .dialog-leave-to { opacity: 0; }
 
@@ -485,9 +687,22 @@ onUnmounted(() => {
 .config-close:hover { background: #e8e8e8; }
 
 @media (max-width: 768px) {
-  .agent-page { height: calc(100vh - 84px); border-radius: 0; max-width: 100%; }
+  .agent-page { border-radius: 0; max-width: 100%; }
   .msg-row { max-width: 88%; }
   .agent-messages { padding: 12px; }
   .msg-tool-card { max-width: 95%; }
+}
+
+/* Drag-drop overlay */
+.drop-overlay {
+  position: absolute; inset: 0; z-index: 100;
+  background: rgba(67,160,71,0.12); border: 3px dashed #66bb6a;
+  border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.drop-hint {
+  background: rgba(67,160,71,0.85); color: #fff;
+  padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 700;
+  font-family: var(--trendy-font);
 }
 </style>

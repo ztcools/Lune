@@ -11,7 +11,7 @@
       <el-table-column label="封面" width="150" align="center">
         <template #default="{ row }">
           <template v-if="row.cover">
-            <el-image v-if="!isVideo(row.cover)" :src="row.cover" fit="cover" class="table-thumb" />
+            <LuneImage v-if="!isVideo(row.cover)" :src="row.cover" variant="thumb" alt="" />
             <video v-else :src="row.cover" class="table-thumb-video" />
           </template>
           <span v-else class="no-image">暂无</span>
@@ -67,7 +67,7 @@
             </el-upload>
           </div>
           <div class="img-preview-row" v-if="form.cover">
-            <el-image v-if="!isVideo(form.cover)" :src="form.cover" fit="cover" class="form-preview-img" />
+            <LuneImage v-if="!isVideo(form.cover)" :src="form.cover" variant="thumb" alt="" />
             <video v-else :src="form.cover" class="form-preview-video" controls />
             <span class="preview-path">{{ form.cover }}</span>
             <el-button link type="danger" size="small" @click="form.cover=''">清除</el-button>
@@ -93,6 +93,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { recordApi, categoryApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import LuneImage from '../components/LuneImage.vue'
 
 const records = ref([])
 const categories = ref([])

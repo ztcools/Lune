@@ -103,7 +103,7 @@
               @click="openProject(p)"
             >
               <div class="pc-cover" v-if="p.cover">
-                <el-image :src="p.cover" fit="cover" class="pc-cover-img" />
+                <LuneImage :src="p.cover" variant="cover" alt="" class="pc-cover-img" />
               </div>
               <div class="pc-body">
                 <div class="preview-date" v-if="p.devPeriod"><LineIcon name="clock" :size="13" />{{ p.devPeriod }}</div>
@@ -167,7 +167,7 @@
         <div class="detail-card">
           <button class="detail-close" @click="detailProject = null">×</button>
           <div class="detail-cover" v-if="detailProject.cover">
-            <el-image :src="detailProject.cover" fit="cover" class="detail-cover-img" />
+            <LuneImage :src="detailProject.cover" variant="hero" alt="" class="detail-cover-img" />
           </div>
           <div class="detail-head">
             <span class="detail-badge"><LineIcon name="layers" :size="26" /></span>
@@ -224,6 +224,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { resumeApi, userProfileApi, siteConfigApi } from '../../api/modules'
 import { usePageBackground } from '../../composables/usePageBackground'
+import LuneImage from '../../components/LuneImage.vue'
 import AltTimeline from '../../components/AltTimeline.vue'
 import LineIcon from '../../components/LineIcon.vue'
 import MediaGrid from './MediaGrid.vue'

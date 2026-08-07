@@ -10,7 +10,7 @@
       <el-table-column prop="title" label="标题" min-width="160" show-overflow-tooltip />
       <el-table-column label="封面" width="150" align="center">
         <template #default="{ row }">
-          <el-image v-if="row.cover" :src="row.cover" fit="cover" class="table-thumb" />
+          <LuneImage v-if="row.cover" :src="row.cover" variant="thumb" alt="" />
           <span v-else class="no-image">暂无</span>
         </template>
       </el-table-column>
@@ -67,7 +67,7 @@
             </el-upload>
           </div>
           <div class="img-preview-row" v-if="form.cover">
-            <el-image :src="form.cover" fit="cover" class="form-preview-img" />
+            <LuneImage :src="form.cover" variant="thumb" alt="" />
             <span class="preview-path">{{ form.cover }}</span>
             <el-button link type="danger" size="small" @click="form.cover=''">清除</el-button>
           </div>
@@ -93,6 +93,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { essayApi } from '../api/modules'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import LuneImage from '../components/LuneImage.vue'
 import MediaEditor from './MediaEditor.vue'
 
 const essays = ref([])

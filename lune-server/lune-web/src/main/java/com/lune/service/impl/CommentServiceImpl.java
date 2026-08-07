@@ -106,4 +106,12 @@ public class CommentServiceImpl implements CommentService {
     public void deleteComment(Long id) {
         commentMapper.deleteById(id);
     }
+
+    @Override
+    public void likeComment(Long id, int delta) {
+        var wrapper = new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Comment>()
+                .eq(Comment::getId, id)
+                .setSql("like_count = GREATEST(0, COALESCE(like_count, 0) + " + delta + ")");
+        commentMapper.update(null, wrapper);
+    }
 }

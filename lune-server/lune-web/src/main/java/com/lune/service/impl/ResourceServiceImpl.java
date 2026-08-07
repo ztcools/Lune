@@ -114,6 +114,84 @@ public class ResourceServiceImpl implements ResourceService {
     }
 
     @Override
+    public Resource uploadFromUrl(String url) {
+        if (url == null || url.isBlank()) throw new BusinessException("URL不能为空");
+        try {
+            // 下载图片字节
+            var client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(15))
+                    .build();
+            var req = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .timeout(java.time.Duration.ofSeconds(30))
+                    .GET().build();
+            var resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+            if (resp.statusCode() != 200) throw new BusinessException("下载图片失败: HTTP " + resp.statusCode());
+
+            byte[] bytes = resp.body();
+            if (bytes.length > MAX_FILE_SIZE) throw new BusinessException("图片过大: " + bytes.length + " bytes");
+
+            // 推断文件名和扩展名
+            String filename = url.substring(url.lastIndexOf('/') + 1);
+            int qi = filename.indexOf('?');
+            if (qi > 0) filename = filename.substring(0, qi);
+            if (filename.isEmpty() || !filename.contains(".")) filename = "download.jpg";
+            String ext = getExtension(filename);
+            if (!ALLOWED_EXTENSIONS.contains(ext.toLowerCase())) ext = "jpg";
+
+            // 推断 Content-Type
+            String contentType = resp.headers().firstValue("Content-Type").orElse("image/jpeg");
+            if (!contentType.startsWith("image/") && !contentType.startsWith("video/")) {
+                contentType = "image/jpeg";
+            }
+
+            // 转为 MultipartFile 走正常上传管道
+            var mf = new org.springframework.mock.web.MockMultipartFile(
+                    "file", filename, contentType, bytes);
+            return upload(mf);
+        } catch (com.lune.common.BusinessException e) { throw e; }
+        catch (Exception e) {
+            log.error("uploadFromUrl failed: {}", url, e);
+            throw new BusinessException("从URL上传失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Resource uploadBase64(String base64Data, String filename) {
+        if (base64Data == null || base64Data.isBlank()) throw new BusinessException("base64数据不能为空");
+        try {
+            // 解析 data:image/jpeg;base64,xxx 格式
+            String pure = base64Data;
+            String contentType = "image/jpeg";
+            if (base64Data.startsWith("data:")) {
+                int commaIdx = base64Data.indexOf(',');
+                if (commaIdx > 0) {
+                    String header = base64Data.substring(0, commaIdx);
+                    if (header.contains(";")) {
+                        contentType = header.substring(5, header.indexOf(';'));
+                    }
+                    pure = base64Data.substring(commaIdx + 1);
+                }
+            }
+
+            byte[] bytes = java.util.Base64.getDecoder().decode(pure);
+            if (bytes.length > MAX_FILE_SIZE) throw new BusinessException("图片过大: " + bytes.length + " bytes");
+
+            if (filename == null || filename.isBlank() || !filename.contains(".")) {
+                filename = "clipboard." + (contentType.contains("png") ? "png" : "jpg");
+            }
+
+            var mf = new org.springframework.mock.web.MockMultipartFile(
+                    "file", filename, contentType, bytes);
+            return upload(mf);
+        } catch (com.lune.common.BusinessException e) { throw e; }
+        catch (Exception e) {
+            log.error("uploadBase64 failed", e);
+            throw new BusinessException("base64上传失败: " + e.getMessage());
+        }
+    }
+
+    @Override
     public void deleteResource(Long id) {
         Resource resource = resourceMapper.selectById(id);
         if (resource != null) {

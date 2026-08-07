@@ -83,9 +83,7 @@
     <div v-show="activeTab === 'painting'" class="painting-card">
       <div class="painting-inner">
         <div class="painting-frame">
-          <el-image :src="paintingUrl" class="painting-img" fit="cover">
-            <template #error><div class="painting-fallback"></div></template>
-          </el-image>
+          <LuneImage :src="paintingUrl" class="painting-img" variant="hero" alt="世界名画" />
           <div class="painting-vignette" />
           <div class="painting-label">世界名画 · 我们的爱</div>
         </div>
@@ -158,6 +156,7 @@ import { useUserStore } from '../../stores/user'
 import { ElMessage } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
 import { usePageBackground } from '../../composables/usePageBackground'
+import LuneImage from '../../components/LuneImage.vue'
 import SakuraFall from '../../components/SakuraFall.vue'
 
 const familyHeroBg = usePageBackground('familyHero')

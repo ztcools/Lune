@@ -106,6 +106,7 @@ function timeAgo(d) {
 </script>
 
 <style scoped>
+.comment-section { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .comment-panel-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
 .comment-panel-header h3 { margin: 0; font-size: 17px; font-weight: 600; color: #333; }
 .comment-panel-close { background: none; border: none; font-size: 24px; color: #999; cursor: pointer; padding: 0 4px; line-height: 1; }

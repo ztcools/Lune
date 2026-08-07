@@ -76,6 +76,11 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- MockMultipartFile 依赖（upload-from-url / upload-base64 使用） -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+        </dependency>
         <!-- 腾讯云 COS 对象存储 SDK -->
         <dependency>
             <groupId>com.qcloud</groupId>

@@ -2,7 +2,7 @@
   <div class="media-editor">
     <div class="media-list">
       <div v-for="(m, i) in items" :key="i" class="media-item">
-        <el-image v-if="m.type === 'image'" :src="m.url" fit="cover" class="media-thumb" />
+        <LuneImage v-if="m.type === 'image'" :src="m.url" variant="thumb" alt="" />
         <video v-else :src="m.url" class="media-thumb video" controls preload="metadata"></video>
         <div class="media-mask">
           <el-icon class="media-del" @click="remove(i)"><Delete /></el-icon>
@@ -33,6 +33,7 @@
 import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
+import LuneImage from '../components/LuneImage.vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' }, // JSON 字符串

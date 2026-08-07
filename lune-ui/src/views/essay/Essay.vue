@@ -41,15 +41,9 @@
           <div class="moment-media" v-if="essay.mediaList.length">
             <div :class="'mgrid mgrid-' + Math.min(essay.mediaList.length, 9)">
               <div v-for="(m, mi) in essay.mediaList.slice(0, 9)" :key="mi" class="mgrid-item">
-                <el-image
+                <LuneImage
                   v-if="m.type === 'image'"
-                  :src="m.url" fit="cover" class="mgrid-img"
-                  :preview-src-list="essay.imageList"
-                  :initial-index="essay.imageList.indexOf(m.url)"
-                  preview-teleported
-                  :z-index="3000"
-                  hide-on-click-modal
-                  lazy
+                  :src="m.url" variant="content" class="mgrid-img"
                 />
                 <video v-else :src="m.url" controls class="mgrid-video" preload="metadata"></video>
               </div>
@@ -151,6 +145,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { requireLogin } from '../../composables/useAuth'
 import MiniProfileCard from '../../components/MiniProfileCard.vue'
 import MediaEditor from '../../admin/MediaEditor.vue'
+import LuneImage from '../../components/LuneImage.vue'
 import PageBg from '../../components/PageBg.vue'
 
 const userStore = useUserStore()
@@ -184,7 +179,15 @@ onMounted(() => fetchEssays())
 
 function parseMedia(json) {
   if (!json) return []
-  try { const a = JSON.parse(json); return Array.isArray(a) ? a.filter(m => m && m.url) : [] } catch { return [] }
+  try {
+    let a = JSON.parse(json)
+    if (!Array.isArray(a)) return []
+    return a.map(m => {
+      if (typeof m === 'string') return { type: 'image', url: m }
+      if (m && m.url) return { type: m.type || 'image', url: m.url }
+      return null
+    }).filter(Boolean)
+  } catch { return [] }
 }
 
 async function fetchEssays(reset = false) {
