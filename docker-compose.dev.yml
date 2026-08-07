@@ -39,6 +39,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - LUNE_API_URL=http://backend:8081
       - AGENT_API_KEY=${AGENT_API_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-only-for-local-development}
       - TZ=Asia/Shanghai
     depends_on:
       redis:
