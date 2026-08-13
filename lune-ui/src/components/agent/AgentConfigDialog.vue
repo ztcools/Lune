@@ -6,12 +6,6 @@
     </div>
     <div class="config-body">
       <div class="config-field">
-        <label>提供商</label>
-        <el-select v-model="form.provider" size="default" style="width:100%">
-          <el-option label="DeepSeek" value="deepseek" />
-        </el-select>
-      </div>
-      <div class="config-field">
         <label>API 地址</label>
         <el-input v-model="form.baseUrl" placeholder="https://aigw.phigent.cn" />
         <p class="field-hint">自定义网关地址，不含 /v1 后缀</p>
@@ -48,7 +42,6 @@ import { agentApi } from '../../api/modules'
 const emit = defineEmits(['close', 'saved'])
 
 const form = reactive({
-  provider: 'deepseek',
   baseUrl: 'https://aigw.phigent.cn',
   model: 'deepseek/deepseek-v4-flash',
   apiKey: ''
@@ -63,10 +56,10 @@ onMounted(async () => {
   try {
     const config = await agentApi.getConfig()
     if (config) {
-      if (config.provider) form.provider = config.provider
       if (config.baseUrl) form.baseUrl = config.baseUrl
       if (config.model) form.model = config.model
-      if (config.apiKey) form.apiKey = config.apiKey
+      // 后端返回的是脱敏占位符（sk-****xxxx），不回填，避免误用/误存
+      if (config.apiKey && !config.apiKey.startsWith('sk-****')) form.apiKey = config.apiKey
     }
   } catch (e) { /* use defaults */ }
 })
@@ -107,7 +100,6 @@ async function saveConfig() {
   saving.value = true
   try {
     await agentApi.saveConfig({
-      provider: form.provider,
       baseUrl: form.baseUrl.replace(/\/+$/, ''),
       model: form.model,
       apiKey: form.apiKey

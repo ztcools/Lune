@@ -56,17 +56,6 @@ public class UserPreference {
         return getDefaults();
     }
 
-    /** 获取单条偏好 */
-    public String get(Long userId, String field) {
-        try {
-            var val = redis.<String, String>opsForHash().get(key(userId), field);
-            if (val != null) return val;
-        } catch (Exception e) {
-            log.warn("Failed to load preference {} for user {}: {}", field, userId, e.getMessage());
-        }
-        return getDefaults().get(field);
-    }
-
     /** 设置单条偏好 */
     public void set(Long userId, String field, String value) {
         try {

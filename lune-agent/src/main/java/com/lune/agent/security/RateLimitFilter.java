@@ -89,7 +89,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             zset.removeRangeByScore(key, 0, windowStart);
             Long count = zset.zCard(key);
             if (count != null && count >= limit) return false;
-            zset.add(key, String.valueOf(now), now);
+            // 成员用纳秒保证唯一，避免同毫秒并发覆盖计数
+            zset.add(key, now + ":" + System.nanoTime(), now);
             redis.expire(key, Duration.ofSeconds(windowSeconds + 1));
             return true;
         } catch (Exception e) {

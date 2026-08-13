@@ -30,8 +30,9 @@ HTTP POST /api/admin/agent/chat
 
 ```
 Redis Keys:
-  agent:chat:{userId}:{yyyy-MM-dd}  → JSON array (max 100 messages)
-  agent:context:{userId}            → "true"/"false"
+  agent:chat:{userId}:{sessionId}:{yyyy-MM-dd} → JSON array (max 100 messages)
+  agent:context:{userId}                      → "true"/"false"
+  agent:pref:{userId}                         → Hash（用户偏好，不过期）
 
 Lifecycle:
   - Every message pushed to array
@@ -40,7 +41,7 @@ Lifecycle:
   - Manual clear via "清空" button
 ```
 
-## Tools (22 Function Calls)
+## Tools (28 Function Calls)
 
 | Category | Tools |
 |----------|-------|
@@ -51,10 +52,17 @@ Lifecycle:
 | 许愿池 | list_wishes, manage_wish |
 | 网站配置 | get_site_config, update_site_config |
 | 分类 | list_categories |
-| 简历 | create_work_experience, delete_work_experience, create_project, delete_project |
-| 统计 | get_dashboard_stats |
+| 简历·工作 | create_work_experience, update_work_experience, delete_work_experience, list_work_experiences |
+| 简历·项目 | create_project, update_project, delete_project, list_projects |
+| 资源 & 统计 | upload_image, get_dashboard_stats |
 
 All tools execute via `LuneApiClient` → HTTP calls to `lune-web` admin API.
+
+## Routing
+
+领域路由（零 LLM 调用）由 `AgentProfiles` 注册表统一声明：`@文章/@随笔/...` 显式前缀 +
+关键词命中。恰好命中一个领域 → 该领域；零个/多个 → 通用兜底。新增领域只需在
+`AgentProfiles` 加一条常量，无需改动 `AgentOrchestrator`。
 
 ## Configuration
 

@@ -1,6 +1,5 @@
 package com.lune.agent.pipeline;
 
-import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.lune.agent.client.LuneApiClient;
@@ -9,21 +8,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 工具执行器 —— 注册表模式。
  *
  * <p>每种工具按领域分组为内部 Handler 类，通过 {@code Map<String, ToolHandler>} 路由。
  * 新增工具只需在对应 Handler 的 switch 中添加 case，无需修改本类的 dispatch 逻辑。
- * 工具调用有 30 秒超时保护。</p>
+ * 工具超时由 {@link LuneApiClient} 的 HTTP 客户端（30s）兜底。</p>
  */
 @Component
 public class ToolExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(ToolExecutor.class);
-    private static final long TOOL_TIMEOUT_SECONDS = 30;
 
     private final Map<String, ToolHandler> handlers = new LinkedHashMap<>();
 
@@ -57,35 +53,18 @@ public class ToolExecutor {
         for (var name : names) handlers.put(name, handler);
     }
 
-    /** @deprecated 使用 {@link ToolDefinitions#allDefinitions()}，保留以兼容 */
-    public JSONArray getDefinitions() {
-        return ToolDefinitions.allDefinitions();
-    }
-
     /**
-     * 执行工具调用，带 30 秒超时保护。
+     * 执行工具调用。超时由 {@link LuneApiClient} 的 HTTP 客户端（30s）兜底，
+     * 此处直接同步执行，避免嵌套线程池。
      */
-    @SuppressWarnings("unchecked")
     public Map<String, Object> execute(String name, Map<String, Object> args, String token) {
         var handler = handlers.get(name);
         if (handler == null) return m("success", false, "message", "未知工具: " + name);
         try {
-            return CompletableFuture
-                    .supplyAsync(() -> {
-                        try {
-                            return handler.execute(name, args, token);
-                        } catch (Exception e) {
-                            log.error("Tool {} error: {}", name, e.getMessage(), e);
-                            return m("success", false, "message", "执行失败: " + e.getMessage());
-                        }
-                    })
-                    .get(TOOL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.warn("Tool {} timed out after {}s", name, TOOL_TIMEOUT_SECONDS);
-            return m("success", false, "message", "操作超时（" + TOOL_TIMEOUT_SECONDS + "秒），请简化请求后重试");
+            return handler.execute(name, args, token);
         } catch (Exception e) {
-            log.error("Tool {} unexpected: {}", name, e.getMessage(), e);
-            return m("success", false, "message", "执行异常: " + e.getMessage());
+            log.error("Tool {} error: {}", name, e.getMessage(), e);
+            return m("success", false, "message", "执行失败: " + e.getMessage());
         }
     }
 
@@ -104,7 +83,10 @@ public class ToolExecutor {
         return r;
     }
 
-    static long num(Map<String, Object> m, String k) { return ((Number) m.get(k)).longValue(); }
+    static long num(Map<String, Object> m, String k) {
+        var v = m.get(k);
+        return v instanceof Number n ? n.longValue() : 0L;
+    }
 
     static JSONObject mapObj(Map<String, Object> src, String... keys) {
         var dst = new JSONObject();
@@ -120,6 +102,11 @@ public class ToolExecutor {
         var m = new LinkedHashMap<String, Object>();
         for (var k : obj.keySet()) m.put(k, obj.get(k));
         return m;
+    }
+
+    /** 删除类工具的统一返回：根据 API 删除结果上报成败。 */
+    static Map<String, Object> deleted(boolean ok) {
+        return m("success", ok, "message", ok ? "已删除" : "删除失败");
     }
 
     // ──── Domain Handlers ────
@@ -164,10 +151,7 @@ public class ToolExecutor {
                     if (opt.isPresent()) yield m("success", true, "message", "已更新", "preview", preview(opt.get()));
                     yield m("success", false, "message", "更新失败");
                 }
-                case "delete_article" -> {
-                    api.deleteArticle(num(a, "id"), token);
-                    yield m("success", true, "message", "已删除");
-                }
+                case "delete_article" -> deleted(api.deleteArticle(num(a, "id"), token));
                 case "list_articles" -> {
                     int page = a.containsKey("page") ? ((Number) a.get("page")).intValue() : 1;
                     int size = a.containsKey("size") ? ((Number) a.get("size")).intValue() : 10;
@@ -209,7 +193,7 @@ public class ToolExecutor {
                     if (opt.isPresent()) yield m("success", true, "message", "随笔已创建", "preview", preview(opt.get()));
                     yield m("success", false, "message", "创建失败");
                 }
-                case "delete_essay" -> { api.deleteEssay(num(a, "id"), token); yield m("success", true, "message", "已删除"); }
+                case "delete_essay" -> deleted(api.deleteEssay(num(a, "id"), token));
                 case "list_essays" -> {
                     int page = a.containsKey("page") ? ((Number) a.get("page")).intValue() : 1;
                     int size = a.containsKey("size") ? ((Number) a.get("size")).intValue() : 10;
@@ -234,7 +218,7 @@ public class ToolExecutor {
                     if (opt.isPresent()) yield m("success", true, "message", "记录已创建", "preview", preview(opt.get()));
                     yield m("success", false, "message", "创建失败");
                 }
-                case "delete_record" -> { api.deleteRecord(num(a, "id"), token); yield m("success", true, "message", "已删除"); }
+                case "delete_record" -> deleted(api.deleteRecord(num(a, "id"), token));
                 case "list_records" -> {
                     int page = a.containsKey("page") ? ((Number) a.get("page")).intValue() : 1;
                     int size = a.containsKey("size") ? ((Number) a.get("size")).intValue() : 10;
@@ -262,7 +246,7 @@ public class ToolExecutor {
                     var obj = opt.get();
                     yield m("success", true, "message", "共 " + obj.get("total") + " 条", "total", obj.get("total"), "treeholes", obj.get("records"));
                 }
-                case "delete_treehole" -> { api.deleteTreeHole(num(a, "id"), token); yield m("success", true, "message", "已删除"); }
+                case "delete_treehole" -> deleted(api.deleteTreeHole(num(a, "id"), token));
                 default -> m("success", false, "message", "Unknown treehole tool: " + name);
             };
         }
@@ -282,7 +266,7 @@ public class ToolExecutor {
                     yield m("success", true, "message", "共 " + obj.get("total") + " 条", "total", obj.get("total"), "wishes", obj.get("records"));
                 }
                 case "manage_wish" -> {
-                    if ("delete".equals(a.get("action"))) { api.deleteWish(num(a, "id"), token); yield m("success", true, "message", "已删除"); }
+                    if ("delete".equals(a.get("action"))) yield deleted(api.deleteWish(num(a, "id"), token));
                     yield m("success", false, "message", "未知操作");
                 }
                 default -> m("success", false, "message", "Unknown wish tool: " + name);
@@ -343,7 +327,7 @@ public class ToolExecutor {
                     if (opt.isPresent()) yield m("success", true, "message", "已更新", "preview", preview(opt.get()));
                     yield m("success", false, "message", "更新失败");
                 }
-                case "delete_work_experience" -> { api.deleteWorkExperience(num(a, "id"), token); yield m("success", true, "message", "已删除"); }
+                case "delete_work_experience" -> deleted(api.deleteWorkExperience(num(a, "id"), token));
                 case "list_work_experiences" -> {
                     var opt = api.listWorkExperiences(token);
                     if (opt.isEmpty()) yield m("success", false, "message", "查询失败");
@@ -365,7 +349,7 @@ public class ToolExecutor {
                     if (opt.isPresent()) yield m("success", true, "message", "已更新", "preview", preview(opt.get()));
                     yield m("success", false, "message", "更新失败");
                 }
-                case "delete_project" -> { api.deleteProject(num(a, "id"), token); yield m("success", true, "message", "已删除"); }
+                case "delete_project" -> deleted(api.deleteProject(num(a, "id"), token));
                 case "list_projects" -> {
                     var opt = api.listProjects(token);
                     if (opt.isEmpty()) yield m("success", false, "message", "查询失败");
@@ -411,17 +395,14 @@ public class ToolExecutor {
         private final LuneApiClient api;
         DashboardHandler(LuneApiClient api) { this.api = api; }
         public Map<String, Object> execute(String name, Map<String, Object> a, String token) {
-            var artsF = CompletableFuture.supplyAsync(() -> api.listArticles(1, 1, token).map(o -> o.get("total")).orElse(0));
-            var essaysF = CompletableFuture.supplyAsync(() -> api.listEssays(1, 1, token).map(o -> o.get("total")).orElse(0));
-            var holesF = CompletableFuture.supplyAsync(() -> api.listTreeHoles(1, 1, token).map(o -> o.get("total")).orElse(0));
-            var wishesF = CompletableFuture.supplyAsync(() -> api.listWishes(1, 1, token).map(o -> o.get("total")).orElse(0));
-            var r = new HashMap<String, Object>();
-            r.put("success", true); r.put("message", "网站统计");
-            try { r.put("articleCount", artsF.get(10, TimeUnit.SECONDS)); } catch (Exception e) { r.put("articleCount", 0); }
-            try { r.put("essayCount", essaysF.get(10, TimeUnit.SECONDS)); } catch (Exception e) { r.put("essayCount", 0); }
-            try { r.put("treeholeCount", holesF.get(10, TimeUnit.SECONDS)); } catch (Exception e) { r.put("treeholeCount", 0); }
-            try { r.put("wishCount", wishesF.get(10, TimeUnit.SECONDS)); } catch (Exception e) { r.put("wishCount", 0); }
-            return r;
+            return m("success", true, "message", "网站统计",
+                    "articleCount", count(() -> api.listArticles(1, 1, token)),
+                    "essayCount", count(() -> api.listEssays(1, 1, token)),
+                    "treeholeCount", count(() -> api.listTreeHoles(1, 1, token)),
+                    "wishCount", count(() -> api.listWishes(1, 1, token)));
+        }
+        private Object count(java.util.function.Supplier<Optional<JSONObject>> s) {
+            return s.get().map(o -> o.get("total")).orElse(0);
         }
     }
 }

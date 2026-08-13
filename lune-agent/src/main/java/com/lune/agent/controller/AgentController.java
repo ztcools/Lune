@@ -56,7 +56,6 @@ public class AgentController {
         // 仅暴露后 4 位，前缀替换为固定值，防止密钥猜测
         var masked = (k != null && k.length() > 4) ? "sk-****" + k.substring(k.length() - 4) : (k != null ? "****" : "");
         return Map.of("code", 200, "data", Map.of(
-                "provider", config.getProvider(),
                 "baseUrl", config.getBaseUrl(),
                 "model", config.getModel(),
                 "apiKey", masked
@@ -67,29 +66,35 @@ public class AgentController {
     public Map<String, Object> saveConfig(@RequestBody Map<String, Object> body) {
         if (body.containsKey("baseUrl")) config.setBaseUrl((String) body.get("baseUrl"));
         if (body.containsKey("model")) config.setModel((String) body.get("model"));
-        if (body.containsKey("apiKey")) config.setApiKey((String) body.get("apiKey"));
+        if (body.containsKey("apiKey")) {
+            var key = (String) body.get("apiKey");
+            // 忽略脱敏占位符（"sk-****xxxx"），避免前端把掩码回写覆盖真实密钥
+            if (key != null && !key.isBlank() && !key.startsWith("sk-****")) {
+                config.setApiKey(key);
+            }
+        }
         return Map.of("code", 200, "message", "success");
     }
 
     @DeleteMapping("/history")
     public Map<String, Object> clearHistory(@RequestParam(defaultValue = "default") String sessionId) {
-        memory.clear(1L, sessionId);
+        memory.clear(resolveUserId(), sessionId);
         return Map.of("code", 200, "message", "success");
     }
 
     @GetMapping("/history")
     public Map<String, Object> getHistory(@RequestParam(defaultValue = "default") String sessionId) {
-        return Map.of("code", 200, "data", memory.load(1L, sessionId));
+        return Map.of("code", 200, "data", memory.load(resolveUserId(), sessionId));
     }
 
     @GetMapping("/sessions")
     public Map<String, Object> listSessions() {
-        return Map.of("code", 200, "data", memory.listSessions(1L));
+        return Map.of("code", 200, "data", memory.listSessions(resolveUserId()));
     }
 
     @PutMapping("/context")
     public Map<String, Object> setContext(@RequestParam boolean enabled) {
-        memory.setContextEnabled(1L, enabled);
+        memory.setContextEnabled(resolveUserId(), enabled);
         return Map.of("code", 200, "message", "success");
     }
 

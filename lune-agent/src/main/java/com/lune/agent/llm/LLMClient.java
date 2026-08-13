@@ -86,8 +86,8 @@ public class LLMClient {
 
     private JSONObject doCall(JSONArray messages, JSONArray tools, boolean stream,
                               Consumer<String> onChunk) throws Exception {
-        String apiKey = resolveApiKey();
-        if (apiKey == null) return null;
+        String apiKey = config.getApiKey();
+        if (apiKey == null || apiKey.isBlank()) return null;
 
         var uri = config.getBaseUrl().replaceAll("/+$", "") + "/v1/chat/completions";
         var body = new JSONObject();
@@ -244,12 +244,5 @@ public class LLMClient {
         merged.set("choices", choices);
 
         return merged;
-    }
-
-    private String resolveApiKey() {
-        var key = config.getApiKey();
-        if (key != null && !key.isBlank()) return key;
-        key = System.getenv("AGENT_API_KEY");
-        return (key != null && !key.isBlank()) ? key : null;
     }
 }
