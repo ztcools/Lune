@@ -147,6 +147,7 @@ import AgentImageQueue from '../components/agent/AgentImageQueue.vue'
 import ToolResultCard from '../components/agent/ToolResultCard.vue'
 
 let _kid = 0
+let _imgId = 0
 const messages = ref([])
 const inputText = ref('')
 const loading = ref(false)
@@ -202,9 +203,8 @@ async function queueImage(blob, name) {
   }
   if (blob.size > 50 * 1024 * 1024) { ElMessage.error('图片过大（最多50MB）'); return }
   const tempUrl = URL.createObjectURL(blob)
-  const entry = { url: tempUrl, name, uploading: true }
-  pendingImages.value.push(entry)
-  const idx = pendingImages.value.length - 1
+  const id = ++_imgId
+  pendingImages.value.push({ id, url: tempUrl, name, uploading: true })
 
   const reader = new FileReader()
   reader.onload = async () => {
@@ -215,16 +215,26 @@ async function queueImage(blob, name) {
         body: JSON.stringify({ base64: reader.result, filename: name || ('img-' + Date.now() + '.jpg') })
       })
       const json = await resp.json()
-      if (json.code === 200 && json.data) {
-        pendingImages.value[idx] = { url: json.data.path, name: json.data.filename || name, uploading: false }
+      // 用稳定 id 定位，避免上传期间移除其它图片导致索引错位
+      const i = pendingImages.value.findIndex(x => x.id === id)
+      if (i === -1) return
+      if (resp.ok && json.code === 200 && json.data) {
+        pendingImages.value[i] = { id, url: json.data.path, name: json.data.filename || name, uploading: false }
       } else {
-        pendingImages.value.splice(idx, 1)
+        pendingImages.value.splice(i, 1)
         ElMessage.error('上传失败')
       }
     } catch (err) {
-      pendingImages.value.splice(idx, 1)
+      const i = pendingImages.value.findIndex(x => x.id === id)
+      if (i !== -1) pendingImages.value.splice(i, 1)
       ElMessage.error('上传失败: ' + (err.message || ''))
+    } finally {
+      URL.revokeObjectURL(tempUrl)
     }
+  }
+  reader.onerror = () => {
+    const i = pendingImages.value.findIndex(x => x.id === id)
+    if (i !== -1) pendingImages.value.splice(i, 1)
     URL.revokeObjectURL(tempUrl)
   }
   reader.readAsDataURL(blob)
@@ -268,13 +278,20 @@ function scrollToBottom() {
   })
 }
 
+const mdCache = new Map()
 function renderMd(text) {
   if (!text) return ''
-  return text
+  const hit = mdCache.get(text)
+  if (hit !== undefined) return hit
+  const html = text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
     .replace(/\n/g, '<br>')
+  // 防止流式期间每个 token 累积出无界中间态；超阈值清空重来
+  if (mdCache.size > 2000) mdCache.clear()
+  mdCache.set(text, html)
+  return html
 }
 
 function addMsg(msg) {
@@ -328,22 +345,11 @@ async function handleSend() {
       const { done, value } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
-      // Split SSE events by double newline
-      const parts = buffer.split('\n\n')
-      buffer = parts.pop() || ''
-      for (const block of parts) {
-        if (!block.trim()) continue
-        // Extract data: payload — SseEmitter sends "data:{json}" (no space after colon)
-        for (const line of block.split('\n')) {
-          const trimmed = line.trim()
-          if (!trimmed.startsWith('data:')) continue
-          // Handle both "data:{...}" and "data: {...}"
-          const payload = trimmed[5] === ' ' ? trimmed.slice(6) : trimmed.slice(5)
-          if (!payload) continue
-          try { handleSSE(JSON.parse(payload)) } catch (e) { /* skip malformed */ }
-        }
-      }
+      buffer = parseSSE(buffer)
     }
+    // 收尾：flush 剩余 buffer + finalize 多字节字符（避免尾部事件/字符丢失）
+    buffer += decoder.decode()
+    parseSSE(buffer)
   } catch (e) {
     if (e.name !== 'AbortError') {
       ElMessage.error('连接失败: ' + e.message)
@@ -366,6 +372,24 @@ function cancelRequest() {
     addMsg({ role: 'assistant', content: '⏹ 已取消' })
     scrollToBottom()
   }
+}
+
+/** 解析 SSE buffer：处理完整事件（以双换行分隔），返回未消费的尾部 buffer。 */
+function parseSSE(buffer) {
+  const parts = buffer.split(/\r?\n\r?\n/)
+  const rest = parts.pop() || ''
+  for (const block of parts) {
+    if (!block.trim()) continue
+    for (const line of block.split(/\r?\n/)) {
+      const trimmed = line.trim()
+      if (!trimmed.startsWith('data:')) continue
+      // 兼容 "data:{json}" 与 "data: {json}"
+      const payload = trimmed[5] === ' ' ? trimmed.slice(6) : trimmed.slice(5)
+      if (!payload) continue
+      try { handleSSE(JSON.parse(payload)) } catch (e) { /* skip malformed */ }
+    }
+  }
+  return rest
 }
 
 function handleSSE(data) {
@@ -459,8 +483,13 @@ async function clearHistory() {
 
 onMounted(async () => {
   inputRef.value?.addEventListener('paste', handlePaste)
-  // Sync context state from server (true if missing key = default ON)
   try {
+    // 读回服务端真实的记忆开关状态，而不是无条件覆盖为 true
+    try {
+      const ctx = await agentApi.getContext()
+      contextEnabled.value = ctx !== undefined ? ctx : true
+    } catch (e) { contextEnabled.value = true }
+
     const res = await agentApi.getHistory()
     // getHistory returns empty array when no history or server error — that's fine
     if (Array.isArray(res) && res.length > 0) {
@@ -469,9 +498,6 @@ onMounted(async () => {
       await nextTick()
       scrollToBottom()
     }
-    // Default memory ON — server returns null for new sessions
-    contextEnabled.value = true
-    await agentApi.setContext(true).catch(() => {})
   } catch (e) {
     console.warn('加载历史记录失败:', e)
     contextEnabled.value = true // default ON even on error

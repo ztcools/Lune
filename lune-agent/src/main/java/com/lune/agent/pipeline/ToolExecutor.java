@@ -123,21 +123,24 @@ public class ToolExecutor {
                     body.set("summary", a.getOrDefault("summary", ""));
                     body.set("categoryId", a.getOrDefault("categoryId", null));
                     body.set("cover", a.getOrDefault("cover", null));
+                    body.set("status", 0); // 直接创建为草稿，避免二次写库
                     var opt = api.createArticle(body, token);
                     if (opt.isEmpty()) yield m("success", false, "message", "创建失败");
                     var obj = opt.get();
-                    var draft = new JSONObject();
-                    draft.set("title", a.get("title"));
-                    draft.set("content", a.get("content"));
-                    draft.set("status", 0);
-                    api.updateArticle(obj.getLong("id"), draft, token);
                     yield m("success", true, "message", "文章草稿已创建，说「发」即发布", "preview", preview(obj));
                 }
                 case "publish_article" -> {
                     long id = num(a, "id");
+                    var title = a.get("title");
+                    var content = a.get("content");
+                    // 后端 updateArticle 会整字段覆盖，缺 title/content 时用占位符会清空正文，故缺则失败
+                    if (title == null || String.valueOf(title).isBlank()
+                            || content == null || String.valueOf(content).isBlank()) {
+                        yield m("success", false, "message", "缺少标题或正文，请先查询文章内容后再发布");
+                    }
                     var body = new JSONObject();
-                    body.set("title", a.getOrDefault("title", "article-" + id));
-                    body.set("content", a.getOrDefault("content", "<p></p>"));
+                    body.set("title", title);
+                    body.set("content", content);
                     body.set("status", 1);
                     if (api.updateArticle(id, body, token).isPresent())
                         yield m("success", true, "message", "文章 ID=" + id + " 已发布", "articleId", id);
@@ -214,6 +217,16 @@ public class ToolExecutor {
             return switch (name) {
                 case "create_record" -> {
                     var body = mapObj(a, "content", "categoryId", "cover", "media");
+                    // title 为 DB 必填列：优先用模型给的 title，否则用正文前 20 字兜底
+                    var title = a.get("title");
+                    if (title == null || String.valueOf(title).isBlank()) {
+                        var content = (String) a.get("content");
+                        var fallback = content != null && !content.isBlank()
+                                ? content.replaceAll("\\s+", " ").trim() : "";
+                        title = fallback.length() > 20 ? fallback.substring(0, 20)
+                                : (fallback.isEmpty() ? "未命名记录" : fallback);
+                    }
+                    body.set("title", title);
                     var opt = api.createRecord(body, token);
                     if (opt.isPresent()) yield m("success", true, "message", "记录已创建", "preview", preview(opt.get()));
                     yield m("success", false, "message", "创建失败");
@@ -288,8 +301,9 @@ public class ToolExecutor {
                     var body = new JSONObject();
                     body.set("configKey", a.get("configKey"));
                     body.set("configValue", a.get("configValue"));
-                    api.saveSiteConfig(body, token);
-                    yield m("success", true, "message", "配置 " + a.get("configKey") + " 已更新");
+                    if (api.saveSiteConfig(body, token).isPresent())
+                        yield m("success", true, "message", "配置 " + a.get("configKey") + " 已更新");
+                    yield m("success", false, "message", "配置更新失败");
                 }
                 default -> m("success", false, "message", "Unknown config tool: " + name);
             };
@@ -372,10 +386,34 @@ public class ToolExecutor {
                 p.set("path", uploadPath);
                 return m("success", true, "message", "图片已就绪", "url", uploadPath, "preview", p);
             }
+            if (!isSafeImageUrl(url)) return m("success", false, "message", "图片URL不合法（仅支持公网 http/https，禁止内网地址）");
             var opt = api.uploadFromUrl(url, token);
             if (opt.isPresent()) return m("success", true, "message", "图片已上传", "url", opt.get().get("path"), "preview", preview(opt.get()));
             return m("success", false, "message", "上传失败");
         }
+
+        /** SSRF 防护：仅允许公网 http/https，拒绝 file://、内网/环回/链路本地/云元数据地址。 */
+        private static boolean isSafeImageUrl(String url) {
+            try {
+                var u = java.net.URI.create(url);
+                var scheme = u.getScheme();
+                if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) return false;
+                var host = u.getHost();
+                if (host == null || host.isBlank()) return false;
+                host = host.toLowerCase();
+                if (host.equals("localhost") || host.endsWith(".localhost")
+                        || host.equals("169.254.169.254") || host.equals("metadata.google.internal")) return false;
+                if (host.matches("\\d{1,3}(\\.\\d{1,3}){3}")) {
+                    var ip = java.net.InetAddress.getByName(host);
+                    if (ip.isLoopbackAddress() || ip.isLinkLocalAddress() || ip.isSiteLocalAddress()
+                            || ip.isAnyLocalAddress() || ip.isMulticastAddress()) return false;
+                }
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
         private static String extractUploadPath(String url) {
             int idx = url.indexOf("/upload/");
             if (idx >= 0) {

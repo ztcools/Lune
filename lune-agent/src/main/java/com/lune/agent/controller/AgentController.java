@@ -92,6 +92,11 @@ public class AgentController {
         return Map.of("code", 200, "data", memory.listSessions(resolveUserId()));
     }
 
+    @GetMapping("/context")
+    public Map<String, Object> getContext() {
+        return Map.of("code", 200, "data", memory.isContextEnabled(resolveUserId()));
+    }
+
     @PutMapping("/context")
     public Map<String, Object> setContext(@RequestParam boolean enabled) {
         memory.setContextEnabled(resolveUserId(), enabled);

@@ -117,6 +117,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - LUNE_API_URL=http://backend:8081
+      - JWT_SECRET=${JWT_SECRET}
       - AGENT_API_KEY=${AGENT_API_KEY:-}
       - AGENT_BASE_URL=${AGENT_BASE_URL:-https://aigw.phigent.cn}
       - AGENT_MODEL=${AGENT_MODEL:-deepseek/deepseek-v4-flash}

@@ -51,9 +51,10 @@ public final class ToolDefinitions {
             params(Prop.p("page", "integer"), Prop.p("size", "integer")));
 
         // ── 记录 ──
-        def("create_record", "创建记录（打卡式，无标题）。content、categoryId 必填。",
-            params(Prop.req("content", "string", "记录正文"),
-                   Prop.req("categoryId", "integer", "分类 ID（先 list_categories 获取）"),
+        def("create_record", "创建记录（打卡式）。title、content、categoryId 必填。",
+            params(Prop.req("title", "string", "记录标题，用户未提供时自拟"),
+                   Prop.req("content", "string", "记录正文"),
+                   Prop.req("categoryId", "integer", "分类 ID（先 list_categories 获取，须为 record 类型）"),
                    Prop.p("cover", "string"), Prop.p("media", "string", "媒体 JSON 数组")));
         def("delete_record", "删除记录",
             params(Prop.req("id", "integer")));

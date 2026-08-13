@@ -76,7 +76,11 @@ public class LuneApiClient {
     private boolean delete(String path, String token) {
         try {
             var r = http.send(request(path, token).DELETE().build(), HttpResponse.BodyHandlers.ofString());
-            return r.statusCode() == 200;
+            if (r.statusCode() != 200) {
+                log.warn("DELETE {} HTTP {}", path, r.statusCode());
+                return false;
+            }
+            return JSONUtil.parseObj(r.body()).getInt("code") == 200;
         } catch (Exception e) {
             log.warn("DELETE {} err: {}", path, e.getMessage());
             return false;

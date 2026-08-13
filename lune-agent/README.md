@@ -94,6 +94,12 @@ cp src/main/resources/application-local.yml.template \
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
+> **⚠️ 容器启动必须带 `--env-file .env.local`**
+> 推荐用 `make dev`（内部已带 `--env-file .env.local`）。
+> 若直接 `docker compose up`，`JWT_SECRET` 会回退到默认开发密钥、`AGENT_API_KEY` 为空，
+> 导致所有 `/api/admin/agent/**` 返回 403、聊天提示「请先配置 API Key」。
+> 启动后若出现 403，优先检查 JWT_SECRET 与后端是否一致（长度/指纹）。
+
 ## Build & Deploy
 
 ```bash

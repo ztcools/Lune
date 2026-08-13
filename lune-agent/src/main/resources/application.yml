@@ -22,7 +22,7 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:dev-secret-only-for-local-development}
+    secret: ${JWT_SECRET:}
   agent:
     base-url: ${AGENT_BASE_URL:https://aigw.phigent.cn}
     model: ${AGENT_MODEL:deepseek/deepseek-v4-flash}

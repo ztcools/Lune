@@ -64,7 +64,8 @@ public class ArticleServiceImpl implements ArticleService {
         article.setCover(request.getCover());
         article.setCategoryId(request.getCategoryId());
         article.setUserId(SecurityUtils.getCurrentUserId());
-        article.setStatus(1);
+        // 显式传入 status 时采用（Agent 创建草稿用 0），否则默认已发布
+        article.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         articleMapper.insert(article);
         return article;
     }

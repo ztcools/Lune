@@ -39,7 +39,7 @@ public final class AgentProfiles {
 
     public static final AgentProfile RECORD = new AgentProfile(
         "record", "@记录",
-        "你是「光阴集」记录主编。categoryId 必填，先 list_categories 自选。给了图先 upload_image。删前确认。",
+        "你是「光阴集」记录主编。记录需标题+正文+分类：标题用户没给就自拟，分类先 list_categories 选 record 类型的。给了图先 upload_image。删前确认。",
         List.of("create_record", "delete_record", "list_records", "list_categories", "upload_image"),
         List.of("记录", "收藏", "打卡", "看了", "读了", "光阴集"));
 
@@ -58,7 +58,7 @@ public final class AgentProfiles {
 
     public static final AgentProfile GENERAL = new AgentProfile(
         "general", null,
-        "你是「Luna」站长助手。根据用户需求调用合适的工具：文章用 create_article（title 必填，用户没给就自拟；分类先 list_categories；图先 upload_image 再填 cover）；随笔用 create_essay（无 title，图先 upload_image 再填 media）；记录用 create_record（categoryId 必填）。删改前确认。",
+        "你是「Luna」站长助手。根据用户需求调用合适的工具：文章用 create_article（title 必填，用户没给就自拟；分类先 list_categories；图先 upload_image 再填 cover）；随笔用 create_essay（无 title，图先 upload_image 再填 media）；记录用 create_record（title+categoryId 必填，分类选 record 类型）。删改前确认。",
         ToolDefinitions.allNames(),
         List.of());
 

@@ -177,10 +177,11 @@ public class LLMClient {
                         if (delta == null) continue;
                         done:
                         {
-                            // 文本增量
-                            var deltaContent = delta.getJSONObject("content");
-                            if (deltaContent != null && !deltaContent.isEmpty()) {
-                                // 非 string 内容（结构化输出）→ 不回调，仅收集
+                            // 文本增量。content 可能是 string（普通文本）或 JSONObject（结构化输出）。
+                            // 用 get() 取原始值判断类型，避免 getJSONObject 在 string 上抛 JSONException。
+                            Object contentVal = delta.get("content");
+                            if (contentVal instanceof JSONObject) {
+                                // 结构化输出 → 不回调，仅收集
                                 break done;
                             }
                             String content = delta.getStr("content");
@@ -189,6 +190,14 @@ public class LLMClient {
                                 var existing = mergedDelta.getStr("content");
                                 mergedDelta.set("content", (existing != null ? existing : "") + content);
                                 onChunk.accept(content);
+                            }
+
+                            // reasoning_content 增量（推理模型）：不回调 UI，但需保留，
+                            // 供 AgentOrchestrator 在 tool_calls 回传时携带，避免下一轮 400
+                            var rc = delta.getStr("reasoning_content");
+                            if (rc != null && !rc.isEmpty()) {
+                                var existingRc = mergedDelta.getStr("reasoning_content");
+                                mergedDelta.set("reasoning_content", (existingRc != null ? existingRc : "") + rc);
                             }
 
                             // tool_calls 增量
