@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.agent")
 public class AgentConfig {
     private String baseUrl = "https://aigw.phigent.cn";
-    private String model = "deepseek/deepseek-v4-flash";
+    private String model = "claude-haiku-4-5-20251001";
     private String apiKey;
     private int maxTokens = 4096;
     private double temperature = 0.7;

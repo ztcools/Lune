@@ -494,7 +494,7 @@ make prod         # 重新构建并启动
 | `ADMIN_DEFAULT_PASSWORD` | 默认管理员初始密码 | ❌（默认 admin123） |
 | `AGENT_API_KEY` | AI Agent API Key | ❌（不配则 Agent 不可用） |
 | `AGENT_BASE_URL` | LLM API 网关地址 | ❌（默认 aigw.phigent.cn） |
-| `AGENT_MODEL` | 模型名称 | ❌（默认 deepseek/deepseek-v4-flash） |
+| `AGENT_MODEL` | 模型名称 | ❌（默认 claude-haiku-4-5-20251001，非推理） |
 
 > 📘 Agent 详细架构文档见 [lune-agent/README.md](lune-agent/README.md)
 

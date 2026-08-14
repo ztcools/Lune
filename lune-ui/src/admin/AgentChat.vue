@@ -1,5 +1,5 @@
 <template>
-  <div class="agent-page" @dragover.prevent="dragOver = true" @dragleave.prevent="dragOver = false" @drop.prevent="onDrop">
+  <div ref="pageRoot" class="agent-page" @dragover.prevent="dragOver = true" @dragleave="onDragLeave" @drop.prevent="onDrop">
     <div v-if="dragOver" class="drop-overlay"><div class="drop-hint">松开以上传图片</div></div>
     <!-- Header -->
     <div class="agent-header">
@@ -125,7 +125,7 @@
               <h2>{{ previewArticle.title }}</h2>
               <button @click="previewArticle = null" class="config-close">×</button>
             </div>
-            <div class="preview-modal-body" v-html="previewArticle.content"></div>
+            <div class="preview-modal-body" v-html="sanitizeHtml(previewArticle.content)"></div>
             <div class="preview-modal-footer">
               <span v-if="previewArticle.createTime">📅 {{ previewArticle.createTime?.substring(0, 10) }}</span>
               <span>状态：{{ previewArticle.status === 0 ? '草稿' : '已发布' }}</span>
@@ -157,6 +157,7 @@ const showConfig = ref(false)
 const showPref = ref(false)
 const previewArticle = ref(null)
 const msgContainer = ref(null)
+const pageRoot = ref(null)
 const inputRef = ref(null)
 let abortController = null
 
@@ -254,6 +255,12 @@ function onDrop(e) {
   Array.from(files).filter(f => f.type.startsWith('image/')).forEach(f => queueImage(f, f.name))
 }
 
+/** 仅在真正离开容器时隐藏遮罩，避免经过子元素误触发 dragleave 导致闪烁。 */
+function onDragLeave(e) {
+  if (e.currentTarget.contains(e.relatedTarget)) return
+  dragOver.value = false
+}
+
 async function handlePaste(e) {
   const items = e.clipboardData?.items
   if (!items) return
@@ -292,6 +299,16 @@ function renderMd(text) {
   if (mdCache.size > 2000) mdCache.clear()
   mdCache.set(text, html)
   return html
+}
+
+/** 富文本轻量消毒（纵深防御）：剥离 script/iframe/事件属性/javascript: 链接。 */
+function sanitizeHtml(html) {
+  if (!html) return ''
+  return html
+    .replace(/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+    .replace(/<\s*\/?\s*(iframe|object|embed|link|style|meta)\b[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src)\s*=\s*["']?\s*javascript:[^"'\s>]*["']?/gi, '')
 }
 
 function addMsg(msg) {
@@ -453,9 +470,14 @@ async function handlePublish(toolResult) {
 async function handleDiscard(toolName, toolResult) {
   const id = toolResult?.preview?.id
   if (!id || !toolName) return
+  // 目前只有文章支持从工具卡片直接删除；其它类型不误报删除结果
+  if (!toolName.includes('article')) {
+    ElMessage.info('该类型暂不支持在聊天中删除')
+    return
+  }
   try {
     await ElMessageBox.confirm('确定要删除吗？', '确认', { type: 'warning' })
-    if (toolName.includes('article')) await articleApi.delete(id)
+    await articleApi.delete(id)
     addMsg({ role: 'assistant', content: '已删除' })
     scrollToBottom()
   } catch (e) { /* cancelled or error */ }
@@ -482,7 +504,7 @@ async function clearHistory() {
 }
 
 onMounted(async () => {
-  inputRef.value?.addEventListener('paste', handlePaste)
+  pageRoot.value?.addEventListener('paste', handlePaste)
   try {
     // 读回服务端真实的记忆开关状态，而不是无条件覆盖为 true
     try {
@@ -507,7 +529,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (abortController) abortController.abort()
-  inputRef.value?.removeEventListener('paste', handlePaste)
+  pageRoot.value?.removeEventListener('paste', handlePaste)
 })
 </script>
 

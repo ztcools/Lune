@@ -69,11 +69,20 @@ public class LLMClient {
     private JSONObject callWithRetry(JSONArray messages, JSONArray tools, boolean stream,
                                      Consumer<String> onChunk) {
         long delay = RETRY_BASE_MS;
+        // 流式场景下，一旦已向客户端输出过 chunk，重试会重复/错乱输出，必须直接放弃。
+        final boolean[] emitted = {false};
+        Consumer<String> tracked = stream ? chunk -> { emitted[0] = true; onChunk.accept(chunk); } : onChunk;
+
         for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
             try {
-                return doCall(messages, tools, stream, onChunk);
+                return doCall(messages, tools, stream, tracked);
             } catch (Exception e) {
+                // 仅 IOException/超时等瞬时异常走到这里；非 2xx 已在 doCall 内返回 null 不重试
                 log.warn("LLM call attempt {}/{} failed: {}", attempt + 1, MAX_RETRIES, e.getMessage());
+                if (stream && emitted[0]) {
+                    log.warn("Stream already emitted chunks, aborting retry to avoid duplicate output");
+                    return null;
+                }
                 if (attempt < MAX_RETRIES - 1) {
                     try { Thread.sleep(delay); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return null; }
                     delay *= 2;

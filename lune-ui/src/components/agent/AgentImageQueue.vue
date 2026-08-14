@@ -2,7 +2,7 @@
   <div v-if="images.length" class="image-queue">
     <div
       v-for="(img, idx) in images"
-      :key="idx"
+      :key="img.id ?? img.url"
       class="img-chip"
       :class="{ uploading: img.uploading }"
     >

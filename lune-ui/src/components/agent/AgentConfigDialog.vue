@@ -12,13 +12,13 @@
       </div>
       <div class="config-field">
         <label>模型名称</label>
-        <el-input v-model="form.model" placeholder="deepseek/deepseek-v4-flash" />
+        <el-input v-model="form.model" placeholder="claude-haiku-4-5-20251001" />
       </div>
       <div class="config-field">
         <label>API Key</label>
         <el-input
           v-model="form.apiKey"
-          :type="showKey ? 'text' : 'password'"
+          type="password"
           placeholder="sk-..."
           show-password
         />
@@ -43,11 +43,10 @@ const emit = defineEmits(['close', 'saved'])
 
 const form = reactive({
   baseUrl: 'https://aigw.phigent.cn',
-  model: 'deepseek/deepseek-v4-flash',
+  model: 'claude-haiku-4-5-20251001',
   apiKey: ''
 })
 
-const showKey = ref(false)
 const saving = ref(false)
 const testing = ref(false)
 const testResult = ref(null)
@@ -58,8 +57,8 @@ onMounted(async () => {
     if (config) {
       if (config.baseUrl) form.baseUrl = config.baseUrl
       if (config.model) form.model = config.model
-      // 后端返回的是脱敏占位符（sk-****xxxx），不回填，避免误用/误存
-      if (config.apiKey && !config.apiKey.startsWith('sk-****')) form.apiKey = config.apiKey
+      // 后端返回脱敏占位符时（masked=true）不回填，避免误用/误存
+      if (config.apiKey && !config.masked) form.apiKey = config.apiKey
     }
   } catch (e) { /* use defaults */ }
 })
@@ -71,10 +70,13 @@ async function testConnection() {
   }
   testing.value = true
   testResult.value = null
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10000)
   try {
     const url = form.baseUrl.replace(/\/+$/, '') + '/v1/chat/completions'
     const resp = await fetch(url, {
       method: 'POST',
+      signal: controller.signal,
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + form.apiKey },
       body: JSON.stringify({
         model: form.model,
@@ -90,8 +92,9 @@ async function testConnection() {
       testResult.value = { success: false, message: resp.status + ': ' + txt.substring(0, 100) }
     }
   } catch (e) {
-    testResult.value = { success: false, message: e.message }
+    testResult.value = { success: false, message: e.name === 'AbortError' ? '连接超时（10s）' : e.message }
   } finally {
+    clearTimeout(timer)
     testing.value = false
   }
 }

@@ -99,7 +99,8 @@ onMounted(async () => {
     const res = await agentApi.getPreferences()
     if (res) {
       for (const [k, v] of Object.entries(res)) {
-        prefs.value[k] = v || prefs.value[k]
+        // 仅对 null/undefined/空串保持默认，保留合法的 false/'0' 等假值语义
+        if (v !== null && v !== undefined && v !== '') prefs.value[k] = v
       }
     }
   } catch (e) { /* 使用默认值 */ }

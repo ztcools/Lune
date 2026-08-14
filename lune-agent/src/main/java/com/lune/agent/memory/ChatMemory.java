@@ -111,21 +111,22 @@ public class ChatMemory {
 
     // ── Session listing ──
 
-    /** 列出用户所有活跃 session（当天有对话的） */
+    /** 列出用户所有活跃 session（当天有对话的）。用 SCAN 游标，避免 KEYS 阻塞 Redis。 */
     public List<String> listSessions(Long userId) {
         try {
             var pattern = KEY_CHAT + userId + ":*:" + LocalDate.now();
-            var keys = redis.keys(pattern);
-            if (keys == null || keys.isEmpty()) return List.of();
-            return keys.stream()
-                    .map(k -> {
-                        // Format: agent:chat:{userId}:{sessionId}:{date}
-                        var parts = k.split(":");
-                        if (parts.length >= 4) return parts[parts.length - 2];
-                        return k;
-                    })
-                    .distinct()
-                    .toList();
+            var sessions = new java.util.LinkedHashSet<String>();
+            try (var cursor = redis.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(pattern).count(100).build())) {
+                while (cursor.hasNext()) {
+                    var k = cursor.next();
+                    // Format: agent:chat:{userId}:{sessionId}:{date}
+                    var parts = k.split(":");
+                    if (parts.length >= 4) sessions.add(parts[parts.length - 2]);
+                }
+            }
+            return List.copyOf(sessions);
         } catch (Exception e) {
             log.warn("Redis session list failed: {}", e.getMessage());
             return List.of();

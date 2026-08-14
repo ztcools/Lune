@@ -120,7 +120,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - AGENT_API_KEY=${AGENT_API_KEY:-}
       - AGENT_BASE_URL=${AGENT_BASE_URL:-https://aigw.phigent.cn}
-      - AGENT_MODEL=${AGENT_MODEL:-deepseek/deepseek-v4-flash}
+      - AGENT_MODEL=${AGENT_MODEL:-claude-haiku-4-5-20251001}
       - TZ=Asia/Shanghai
       - JAVA_OPTS=-Xms128m -Xmx256m -XX:+UseG1GC
     depends_on:

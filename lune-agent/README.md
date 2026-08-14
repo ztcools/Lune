@@ -81,7 +81,7 @@ All tools execute via `LuneApiClient` → HTTP calls to `lune-web` admin API.
 | `AGENT_PORT` | 8082 | Server port |
 | `AGENT_API_KEY` | - | DeepSeek API key (required) |
 | `AGENT_BASE_URL` | https://aigw.phigent.cn | API gateway |
-| `AGENT_MODEL` | deepseek/deepseek-v4-flash | Model name |
+| `AGENT_MODEL` | claude-haiku-4-5-20251001 | Model name（非推理，低延迟） |
 | `REDIS_HOST` | localhost | Redis host |
 | `LUNE_API_URL` | http://localhost:8081 | lune-web base URL |
 

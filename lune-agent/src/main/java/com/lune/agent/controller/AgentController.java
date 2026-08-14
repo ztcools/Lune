@@ -53,12 +53,14 @@ public class AgentController {
     @GetMapping("/config")
     public Map<String, Object> getConfig() {
         var k = config.getApiKey();
-        // 仅暴露后 4 位，前缀替换为固定值，防止密钥猜测
-        var masked = (k != null && k.length() > 4) ? "sk-****" + k.substring(k.length() - 4) : (k != null ? "****" : "");
+        boolean hasKey = k != null && !k.isBlank();
+        // 仅暴露后 4 位，前缀替换为固定值，防止密钥猜测；masked 标志供前端判断是否回填
+        var masked = hasKey ? "sk-****" + k.substring(k.length() - 4) : "";
         return Map.of("code", 200, "data", Map.of(
                 "baseUrl", config.getBaseUrl(),
                 "model", config.getModel(),
-                "apiKey", masked
+                "apiKey", masked,
+                "masked", hasKey
         ));
     }
 
