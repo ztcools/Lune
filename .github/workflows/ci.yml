@@ -1,0 +1,80 @@
+name: CI
+
+# ============================================================
+# 持续集成：代码推送到 main 或发起 Pull Request 时，
+# 跑后端/Agent 单元+集成测试、前端单测+生产构建。
+# 运行在 GitHub 托管的 ubuntu-latest（有外网、有 Docker）。
+# ============================================================
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lune-server)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build & test (unit + Testcontainers integration)
+        run: mvn -B -ntp test
+        working-directory: lune-server
+
+  agent:
+    name: Agent (lune-agent)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build & test
+        run: mvn -B -ntp test
+        working-directory: lune-agent
+
+  frontend:
+    name: Frontend (lune-ui)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: lune-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: lune-ui
+
+      - name: Unit tests
+        run: npm test
+        working-directory: lune-ui
+
+      - name: Production build (smoke)
+        run: npm run build
+        working-directory: lune-ui

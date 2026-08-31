@@ -1,0 +1,63 @@
+name: Deploy
+
+# ============================================================
+# 持续部署：push 到 main 时，在自托管 Runner（本地机器）上
+# 构建三套镜像 → docker save → scp 到无外网服务器 → 服务器
+# docker load + 迁移 + compose up + 健康检查。
+#
+# 为什么自托管：生产服务器无外网（Docker Hub 直连不通），
+# 沿用已验证的「本地构建 + scp 上传」链路，不引入 registry。
+#
+# SSH 走 Runner 机器上的 ~/.ssh/config 别名 lune-prod
+# （指向生产服务器的 ubuntu 用户，密钥 ~/.ssh/lune_ci_deploy）。
+# 因此本流程无需任何 GitHub Secrets / 环境变量。
+# ============================================================
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build images & deploy to server
+    runs-on: self-hosted
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -f docker/backend/Dockerfile -t lune-backend:latest .
+
+      - name: Build nginx image (含前端构建)
+        run: docker build -f docker/nginx/Dockerfile -t lune-nginx:latest .
+
+      - name: Build agent image
+        run: |
+          cd lune-agent
+          mvn -B -ntp -q -DskipTests package
+          docker build -t lune-agent:latest .
+
+      - name: Export & compress images
+        run: |
+          rm -rf /tmp/lune-deploy && mkdir -p /tmp/lune-deploy
+          docker save lune-backend:latest | gzip -1 > /tmp/lune-deploy/lune-backend.tar.gz
+          docker save lune-nginx:latest   | gzip -1 > /tmp/lune-deploy/lune-nginx.tar.gz
+          docker save lune-agent:latest   | gzip -1 > /tmp/lune-deploy/lune-agent.tar.gz
+          ls -lh /tmp/lune-deploy
+
+      - name: Upload images + compose + migrations + script
+        run: |
+          ssh lune-prod 'mkdir -p /opt/lune/deploy-tmp /opt/lune/data/geoip'
+          scp /tmp/lune-deploy/*.tar.gz lune-prod:/opt/lune/deploy-tmp/
+          scp docker-compose.server.yml lune-prod:/opt/lune/deploy-tmp/docker-compose.server.yml
+          scp lune-server/lune-web/src/main/resources/sql/migration-*.sql lune-prod:/opt/lune/deploy-tmp/
+          scp scripts/deploy-server.sh lune-prod:/opt/lune/deploy-tmp/deploy-server.sh
+
+      - name: Deploy on server
+        run: ssh lune-prod 'cd /opt/lune && bash deploy-tmp/deploy-server.sh'

@@ -276,6 +276,8 @@ Lune/
 >
 > 🌐 **当前生产环境部署报告（含服务器架构图 / 资源限制 / Phase 2-5 增量路线图）见 [docs/SERVER-DEPLOYMENT.md](docs/SERVER-DEPLOYMENT.md)**
 >
+> 🤖 **CI/CD 自动测试与部署（GitHub Actions：后端/Agent/前端自动测试 + 自托管 Runner 自动构建镜像并部署）见 [docs/CI-CD.md](docs/CI-CD.md)**
+>
 > 演示站点已部署在腾讯云 2C4G 5M 服务器（https://ztcools.com），资源受限环境下的最佳实践参考。
 
 ### 方式一：Docker 部署（推荐）

@@ -1,0 +1,25 @@
+# ============================================================
+# 测试环境配置（@ActiveProfiles("test") 激活）
+# 只覆盖测试所需的最小项；数据库/Redis 地址由 LuneIntegrationTest
+# 的 @DynamicPropertySource 注入 Testcontainers 容器地址。
+# ============================================================
+
+app:
+  jwt:
+    # 测试专用密钥（≥32 字符即可，仅用于测试签名/校验）
+    secret: lune-test-jwt-secret-0123456789abcdef0123456789
+    expiration: 86400000
+  admin:
+    # 集成测试里 DataInitializer 首次启动创建的 admin 初始密码
+    default-password: admin123
+  # 测试环境统一走本地存储，避免误连 COS
+  storage:
+    type: local
+  # 测试环境禁用 HSTS（HTTP 环境）
+  security:
+    hsts-enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.lune: INFO
